@@ -1,0 +1,125 @@
+import { useId, useState, type FormEvent } from 'react'
+import Button from './ui/Button'
+import Field from './ui/Field'
+import ModalDrawer from './ui/ModalDrawer'
+import type { Contact } from '../lib/contacts'
+import {
+  combineRemindAt,
+  createReminder,
+  splitRemindAt,
+  todayYmd,
+  updateReminder,
+  type ContactReminder,
+} from '../lib/reminders'
+
+type Props = {
+  open: boolean
+  contact: Contact | null
+  reminder?: ContactReminder | null
+  onClose: () => void
+  onSaved: (reminder: ContactReminder) => void
+}
+
+export default function ReminderModal({ open, contact, reminder, onClose, onSaved }: Props) {
+  const textId = useId()
+  const dateId = useId()
+  const timeId = useId()
+  const sessionKey = open ? `${contact?.id || ''}:${reminder?.id || 'new'}` : null
+  const initial = reminder ? splitRemindAt(reminder.remind_at) : { date: todayYmd(), time: '09:00' }
+  const [formKey, setFormKey] = useState(sessionKey)
+  const [text, setText] = useState(reminder?.text || '')
+  const [date, setDate] = useState(initial.date)
+  const [time, setTime] = useState(initial.time)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (sessionKey !== formKey) {
+    setFormKey(sessionKey)
+    setError(null)
+    setText(reminder?.text || '')
+    const next = reminder ? splitRemindAt(reminder.remind_at) : { date: todayYmd(), time: '09:00' }
+    setDate(next.date)
+    setTime(next.time)
+  }
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!contact) return
+    if (!text.trim()) {
+      setError('Enter a reminder')
+      return
+    }
+    if (!date || !time) {
+      setError('Pick a date and time')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      const payload = { text: text.trim(), remind_at: combineRemindAt(date, time) }
+      const saved = reminder
+        ? await updateReminder(reminder.id, payload)
+        : await createReminder(contact.id, payload)
+      onSaved(saved)
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save reminder')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <ModalDrawer
+      open={open}
+      title={reminder ? 'Edit reminder' : 'Add reminder'}
+      subtitle={contact ? `For ${contact.name}` : undefined}
+      onClose={onClose}
+      maxWidthClassName="max-w-md"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" form="reminder-form" disabled={saving || !contact}>
+            {saving ? 'Saving…' : reminder ? 'Save changes' : 'Add reminder'}
+          </Button>
+        </div>
+      }
+    >
+      <form id="reminder-form" onSubmit={(e) => void submit(e)} className="grid gap-4">
+        <Field label="Reminder" htmlFor={textId} error={error && !text.trim() ? error : null}>
+          <textarea
+            id={textId}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={3}
+            className="w-full rounded-md border border-shop-border px-3 py-2 text-sm outline-none focus:border-primary-500"
+            placeholder="Follow up about hotel confirmation…"
+          />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Date" htmlFor={dateId}>
+            <input
+              id={dateId}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-md border border-shop-border px-3 py-2 text-sm outline-none focus:border-primary-500"
+            />
+          </Field>
+          <Field label="Time" htmlFor={timeId}>
+            <input
+              id={timeId}
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="w-full rounded-md border border-shop-border px-3 py-2 text-sm outline-none focus:border-primary-500"
+            />
+          </Field>
+        </div>
+        {error && text.trim() ? <p className="text-sm text-red-600">{error}</p> : null}
+      </form>
+    </ModalDrawer>
+  )
+}

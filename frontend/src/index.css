@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --color-shop-bg: #f8fafc;
+  --color-shop-sidebar: #ffffff;
+  --color-shop-border: #e2e8f0;
+  --color-shop-ink: #0f172a;
+  --color-shop-muted: #64748b;
+  --color-shop-green: #0f766e;
+  --color-shop-green-bg: #ccfbf1;
+  --color-shop-gray-bg: #e2e8f0;
+  --color-shop-accent: #0f766e;
+  --color-shop-accent-fg: #ffffff;
+  --color-chat-bg: #f8fafc;
+  --color-chat-inbound: #ffffff;
+  --color-chat-outbound: #ccfbf1;
+  --color-chat-header: #0f172a;
+  --color-chat-header-light: #1e293b;
+
+  /* Design system v1.0 (Claude Design: "Horizon Travel CRM") — state and source colours.
+     Each is a background tint + readable foreground; status is always text + colour. */
+  --color-primary-800: #115e59;
+  --color-tint: #f0fdfa;
+  --color-line-strong: #cbd5e1;
+  --color-neutral-bg: #f1f5f9;
+  --color-neutral-fg: #334155;
+  --color-info-bg: #dbeafe;
+  --color-info-fg: #1e40af;
+  --color-warn-bg: #fef3c7;
+  --color-warn-fg: #92400e;
+  --color-danger: #b91c1c;
+  --color-danger-hover: #991b1b;
+  --color-danger-bg: #fee2e2;
+  --color-danger-fg: #991b1b;
+  --color-dealer-bg: #ede9fe;
+  --color-dealer-fg: #5b21b6;
+  --color-dealer: #7c3aed;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    color: var(--color-shop-ink);
+    font-family: var(--font-sans);
+    background: var(--color-shop-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-shop-accent);
+    outline-offset: 2px;
+  }
+
+  :is(button:not(:disabled), a[href], select:not(:disabled), summary, [role="button"]:not([aria-disabled="true"]), input[type="checkbox"]:not(:disabled), input[type="radio"]:not(:disabled), input[type="file"]:not(:disabled)) {
+    cursor: pointer;
+  }
+
+  :is(button, input, select, textarea):disabled {
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    background: var(--color-shop-green-bg);
+    color: var(--color-shop-ink);
+  }
+}
+
+/* Loading placeholders (design system): a slow shimmer, still when motion is reduced. */
+.skeleton {
+  background: linear-gradient(90deg, #eef2f6 0%, #f8fafc 50%, #eef2f6 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

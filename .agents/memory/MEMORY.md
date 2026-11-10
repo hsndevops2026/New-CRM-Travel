@@ -1,0 +1,2 @@
+- [Credential file imports](credential-file-imports.md) — treat uploaded dotenv/config files as transient secrets; never let setup commits sweep them into Git.
+- [Workflow child cleanup](workflow-child-cleanup.md) — after replacing a workflow, verify its service ports are free before starting the replacement.

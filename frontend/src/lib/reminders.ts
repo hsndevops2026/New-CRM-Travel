@@ -6,6 +6,8 @@ export type ContactReminder = {
   text: string
   remind_at: string
   done_at: string | null
+  notify_customer?: boolean
+  sent_at?: string | null
   created_by?: string | null
   created_at: string
   contact_name?: string
@@ -15,6 +17,7 @@ export type ContactReminder = {
 export type ReminderInput = {
   text: string
   remind_at: string
+  notify_customer?: boolean
 }
 
 /** Local calendar day bounds as ISO strings for the reminders range API. */

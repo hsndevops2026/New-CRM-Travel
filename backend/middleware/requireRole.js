@@ -6,8 +6,9 @@
  */
 export function requireRole(...allowedRoles) {
   return (req, res, next) => {
-    const role = req.admin?.role || 'admin';
-    if (!allowedRoles.includes(role)) {
+    // Deny by default: an account with no role gets no access.
+    const role = req.admin?.role;
+    if (!role || !allowedRoles.includes(role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     return next();

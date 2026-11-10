@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import {
   fetchHotelQuotes,
@@ -36,6 +37,7 @@ function groupDetailsByRoom(details: HotelQuoteDetail[]) {
 }
 
 function RateRow({ rate }: { rate: HotelQuoteDetail }) {
+  useI18n()
   return (
     <div className="rounded-lg border border-shop-border bg-white p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -59,8 +61,7 @@ function RateRow({ rate }: { rate: HotelQuoteDetail }) {
             )}
             {rate.free_cancellation ? (
               <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
-                Free cancellation
-              </span>
+                {translate("Free cancellation")}</span>
             ) : rate.cancellation_summary ? (
               <span className="rounded-md bg-amber-50 px-2 py-0.5 font-medium text-amber-800">
                 {rate.cancellation_summary}
@@ -69,9 +70,9 @@ function RateRow({ rate }: { rate: HotelQuoteDetail }) {
           </div>
           <div className="text-xs text-shop-muted">
             {[
-              rate.payment_type ? `Pay: ${rate.payment_type}` : null,
-              rate.allotment != null ? `Allotment: ${rate.allotment}` : null,
-              rate.packaging ? 'Packaging' : null,
+              rate.payment_type ? translate("Pay: {value0}", { value0: translate(String(rate.payment_type)) }) : null,
+              rate.allotment != null ? translate("Allotment: {value0}", { value0: translate(String(rate.allotment)) }) : null,
+              rate.packaging ? translate('Packaging') : null,
               rate.adults != null || rate.children != null
                 ? `${rate.adults ?? '—'}A · ${rate.children ?? '—'}C`
                 : null,
@@ -92,20 +93,20 @@ function RateRow({ rate }: { rate: HotelQuoteDetail }) {
             <ul className="mt-1 space-y-0.5 text-xs text-shop-muted">
               {rate.cancellation_policies.map((policy, index) => (
                 <li key={`${policy.from || 'p'}-${index}`}>
-                  From {policy.from ? String(policy.from).slice(0, 16).replace('T', ' ') : '—'}
-                  {policy.amount != null ? ` · fee ${policy.amount}` : ''}
+                  {translate("From")}{' '}{policy.from ? String(policy.from).slice(0, 16).replace('T', ' ') : '—'}
+                  {policy.amount != null ? translate(" · fee {value0}", { value0: translate(String(policy.amount)) }) : ''}
                 </li>
               ))}
             </ul>
           )}
         </div>
-        <div className="shrink-0 text-right">
+        <div className="shrink-0 text-end">
           <div className="text-base font-bold tracking-tight">
-            {formatMoney(rate.price, rate.currency)}
+            <bdi dir="ltr">{formatMoney(rate.price, rate.currency)}</bdi>
           </div>
           {rate.selling_rate != null && rate.net != null && rate.selling_rate !== rate.net && (
             <div className="text-xs text-shop-muted">
-              sell {formatMoney(rate.selling_rate, rate.currency)}
+              {translate("sell")}{' '}<bdi dir="ltr">{formatMoney(rate.selling_rate, rate.currency)}</bdi>
             </div>
           )}
         </div>
@@ -115,6 +116,7 @@ function RateRow({ rate }: { rate: HotelQuoteDetail }) {
 }
 
 function HotelCustomCard({ quote }: { quote: HotelQuote }) {
+  useI18n()
   const [open, setOpen] = useState(true)
   const rooms = useMemo(() => groupDetailsByRoom(quote.details ?? []), [quote.details])
   const detailCount = quote.details?.length ?? 0
@@ -124,7 +126,7 @@ function HotelCustomCard({ quote }: { quote: HotelQuote }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-start justify-between gap-3 p-4 text-left"
+        className="flex w-full items-start justify-between gap-3 p-4 text-start"
       >
         <div className="min-w-0">
           <div className="font-semibold">{quote.hotel_name || 'Hotel'}</div>
@@ -133,14 +135,13 @@ function HotelCustomCard({ quote }: { quote: HotelQuote }) {
             {quote.destination_name && <span>{quote.destination_name}</span>}
             {quote.zone_name && <span>{quote.zone_name}</span>}
             <span>
-              {detailCount} rate{detailCount === 1 ? '' : 's'} · {rooms.length} room
-              {rooms.length === 1 ? '' : 's'}
+              {translate("{count} rate{suffix}", { count: detailCount, suffix: detailCount === 1 ? '' : 's' })} · {translate("{count} room{suffix}", { count: rooms.length, suffix: rooms.length === 1 ? '' : 's' })}
             </span>
           </div>
         </div>
-        <div className="shrink-0 text-right">
-          <div className="text-sm font-bold">{formatMoney(quote.price, quote.currency)}</div>
-          <div className="text-xs text-shop-muted">{open ? 'Hide' : 'Show'}</div>
+        <div className="shrink-0 text-end">
+          <div className="text-sm font-bold"><bdi dir="ltr">{formatMoney(quote.price, quote.currency)}</bdi></div>
+          <div className="text-xs text-shop-muted">{open ? translate('Hide') : translate('Show')}</div>
         </div>
       </button>
 
@@ -148,15 +149,14 @@ function HotelCustomCard({ quote }: { quote: HotelQuote }) {
         <div className="space-y-3 border-t border-shop-border px-4 py-3">
           {rooms.length === 0 && (
             <p className="text-sm text-shop-muted">
-              No room/rate details stored for this hotel. Retry quote fetch to refresh raw data.
-            </p>
+              {translate("No room/rate details stored for this hotel. Retry quote fetch to refresh raw data.")}</p>
           )}
           {rooms.map((room) => (
             <div key={`${room.room_code}-${room.room_name}`} className="space-y-2">
               <div className="text-sm font-semibold">
                 {room.room_name || 'Room'}
                 {room.room_code ? (
-                  <span className="ml-2 text-xs font-normal text-shop-muted">{room.room_code}</span>
+                  <span className="ms-2 text-xs font-normal text-shop-muted">{room.room_code}</span>
                 ) : null}
               </div>
               {room.rates.map((rate, index) => (
@@ -171,6 +171,7 @@ function HotelCustomCard({ quote }: { quote: HotelQuote }) {
 }
 
 export default function CustomQuotesModal({ open, lead, onClose }: Props) {
+  useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [quotes, setQuotes] = useState<HotelQuote[]>([])
@@ -244,33 +245,30 @@ export default function CustomQuotesModal({ open, lead, onClose }: Props) {
       <div className="flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-t-2xl border border-shop-border bg-white shadow-xl sm:rounded-2xl">
         <header className="flex items-start justify-between gap-3 border-b border-shop-border px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold">Custom quotes</h2>
+            <h2 className="text-base font-semibold">{translate("Custom quotes")}</h2>
             <p className="truncate text-sm text-shop-muted">{leadTitle(lead)}</p>
-            {subtitle && <p className="mt-0.5 text-xs text-shop-muted">{subtitle}</p>}
+            {subtitle && <p className="mt-0.5 text-xs text-shop-muted">{translate(subtitle)}</p>}
             <p className="mt-1 text-xs text-shop-muted">
-              All Hotelbeds rooms &amp; rates (views appear in room name; cancel rules from policies).
-            </p>
+              {translate("All Hotelbeds rooms &amp; rates (views appear in room name; cancel rules from policies).")}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="rounded-md border border-shop-border px-2.5 py-1.5 text-xs font-semibold hover:bg-shop-bg"
           >
-            Close
-          </button>
+            {translate("Close")}</button>
         </header>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
-          {loading && <div className="py-12 text-center text-sm text-shop-muted">Loading…</div>}
+          {loading && <div className="py-12 text-center text-sm text-shop-muted">{translate("Loading…")}</div>}
           {!loading && error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
+              {translate(error)}
             </div>
           )}
           {!loading && !error && hotelbedsQuotes.length === 0 && (
             <div className="py-12 text-center text-sm text-shop-muted">
-              No hotel quotes yet. Fetch quotes first.
-            </div>
+              {translate("No hotel quotes yet. Fetch quotes first.")}</div>
           )}
           {!loading && hotelbedsQuotes.length > 0 && (
             <QuoteFiltersBar
@@ -282,8 +280,7 @@ export default function CustomQuotesModal({ open, lead, onClose }: Props) {
           )}
           {!loading && hotelbedsQuotes.length > 0 && filteredQuotes.length === 0 && (
             <div className="py-8 text-center text-sm text-shop-muted">
-              No hotels match these filters.
-            </div>
+              {translate("No hotels match these filters.")}</div>
           )}
           {!loading &&
             filteredQuotes.map((quote) => <HotelCustomCard key={quote.id} quote={quote} />)}

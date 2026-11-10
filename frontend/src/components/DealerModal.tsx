@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useMemo, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import ModalDrawer from './ui/ModalDrawer'
@@ -29,6 +30,7 @@ type Props = {
 }
 
 export default function DealerModal({ open, dealer, countryCodes = [], stats = null, onClose, onSaved }: Props) {
+  useI18n()
   const dialOptions = countryCodes.length
     ? countryCodes.map((country) => ({
         iso: country.iso_code || '',
@@ -122,13 +124,13 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
     <ModalDrawer
       open
       variant="side"
-      title={dealer ? 'Edit dealer' : 'Add dealer'}
+      title={dealer ? translate("Edit dealer") : translate("Add dealer")}
       onClose={onClose}
       footer={
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{translate("Cancel")}</Button>
           <Button variant="primary" type="submit" form="dealer-form" loading={saving}>
-            {dealer ? 'Save changes' : 'Add dealer'}
+            {dealer ? translate("Save changes") : translate("Add dealer")}
           </Button>
         </div>
       }
@@ -136,7 +138,7 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
       <form id="dealer-form" onSubmit={submit} className="grid gap-3.5">
         <label className="grid gap-1">
           <span className={LABEL}>
-            Name <span className="text-danger">*</span>
+            {translate("Name")}{' '}<span className="text-danger">*</span>
           </span>
           <input required className={FIELD} value={name} onChange={(e) => setName(e.target.value)} />
         </label>
@@ -146,7 +148,7 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
             WhatsApp <span className="text-danger">*</span>
           </span>
           <div className="flex gap-2">
-            <label className="sr-only" htmlFor="dealer-country-code">Country code</label>
+            <label className="sr-only" htmlFor="dealer-country-code">{translate("Country code")}</label>
             <select
               id="dealer-country-code"
               className={`${FIELD.replace('w-full', 'w-[9.5rem]')} shrink-0`}
@@ -161,7 +163,7 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
             </select>
             <input
               required
-              aria-label="Number"
+              aria-label={translate("Number")}
               inputMode="tel"
               className={`${FIELD.replace('w-full', 'w-0')} min-w-0 flex-1 tabular-nums`}
               placeholder="50 123 4567"
@@ -170,40 +172,39 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
             />
           </div>
           <span className="text-xs text-shop-muted">
-            {preview ? `Saves as ${preview}` : 'Choose a country code, then enter the local number.'}
+            {preview ? translate("Saves as {value0}", { value0: translate(String(preview)) }) : translate("Choose a country code, then enter the local number.")}
           </span>
         </div>
 
         <label className="grid gap-1">
-          <span className={LABEL}>Company</span>
-          <input className={FIELD} placeholder="Optional" value={company} onChange={(e) => setCompany(e.target.value)} />
+          <span className={LABEL}>{translate("Company")}</span>
+          <input className={FIELD} placeholder={translate("Optional")} value={company} onChange={(e) => setCompany(e.target.value)} />
         </label>
 
         <label className="grid gap-1">
-          <span className={LABEL}>WhatsApp group ID</span>
+          <span className={LABEL}>{translate("WhatsApp group ID")}</span>
           <input
             className={`${FIELD} font-mono`}
-            placeholder="120363xxxxxxxxxx@g.us (optional)"
+            placeholder={translate("120363xxxxxxxxxx@g.us (optional)")}
             value={groupId}
             onChange={(e) => setGroupId(e.target.value)}
           />
           <span className="text-xs text-shop-muted">
-            RFQs can go to this group instead of a direct message. Paste the group ID (ends in @g.us).
-          </span>
+            {translate("RFQs can go to this group instead of a direct message. Paste the group ID (ends in @g.us).")}</span>
         </label>
 
         <div className="grid gap-1.5">
-          <span className={LABEL}>Destinations</span>
+          <span className={LABEL}>{translate("Destinations")}</span>
           <div className="flex flex-wrap gap-1.5">
             {destinations.map((place) => (
               <span
                 key={place}
-                className="inline-flex h-7 items-center gap-1 rounded-md bg-neutral-bg pr-1 pl-2 text-xs font-semibold text-neutral-fg"
+                className="inline-flex h-7 items-center gap-1 rounded-md bg-neutral-bg pe-1 ps-2 text-xs font-semibold text-neutral-fg"
               >
                 {place}
                 <button
                   type="button"
-                  aria-label={`Remove ${place}`}
+                  aria-label={translate("Remove {value0}", { value0: translate(String(place)) })}
                   onClick={() => setDestinations((current) => current.filter((x) => x !== place))}
                   className="grid size-5 place-items-center rounded hover:bg-line-strong"
                 >
@@ -214,9 +215,9 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
           </div>
           <div className="flex gap-2">
             <input
-              aria-label="Add a destination"
+              aria-label={translate("Add a destination")}
               className={FIELD}
-              placeholder="Add a country or city"
+              placeholder={translate("Add a country or city")}
               value={newPlace}
               onChange={(e) => setNewPlace(e.target.value)}
               onKeyDown={(e) => {
@@ -227,13 +228,12 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
               }}
             />
             <Button type="button" onClick={addPlace} disabled={!newPlace.trim()}>
-              Add
-            </Button>
+              {translate("Add")}</Button>
           </div>
         </div>
 
         <fieldset className="grid gap-2">
-          <legend className={`${LABEL} mb-1.5`}>Services</legend>
+          <legend className={`${LABEL} mb-1.5`}>{translate("Services")}</legend>
           {SERVICE_OPTIONS.map((option) => (
             <label key={option.id} className="flex items-center gap-2">
               <input
@@ -242,17 +242,17 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
                 onChange={() => toggleService(option.id)}
                 className="size-4 accent-shop-accent"
               />
-              {option.label}
+              {translate(option.label)}
             </label>
           ))}
         </fieldset>
 
         <label className="grid gap-1">
-          <span className={LABEL}>Internal notes</span>
+          <span className={LABEL}>{translate("Internal notes")}</span>
           <textarea
             rows={3}
             className="resize-y rounded-lg border border-line-strong px-2.5 py-2 text-sm"
-            placeholder="Optional"
+            placeholder={translate("Optional")}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
@@ -266,18 +266,18 @@ export default function DealerModal({ open, dealer, countryCodes = [], stats = n
             </div>
             <div>
               <dd className="text-lg font-extrabold">{stats.replyRate == null ? '—' : `${stats.replyRate}%`}</dd>
-              <dt className="text-xs text-shop-muted">Replied</dt>
+              <dt className="text-xs text-shop-muted">{translate("Replied")}</dt>
             </div>
             <div>
               <dd className="text-lg font-extrabold">{stats.replied}</dd>
-              <dt className="text-xs text-shop-muted">Replies</dt>
+              <dt className="text-xs text-shop-muted">{translate("Replies")}</dt>
             </div>
           </dl>
         )}
 
         {error && (
           <div role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">
-            {error}
+            {translate(error)}
           </div>
         )}
       </form>

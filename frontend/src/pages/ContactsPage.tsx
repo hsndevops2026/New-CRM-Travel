@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CircleAlert, Pencil, Plus, Search } from 'lucide-react'
@@ -19,6 +20,7 @@ import { fetchLeads, formatPhone, leadTitle, type Lead } from '../lib/leads'
 import { threadInitials, threadPreview } from '../lib/inboxView'
 
 export default function ContactsPage() {
+  useI18n()
   const navigate = useNavigate()
   const { query, setPlaceholder } = useSearch()
   const { confirm, dialog } = useConfirm()
@@ -88,54 +90,53 @@ export default function ContactsPage() {
   return (
     <div className="mx-auto w-full max-w-[1400px] p-4 pb-24 sm:p-6">
       <PageHeader
-        title="Contacts"
-        subtitle={`${contacts.length} contact${contacts.length === 1 ? '' : 's'} · Customer phone book for WhatsApp quoting.`}
+        title={translate("Contacts")}
+        subtitle={translate("{value0} contact{value1} · Customer phone book for WhatsApp quoting.", { value0: translate(String(contacts.length)), value1: translate(String(contacts.length === 1 ? '' : 's')) })}
         actions={
           <Button variant="primary" icon={<Plus />} onClick={() => setContactEditor(null)}>
-            Add contact
-          </Button>
+            {translate("Add contact")}</Button>
         }
       />
 
       <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
-        {loading && <TableSkeleton rows={5} label="Loading contacts" />}
+        {loading && <TableSkeleton rows={5} label={translate("Loading contacts")} />}
         {!loading && error && (
           <EmptyState
             tone="danger"
             icon={<CircleAlert />}
-            title="Contacts could not be loaded"
-            description={error}
-            action={<Button variant="primary" onClick={() => void load()}>Retry</Button>}
+            title={translate("Contacts could not be loaded")}
+            description={translate(error)}
+            action={<Button variant="primary" onClick={() => void load()}>{translate("Retry")}</Button>}
           />
         )}
         {!loading && !error && filtered.length === 0 && (
           <EmptyState
             tone={query.trim() ? 'neutral' : 'default'}
             icon={query.trim() ? <Search /> : undefined}
-            title={query.trim() ? `No contact matches “${query.trim()}”` : 'No contacts yet'}
+            title={query.trim() ? translate("No contact matches “{value0}”", { value0: translate(String(query.trim())) }) : translate("No contacts yet")}
             description={
               query.trim()
-                ? 'Check the number format, or add them as a new contact.'
-                : 'Save a name and WhatsApp number to reuse on future leads.'
+                ? translate("Check the number format, or add them as a new contact.")
+                : translate("Save a name and WhatsApp number to reuse on future leads.")
             }
             action={
               <Button variant={query.trim() ? 'secondary' : 'primary'} onClick={() => setContactEditor(null)}>
-                {query.trim() ? `Add “${query.trim()}” as contact` : 'Add contact'}
+                {query.trim() ? translate("Add “{value0}” as contact", { value0: translate(String(query.trim())) }) : translate("Add contact")}
               </Button>
             }
           />
         )}
         {!loading && !error && filtered.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[760px] text-start text-sm">
               <thead>
                 <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
-                  <th className="px-3.5 py-2.5">Name</th>
-                  <th className="px-3 py-2.5">WhatsApp / phone</th>
-                  <th className="px-3 py-2.5">Last interaction</th>
-                  <th className="px-3 py-2.5">Related lead</th>
+                  <th className="px-3.5 py-2.5">{translate("Name")}</th>
+                  <th className="px-3 py-2.5">{translate("WhatsApp / phone")}</th>
+                  <th className="px-3 py-2.5">{translate("Last interaction")}</th>
+                  <th className="px-3 py-2.5">{translate("Related lead")}</th>
                   <th className="relative px-3.5 py-2.5">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{translate("Actions")}</span>
                   </th>
                 </tr>
               </thead>
@@ -158,7 +159,7 @@ export default function ContactsPage() {
                           </Link>
                         </div>
                       </td>
-                      <td className="px-3 py-3 tabular-nums">{formatPhone(contact.phone)}</td>
+                      <td className="px-3 py-3 tabular-nums"><bdi dir="ltr">{formatPhone(contact.phone)}</bdi></td>
                       <td className="px-3 py-3">
                         {thread ? (
                           <div className="flex max-w-[280px] flex-col">
@@ -166,7 +167,7 @@ export default function ContactsPage() {
                             <span className="text-xs text-shop-muted tabular-nums">{formatThreadTime(thread.last_at)}</span>
                           </div>
                         ) : (
-                          <span className="text-shop-muted">No messages yet</span>
+                          <span className="text-shop-muted">{translate("No messages yet")}</span>
                         )}
                       </td>
                       <td className="px-3 py-3">
@@ -174,49 +175,47 @@ export default function ContactsPage() {
                           <button
                             type="button"
                             onClick={() => navigate(`/leads/${lead.id}`)}
-                            className="-my-2 inline-flex items-center gap-2 py-2 text-left hover:underline"
+                            className="-my-2 inline-flex items-center gap-2 py-2 text-start hover:underline"
                           >
                             <span className="font-semibold">{leadTitle(lead)}</span>
                             <LifecycleBadge status={lead.lifecycle_status} />
                           </button>
                         ) : (
                           <Button size="sm" onClick={() => setLeadFor(contact)}>
-                            Create lead
-                          </Button>
+                            {translate("Create lead")}</Button>
                         )}
                       </td>
                       <td className="px-3.5 py-3">
                         <div className="flex items-center justify-end gap-0.5">
                           {thread && (
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/inbox/${encodeURIComponent(thread.id)}`)}>
-                              Message
-                            </Button>
+                              {translate("Message")}</Button>
                           )}
                           <Button
                             size="sm"
                             variant="ghost"
                             iconOnly
-                            aria-label={`Edit ${contact.name}`}
+                            aria-label={translate("Edit {value0}", { value0: translate(String(contact.name)) })}
                             icon={<Pencil />}
                             onClick={() => setContactEditor(contact)}
                           />
                           <OverflowMenu
-                            label={`More actions for ${contact.name}`}
+                            label={translate("More actions for {value0}", { value0: translate(String(contact.name)) })}
                             items={[
                               {
                                 id: 'reminder',
-                                label: 'Add reminder…',
+                                label: translate("Add reminder…"),
                                 onClick: () => setReminderFor(contact),
                               },
                               {
                                 id: 'delete',
-                                label: 'Delete contact…',
+                                label: translate("Delete contact…"),
                                 tone: 'danger',
                                 onClick: () => {
                                   void confirm({
-                                    title: `Delete ${contact.name}?`,
-                                    description: 'The contact is removed. Leads keep the phone number they were created with.',
-                                    confirmLabel: 'Delete contact',
+                                    title: translate("Delete {value0}?", { value0: translate(String(contact.name)) }),
+                                    description: translate("The contact is removed. Leads keep the phone number they were created with."),
+                                    confirmLabel: translate("Delete contact"),
                                   }).then((ok) => {
                                     if (ok) void deleteContact(contact.id).then(load)
                                   })

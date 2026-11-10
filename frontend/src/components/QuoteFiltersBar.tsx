@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import {
   EMPTY_QUOTE_FILTERS,
   quoteFiltersActive,
@@ -14,6 +15,7 @@ type Props = {
 const STAR_OPTIONS = [1, 2, 3, 4, 5]
 
 export default function QuoteFiltersBar({ filters, onChange, resultCount, totalCount }: Props) {
+  useI18n()
   const toggleStar = (star: number) => {
     const stars = filters.stars.includes(star)
       ? filters.stars.filter((value) => value !== star)
@@ -25,7 +27,7 @@ export default function QuoteFiltersBar({ filters, onChange, resultCount, totalC
     <div className="space-y-2 rounded-xl border border-shop-border bg-shop-bg/50 p-3">
       <div className="flex flex-wrap gap-2">
         <div className="flex flex-wrap items-center gap-1">
-          <span className="pr-1 text-xs font-semibold text-shop-muted">Stars</span>
+          <span className="pe-1 text-xs font-semibold text-shop-muted">{translate("Stars")}</span>
           {STAR_OPTIONS.map((star) => {
             const active = filters.stars.includes(star)
             return (
@@ -44,7 +46,7 @@ export default function QuoteFiltersBar({ filters, onChange, resultCount, totalC
         </div>
 
         <label className="flex items-center gap-1 text-xs">
-          <span className="font-semibold text-shop-muted">Cancel</span>
+          <span className="font-semibold text-shop-muted">{translate("Cancel")}</span>
           <select
             className="rounded-md border border-shop-border bg-white px-2 py-1"
             value={filters.freeCancellation}
@@ -52,14 +54,14 @@ export default function QuoteFiltersBar({ filters, onChange, resultCount, totalC
               onChange({ ...filters, freeCancellation: e.target.value as QuoteFilters['freeCancellation'] })
             }
           >
-            <option value="any">Any</option>
-            <option value="yes">Free cancellation</option>
-            <option value="no">Paid / none</option>
+            <option value="any">{translate("Any")}</option>
+            <option value="yes">{translate("Free cancellation")}</option>
+            <option value="no">{translate("Paid / none")}</option>
           </select>
         </label>
 
         <label className="flex items-center gap-1 text-xs">
-          <span className="font-semibold text-shop-muted">Refund</span>
+          <span className="font-semibold text-shop-muted">{translate("Refund")}</span>
           <select
             className="rounded-md border border-shop-border bg-white px-2 py-1"
             value={filters.refundable}
@@ -67,14 +69,14 @@ export default function QuoteFiltersBar({ filters, onChange, resultCount, totalC
               onChange({ ...filters, refundable: e.target.value as QuoteFilters['refundable'] })
             }
           >
-            <option value="any">Any</option>
-            <option value="yes">Refundable</option>
-            <option value="no">Non-refundable</option>
+            <option value="any">{translate("Any")}</option>
+            <option value="yes">{translate("Refundable")}</option>
+            <option value="no">{translate("Non-refundable")}</option>
           </select>
         </label>
 
         <label className="flex items-center gap-1 text-xs">
-          <span className="font-semibold text-shop-muted">Room</span>
+          <span className="font-semibold text-shop-muted">{translate("Room")}</span>
           <select
             className="rounded-md border border-shop-border bg-white px-2 py-1"
             value={filters.roomType}
@@ -82,16 +84,16 @@ export default function QuoteFiltersBar({ filters, onChange, resultCount, totalC
               onChange({ ...filters, roomType: e.target.value as QuoteFilters['roomType'] })
             }
           >
-            <option value="any">Any</option>
-            <option value="single">Single</option>
-            <option value="double">Double</option>
+            <option value="any">{translate("Any")}</option>
+            <option value="single">{translate("Single")}</option>
+            <option value="double">{translate("Double")}</option>
           </select>
         </label>
       </div>
 
       <div className="flex items-center justify-between gap-2 text-xs text-shop-muted">
         <span>
-          Showing {resultCount} of {totalCount}
+          {translate("Showing")}{' '}{resultCount}{' '}{translate("of")}{' '}{totalCount}
         </span>
         {quoteFiltersActive(filters) && (
           <button
@@ -99,8 +101,7 @@ export default function QuoteFiltersBar({ filters, onChange, resultCount, totalC
             onClick={() => onChange(EMPTY_QUOTE_FILTERS)}
             className="font-semibold text-shop-ink underline-offset-2 hover:underline"
           >
-            Clear filters
-          </button>
+            {translate("Clear filters")}</button>
         )}
       </div>
     </div>

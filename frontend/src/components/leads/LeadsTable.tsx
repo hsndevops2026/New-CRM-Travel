@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { Columns3, List } from 'lucide-react'
 import type { Lead } from '../../lib/leads'
 import { formatDate, formatWhen, leadPerson, leadTitle } from '../../lib/leads'
@@ -24,6 +25,7 @@ export default function LeadsTable({
   onChat,
   onDelete,
 }: Props) {
+  useI18n()
   return (
     <DataTable
       rows={leads}
@@ -38,7 +40,7 @@ export default function LeadsTable({
           render: (lead) => (
             <input
               type="checkbox"
-              aria-label={`Select ${leadPerson(lead)}`}
+              aria-label={translate("Select {value0}", { value0: translate(String(leadPerson(lead))) })}
               checked={selected.has(lead.id)}
               onClick={(event) => event.stopPropagation()}
               onChange={(event) => onToggleOne(lead.id, event.target.checked)}
@@ -46,8 +48,8 @@ export default function LeadsTable({
           ),
         },
         {
-          key: 'lead',
-          header: 'Lead',
+          key: translate("lead"),
+          header: translate("Lead"),
           render: (lead) => (
             <div>
               <div className="font-semibold">{leadPerson(lead)}</div>
@@ -57,30 +59,30 @@ export default function LeadsTable({
         },
         {
           key: 'stage',
-          header: 'Stage',
+          header: translate('Stage'),
           render: (lead) => <LifecycleBadge status={lead.lifecycle_status} />,
         },
         {
           key: 'dates',
-          header: 'Dates',
+          header: translate("Dates"),
           className: 'whitespace-nowrap',
           render: (lead) => `${formatDate(lead.travel_date)} → ${formatDate(lead.return_date)}`,
         },
         {
           key: 'type',
-          header: 'Type',
+          header: translate("Type"),
           render: (lead) => (
             <span className="inline-flex items-center gap-1">
               <LeadTypeBadge type={lead.booking_type} />
               {lead.quote_status === 'processing' && (
-                <span className="text-xs text-amber-700">fetching</span>
+                <span className="text-xs text-amber-700">{translate("fetching")}</span>
               )}
             </span>
           ),
         },
         {
           key: 'created',
-          header: 'Created',
+          header: translate("Created"),
           className: 'whitespace-nowrap text-shop-muted',
           render: (lead) => formatWhen(lead.created_at),
         },
@@ -92,11 +94,11 @@ export default function LeadsTable({
             <div onClick={(event) => event.stopPropagation()}>
               <OverflowMenu
                 items={[
-                  { id: 'open', label: 'Open', onClick: () => onOpen(lead.id) },
-                  { id: 'chat', label: 'Chat', onClick: () => onChat(lead.id) },
+                  { id: 'open', label: translate("Open"), onClick: () => onOpen(lead.id) },
+                  { id: 'chat', label: translate('Chat'), onClick: () => onChat(lead.id) },
                   {
                     id: 'delete',
-                    label: 'Delete',
+                    label: translate("Delete"),
                     tone: 'danger',
                     onClick: () => onDelete(lead.id),
                   },
@@ -117,14 +119,15 @@ export function ViewToggle({
   value: 'table' | 'board'
   onChange: (value: 'table' | 'board') => void
 }) {
+  useI18n()
   return (
     <SegmentedControl
       ariaLabel="View"
       value={value}
       onChange={(id) => onChange(id as 'table' | 'board')}
       items={[
-        { id: 'table', label: 'Table', icon: <List strokeWidth={1.8} /> },
-        { id: 'board', label: 'Board', icon: <Columns3 strokeWidth={1.8} /> },
+        { id: 'table', label: translate('Table'), icon: <List strokeWidth={1.8} /> },
+        { id: 'board', label: translate("Board"), icon: <Columns3 strokeWidth={1.8} /> },
       ]}
     />
   )

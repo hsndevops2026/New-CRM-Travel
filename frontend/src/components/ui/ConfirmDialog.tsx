@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { useEffect, useId, useRef } from 'react'
 import { Trash2 } from 'lucide-react'
 import Button from './Button'
@@ -30,6 +31,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: Props) {
+  useI18n()
   const titleId = useId()
   const descId = useId()
   const cancelRef = useRef<HTMLButtonElement>(null)
@@ -92,11 +94,11 @@ export default function ConfirmDialog({
           </div>
         )}
         <h3 id={titleId} className="text-lg font-bold">
-          {title}
+          {translate(title)}
         </h3>
         {description && (
           <p id={descId} className="text-shop-muted">
-            {description}
+            {translate(description)}
           </p>
         )}
         <div className="flex justify-end gap-2">

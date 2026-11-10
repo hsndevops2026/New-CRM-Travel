@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../ui/Button'
@@ -22,13 +23,14 @@ type Progress = { options: number | null; asked: number | null; replied: number 
 const CAP = 'text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase'
 
 function sourcingBadge(lead: Lead) {
-  if (lead.quote_status === 'processing') return <StatusBadge label="Searching" tone="info" />
-  if (lead.quote_status === 'error') return <StatusBadge label="Failed" tone="danger" />
-  if (lead.quote_status === 'completed' || lead.quote_status === 'package') return <StatusBadge label="Done" tone="success" />
-  return <StatusBadge label="Not started" tone="neutral" />
+  if (lead.quote_status === 'processing') return <StatusBadge label={translate("Searching")} tone="info" />
+  if (lead.quote_status === 'error') return <StatusBadge label={translate("Failed")} tone="danger" />
+  if (lead.quote_status === 'completed' || lead.quote_status === 'package') return <StatusBadge label={translate("Done")} tone="success" />
+  return <StatusBadge label={translate("Not started")} tone="neutral" />
 }
 
 export default function InboxLeadPane({ leadId, kind, open = true }: Props) {
+  useI18n()
   const navigate = useNavigate()
   const [lead, setLead] = useState<Lead | null>(null)
   const [progress, setProgress] = useState<Progress>({ options: null, asked: null, replied: null })
@@ -78,18 +80,18 @@ export default function InboxLeadPane({ leadId, kind, open = true }: Props) {
 
   if (!open) return null
 
-  const shell = 'hidden w-[320px] min-w-[280px] shrink-0 flex-col overflow-y-auto border-l border-shop-border bg-white xl:flex'
+  const shell = 'hidden w-[320px] min-w-[280px] shrink-0 flex-col overflow-y-auto border-s border-shop-border bg-white xl:flex'
 
   if (!leadId) {
     return (
-      <aside aria-label="Lead summary" className={`${shell} p-4`}>
-        <h2 className={CAP}>{kind === 'group' ? 'Group' : kind === 'dealer' ? 'Dealer' : 'Linked lead'}</h2>
+      <aside aria-label={translate("Lead summary")} className={`${shell} p-4`}>
+        <h2 className={CAP}>{kind === 'group' ? translate("Group") : kind === 'dealer' ? translate("Dealer") : translate("Linked lead")}</h2>
         <p className="mt-2 text-sm text-shop-muted">
           {kind === 'group'
-            ? 'This is a WhatsApp group. Messages you send here go to everyone in the group.'
+            ? translate("This is a WhatsApp group. Messages you send here go to everyone in the group.")
             : kind === 'dealer'
-              ? 'A dealer conversation. Replies with the REQ code are read by AI and added to the lead as offers.'
-              : 'No lead is linked to this conversation yet.'}
+              ? translate("A dealer conversation. Replies with the REQ code are read by AI and added to the lead as offers.")
+              : translate("No lead is linked to this conversation yet.")}
         </p>
       </aside>
     )
@@ -98,18 +100,18 @@ export default function InboxLeadPane({ leadId, kind, open = true }: Props) {
   const next = lead ? nextActionFor(lead.lifecycle_status, lead.quote_status) : null
 
   return (
-    <aside aria-label="Lead summary" className={shell}>
+    <aside aria-label={translate("Lead summary")} className={shell}>
       {error && (
         <p role="alert" className="m-4 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">
-          {error}
+          {translate(error)}
         </p>
       )}
-      {!lead && !error && <p role="status" className="p-4 text-sm text-shop-muted">Loading lead…</p>}
+      {!lead && !error && <p role="status" className="p-4 text-sm text-shop-muted">{translate("Loading lead…")}</p>}
       {lead && next && (
         <>
           <div className="flex flex-col gap-3 border-b border-shop-border p-4">
             <div className="flex items-center justify-between">
-              <span className={CAP}>Linked lead</span>
+              <span className={CAP}>{translate("Linked lead")}</span>
               <LifecycleBadge status={lead.lifecycle_status} />
             </div>
             <div className="flex flex-col gap-0.5">
@@ -119,52 +121,50 @@ export default function InboxLeadPane({ leadId, kind, open = true }: Props) {
               </span>
             </div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px]">
-              <dt className="text-shop-muted">Dates</dt>
+              <dt className="text-shop-muted">{translate("Dates")}</dt>
               <dd className="tabular-nums">
                 {formatDateRange(lead.travel_date, lead.return_date)}
                 {nightsLabel(lead.nights) ? ` · ${nightsLabel(lead.nights)}` : ''}
               </dd>
-              <dt className="text-shop-muted">Travelers</dt>
+              <dt className="text-shop-muted">{translate("Travelers")}</dt>
               <dd>{travelersLabel(lead.adults_count, lead.children_count, lead.children_ages)}</dd>
             </dl>
           </div>
 
           <div className="flex flex-col gap-2.5 border-b border-shop-border p-4">
-            <span className={CAP}>Progress</span>
+            <span className={CAP}>{translate("Progress")}</span>
             <div className="flex items-center justify-between text-sm">
-              <span>Live sources</span>
+              <span>{translate("Live sources")}</span>
               {sourcingBadge(lead)}
             </div>
             {progress.asked != null && progress.asked > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span>Dealer RFQs</span>
+                <span>{translate("Dealer RFQs")}</span>
                 <StatusBadge
-                  label={`${progress.replied ?? 0} of ${progress.asked} replied`}
+                  label={translate("{value0} of {value1} replied", { value0: translate(String(progress.replied ?? 0)), value1: translate(String(progress.asked)) })}
                   tone={(progress.replied ?? 0) >= progress.asked ? 'success' : 'warning'}
                 />
               </div>
             )}
             {progress.options != null && (
               <div className="flex items-center justify-between text-sm">
-                <span>Options to compare</span>
+                <span>{translate("Options to compare")}</span>
                 <strong className="tabular-nums">{progress.options}</strong>
               </div>
             )}
           </div>
 
           <div className="flex flex-col gap-2.5 p-4">
-            <span className={CAP}>Next action</span>
+            <span className={CAP}>{translate("Next action")}</span>
             <p className={next.blocker ? 'font-semibold text-danger-fg' : ''}>{next.text}</p>
             <Button
               block
               className="border-shop-accent text-shop-accent"
               onClick={() => navigate(`/leads/${lead.id}?step=build`)}
             >
-              Build quote
-            </Button>
+              {translate("Build quote")}</Button>
             <Button block variant="ghost" onClick={() => navigate(`/leads/${lead.id}`)}>
-              Open full lead
-            </Button>
+              {translate("Open full lead")}</Button>
           </div>
         </>
       )}

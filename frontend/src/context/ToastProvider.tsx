@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Check, CircleAlert, Info, X } from 'lucide-react'
 import { ToastContext, type ToastOptions, type ToastTone } from './toast'
@@ -15,6 +16,7 @@ const TONE: Record<ToastTone, { box: string; icon: ReactNode; role: 'status' | '
  * download"). They replace window.alert, which blocks the page and can't be styled.
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
+  useI18n()
   const [items, setItems] = useState<Item[]>([])
   const nextId = useRef(1)
 
@@ -34,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 bottom-4 left-4 z-[60] flex flex-col items-center gap-2 sm:left-auto sm:items-end">
+      <div className="pointer-events-none fixed end-4 bottom-4 start-4 z-[60] flex flex-col items-center gap-2 sm:start-auto sm:items-end">
         {items.map((item) => (
           <div
             key={item.id}
@@ -44,10 +46,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <span className="mt-0.5 shrink-0" aria-hidden="true">
               {TONE[item.tone].icon}
             </span>
-            <span className="min-w-0 flex-1">{item.message}</span>
+            <span className="min-w-0 flex-1">{translate(item.message)}</span>
             <button
               type="button"
-              aria-label="Dismiss"
+              aria-label={translate("Dismiss")}
               onClick={() => dismiss(item.id)}
               className="-m-1 grid size-7 shrink-0 place-items-center rounded-md hover:bg-white/15"
             >

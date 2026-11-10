@@ -1,3 +1,5 @@
+import { locale } from '../lib/i18n'
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -75,6 +77,7 @@ function DocumentRow({
   isAdmin: boolean
   onDeleted: (id: string) => void
 }) {
+  useI18n()
   const { confirm, dialog } = useConfirm()
   const label = documentLabel(document)
   return (
@@ -87,7 +90,7 @@ function DocumentRow({
           className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
         >
           <FileText className="size-3.5 shrink-0 text-shop-muted" aria-hidden="true" />
-          <span className="truncate">{label}</span>
+          <span className="truncate">{translate(label)}</span>
           <ExternalLink className="size-3 shrink-0 text-shop-muted" aria-hidden="true" />
         </a>
         <p className="text-xs text-shop-muted">
@@ -99,13 +102,13 @@ function DocumentRow({
           size="sm"
           variant="ghost"
           iconOnly
-          aria-label={`Delete ${label}`}
+          aria-label={translate("Delete {value0}", { value0: translate(String(label)) })}
           icon={<Trash2 />}
           onClick={() => {
             void confirm({
-              title: 'Delete document?',
+              title: translate("Delete document?"),
               description: label,
-              confirmLabel: 'Delete',
+              confirmLabel: translate("Delete"),
             }).then((ok) => {
               if (!ok) return
               void deleteLeadDocument(document.lead_id, document.id).then(() => onDeleted(document.id))
@@ -119,6 +122,7 @@ function DocumentRow({
 }
 
 export default function ContactProfilePage() {
+  useI18n()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -243,7 +247,7 @@ export default function ContactProfilePage() {
   if (loading) {
     return (
       <div className="mx-auto w-full max-w-[1100px] p-4 sm:p-6">
-        <p className="text-sm text-shop-muted">Loading contact…</p>
+        <p className="text-sm text-shop-muted">{translate("Loading contact…")}</p>
       </div>
     )
   }
@@ -254,16 +258,14 @@ export default function ContactProfilePage() {
         <EmptyState
           tone="danger"
           icon={<CircleAlert />}
-          title="Contact could not be loaded"
+          title={translate("Contact could not be loaded")}
           description={error || 'Not found'}
           action={
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => navigate('/contacts')}>
-                Back to contacts
-              </Button>
+                {translate("Back to contacts")}</Button>
               <Button variant="primary" onClick={() => void load()}>
-                Retry
-              </Button>
+                {translate("Retry")}</Button>
             </div>
           }
         />
@@ -281,8 +283,7 @@ export default function ContactProfilePage() {
         className="mb-3 inline-flex items-center gap-1.5 text-sm text-shop-muted hover:text-shop-ink"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
-        Contacts
-      </button>
+        {translate("Contacts")}</button>
 
       <PageHeader
         title={
@@ -301,19 +302,16 @@ export default function ContactProfilePage() {
           <div className="flex flex-wrap gap-2">
             {threads.length > 0 && (
               <Button variant="secondary" icon={<MessageSquare />} onClick={() => messageThread(threads)}>
-                Message
-              </Button>
+                {translate("Message")}</Button>
             )}
             <Button variant="secondary" icon={<Pencil />} onClick={() => setEditing(true)}>
-              Edit
-            </Button>
+              {translate("Edit")}</Button>
             <Button
               variant="primary"
               icon={<Plus />}
               onClick={() => setReminderEditor(null)}
             >
-              Add reminder
-            </Button>
+              {translate("Add reminder")}</Button>
           </div>
         }
       />
@@ -339,8 +337,8 @@ export default function ContactProfilePage() {
                   : 'border-transparent text-shop-muted hover:text-shop-ink'
               }`}
             >
-              {item.label}
-              <span className="ml-1.5 text-xs font-normal tabular-nums text-shop-muted">{count}</span>
+              {translate(item.label)}
+              <span className="ms-1.5 text-xs font-normal tabular-nums text-shop-muted">{count}</span>
             </button>
           )
         })}
@@ -350,8 +348,8 @@ export default function ContactProfilePage() {
         <section className="grid gap-3">
           {bookings.length === 0 && (
             <EmptyState
-              title="No bookings yet"
-              description="Leads for this phone number will show up here."
+              title={translate("No bookings yet")}
+              description={translate("Leads for this phone number will show up here.")}
             />
           )}
           {bookings.map((booking) => (
@@ -364,22 +362,21 @@ export default function ContactProfilePage() {
                     </Link>
                     <LifecycleBadge status={booking.lifecycle_status} />
                     <span className="rounded bg-shop-bg px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-shop-muted uppercase">
-                      {booking.booking_type}
+                      {translate(booking.booking_type)}
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-shop-muted">
-                    {formatDate(booking.travel_date)} – {formatDate(booking.return_date)}
-                    {booking.nights != null ? ` · ${booking.nights} night${booking.nights === 1 ? '' : 's'}` : ''}
+                    <bdi dir="ltr">{formatDate(booking.travel_date)}</bdi> – <bdi dir="ltr">{formatDate(booking.return_date)}</bdi>
+                    {booking.nights != null ? translate(" · {value0} night{value1}", { value0: translate(String(booking.nights)), value1: translate(String(booking.nights === 1 ? '' : 's')) }) : ''}
                   </p>
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => navigate(`/leads/${booking.id}`)}>
-                  Open lead
-                </Button>
+                  {translate("Open lead")}</Button>
               </div>
 
               <div className="mt-4 border-t border-shop-border pt-3">
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <h3 className="text-xs font-bold tracking-wide text-shop-muted uppercase">Documents</h3>
+                  <h3 className="text-xs font-bold tracking-wide text-shop-muted uppercase">{translate("Documents")}</h3>
                   {isAdmin && (
                     <UploadDocumentButton
                       leadId={booking.id}
@@ -388,7 +385,7 @@ export default function ContactProfilePage() {
                   )}
                 </div>
                 {(booking.documents || []).length === 0 ? (
-                  <p className="py-2 text-sm text-shop-muted">No documents uploaded.</p>
+                  <p className="py-2 text-sm text-shop-muted">{translate("No documents uploaded.")}</p>
                 ) : (
                   <ul className="divide-y divide-neutral-bg">
                     {(booking.documents || []).map((document) => (
@@ -413,11 +410,11 @@ export default function ContactProfilePage() {
         <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white md:grid md:min-h-[420px] md:grid-cols-[260px_1fr]">
           {threads.length === 0 ? (
             <div className="p-4 md:col-span-2">
-              <EmptyState title="No chats yet" description="WhatsApp threads for this contact will appear here." />
+              <EmptyState title={translate("No chats yet")} description={translate("WhatsApp threads for this contact will appear here.")} />
             </div>
           ) : (
             <>
-              <ul className="border-b border-shop-border md:border-r md:border-b-0">
+              <ul className="border-b border-shop-border md:border-e md:border-b-0">
                 {threads.map((thread) => (
                   <li key={thread.id}>
                     <button
@@ -427,7 +424,7 @@ export default function ContactProfilePage() {
                         setMessages([])
                         setMessagesLoading(true)
                       }}
-                      className={`flex w-full flex-col gap-0.5 px-3.5 py-3 text-left hover:bg-shop-bg ${
+                      className={`flex w-full flex-col gap-0.5 px-3.5 py-3 text-start hover:bg-shop-bg ${
                         activeThreadId === thread.id ? 'bg-shop-bg' : ''
                       }`}
                     >
@@ -442,28 +439,27 @@ export default function ContactProfilePage() {
               </ul>
               <div className="flex flex-col bg-shop-bg">
                 <div className="flex items-center justify-between border-b border-shop-border bg-white px-3.5 py-2">
-                  <span className="text-sm font-semibold">Conversation</span>
+                  <span className="text-sm font-semibold">{translate("Conversation")}</span>
                   {activeThreadId && (
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => navigate(`/inbox/${encodeURIComponent(activeThreadId)}`)}
                     >
-                      Open in Inbox
-                    </Button>
+                      {translate("Open in Inbox")}</Button>
                   )}
                 </div>
                 <div className="flex-1 space-y-2 overflow-y-auto p-3.5">
-                  {messagesLoading && <p className="text-sm text-shop-muted">Loading messages…</p>}
+                  {messagesLoading && <p className="text-sm text-shop-muted">{translate("Loading messages…")}</p>}
                   {!messagesLoading && messages.length === 0 && (
-                    <p className="text-sm text-shop-muted">No messages in this thread.</p>
+                    <p className="text-sm text-shop-muted">{translate("No messages in this thread.")}</p>
                   )}
                   {messages.map((msg) => (
                     <MessageBubble
                       key={msg.id}
                       direction={msg.direction}
                       body={msg.body || ''}
-                      time={new Date(msg.created_at).toLocaleTimeString(undefined, {
+                      time={new Date(msg.created_at).toLocaleTimeString(locale(), {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
@@ -482,11 +478,11 @@ export default function ContactProfilePage() {
         <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
           {allDocuments.length === 0 ? (
             <EmptyState
-              title="No documents"
+              title={translate("No documents")}
               description={
                 isAdmin
-                  ? 'Upload files from a booking card on the Bookings tab.'
-                  : 'Documents uploaded by an admin will appear here.'
+                  ? translate("Upload files from a booking card on the Bookings tab.")
+                  : translate("Documents uploaded by an admin will appear here.")
               }
             />
           ) : (
@@ -494,7 +490,7 @@ export default function ContactProfilePage() {
               {allDocuments.map(({ booking, document }) => (
                 <li key={document.id} className="px-3.5 py-3">
                   <p className="mb-1 text-xs font-semibold text-shop-muted">
-                    {leadTitle(booking)} · {formatDate(booking.travel_date)}
+                    {leadTitle(booking)} · <bdi dir="ltr">{formatDate(booking.travel_date)}</bdi>
                   </p>
                   <DocumentRow
                     document={document}
@@ -515,14 +511,13 @@ export default function ContactProfilePage() {
           <div className="flex items-center justify-between border-b border-shop-border px-3.5 py-2.5">
             <div className="flex items-center gap-2">
               <Bell className="size-4 text-shop-muted" aria-hidden="true" />
-              <h2 className="text-sm font-semibold">Reminders</h2>
+              <h2 className="text-sm font-semibold">{translate("Reminders")}</h2>
             </div>
             <Button size="sm" variant="primary" icon={<Plus />} onClick={() => setReminderEditor(null)}>
-              Add
-            </Button>
+              {translate("Add")}</Button>
           </div>
           {reminders.length === 0 ? (
-            <p className="px-3.5 py-4 text-sm text-shop-muted">No reminders for this contact.</p>
+            <p className="px-3.5 py-4 text-sm text-shop-muted">{translate("No reminders for this contact.")}</p>
           ) : (
             <ul className="divide-y divide-neutral-bg">
               {reminders.map((reminder) => {
@@ -538,7 +533,7 @@ export default function ContactProfilePage() {
                     <input
                       type="checkbox"
                       checked={done}
-                      aria-label={done ? 'Mark not done' : 'Mark done'}
+                      aria-label={done ? translate("Mark not done") : translate("Mark done")}
                       className="mt-1"
                       onChange={() => {
                         void updateReminder(reminder.id, { done: !done }).then((saved) => {
@@ -556,12 +551,11 @@ export default function ContactProfilePage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline gap-x-2">
                         <span className="text-xs font-semibold tabular-nums text-shop-muted">
-                          {formatDate(reminder.remind_at)} · {formatReminderTime(reminder.remind_at)}
+                          <bdi dir="ltr">{formatDate(reminder.remind_at)}</bdi> · {formatReminderTime(reminder.remind_at)}
                         </span>
                         {overdue && (
                           <span className="text-[11px] font-bold tracking-wide text-amber-800 uppercase">
-                            Overdue
-                          </span>
+                            {translate("Overdue")}</span>
                         )}
                       </div>
                       <p className={`text-sm ${done ? 'line-through text-shop-muted' : ''}`}>{reminder.text}</p>
@@ -571,7 +565,7 @@ export default function ContactProfilePage() {
                         size="sm"
                         variant="ghost"
                         iconOnly
-                        aria-label="Edit reminder"
+                        aria-label={translate("Edit reminder")}
                         icon={<Pencil />}
                         onClick={() => setReminderEditor(reminder)}
                       />
@@ -579,13 +573,13 @@ export default function ContactProfilePage() {
                         size="sm"
                         variant="ghost"
                         iconOnly
-                        aria-label="Delete reminder"
+                        aria-label={translate("Delete reminder")}
                         icon={<Trash2 />}
                         onClick={() => {
                           void confirm({
-                            title: 'Delete reminder?',
+                            title: translate("Delete reminder?"),
                             description: reminder.text,
-                            confirmLabel: 'Delete',
+                            confirmLabel: translate("Delete"),
                           }).then((ok) => {
                             if (!ok) return
                             void deleteReminder(reminder.id).then(() => {

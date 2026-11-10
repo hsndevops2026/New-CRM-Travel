@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { Hotel, Package, Plane, Sparkles, Store } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 
@@ -15,6 +16,7 @@ const SOURCES: Record<OptionSource, Parameters<typeof StatusBadge>[0]> = {
 }
 
 export function SourceBadge({ source }: { source: OptionSource }) {
+  useI18n()
   return <StatusBadge {...SOURCES[source]} />
 }
 
@@ -26,7 +28,8 @@ export function HighlightBadge({
   kind: 'lowest' | 'best_value' | 'ai_pick'
   rank?: number
 }) {
-  if (kind === 'lowest') return <StatusBadge label={`Lowest${rank ? ` #${rank}` : ''}`} tone="ink" />
-  if (kind === 'best_value') return <StatusBadge label="Best value" tone="outlineSuccess" />
-  return <StatusBadge label="AI pick" tone="outlineDealer" icon={<Sparkles {...ICON} />} />
+  useI18n()
+  if (kind === 'lowest') return <StatusBadge label={translate("Lowest{value0}", { value0: translate(String(rank ? ` #${rank}` : '')) })} tone="ink" />
+  if (kind === 'best_value') return <StatusBadge label={translate("Best value")} tone="outlineSuccess" />
+  return <StatusBadge label={translate("AI pick")} tone="outlineDealer" icon={<Sparkles {...ICON} />} />
 }

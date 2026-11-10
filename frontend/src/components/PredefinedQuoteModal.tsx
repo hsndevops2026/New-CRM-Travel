@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import ImageUpload from './ImageUpload'
 import Button from './ui/Button'
@@ -220,7 +221,7 @@ function validateDraft(draft: Draft, quoteType: QuoteType): string | null {
     const missingAge = draft.children_ages
       .slice(0, childCount)
       .findIndex((age) => age === '' || !Number.isFinite(Number(age)))
-    if (missingAge !== -1) return `Choose an age for child ${missingAge + 1}`
+    if (missingAge !== -1) return translate("Choose an age for child {value0}", { value0: translate(String(missingAge + 1)) })
   }
 
   const hotels = draft.items.filter((item) => item.item_type === 'hotel')
@@ -229,17 +230,17 @@ function validateDraft(draft: Draft, quoteType: QuoteType): string | null {
   if (quoteType === 'hotel' || quoteType === 'package') {
     if (!hotels.length) return 'Add at least one hotel stay'
     for (const [index, hotel] of hotels.entries()) {
-      const label = `Hotel ${index + 1}`
-      if (!hotel.hotel_name?.trim()) return `${label} needs a hotel name`
-      if (!hotel.city?.trim()) return `${label} needs a city`
-      if (!hotel.country?.trim()) return `${label} needs a country`
+      const label = translate("Hotel {value0}", { value0: translate(String(index + 1)) })
+      if (!hotel.hotel_name?.trim()) return translate("{value0} needs a hotel name", { value0: translate(String(label)) })
+      if (!hotel.city?.trim()) return translate("{value0} needs a city", { value0: translate(String(label)) })
+      if (!hotel.country?.trim()) return translate("{value0} needs a country", { value0: translate(String(label)) })
       // A period package is for whole months, so its stays need no particular dates.
       if (draft.availability_mode === 'fixed') {
         const checkIn = dateKey(hotel.check_in)
         const checkOut = dateKey(hotel.check_out)
-        if (!checkIn) return `${label} needs a check-in date`
-        if (!checkOut) return `${label} needs a check-out date`
-        if (checkOut <= checkIn) return `${label} check-out must be after check-in`
+        if (!checkIn) return translate("{value0} needs a check-in date", { value0: translate(String(label)) })
+        if (!checkOut) return translate("{value0} needs a check-out date", { value0: translate(String(label)) })
+        if (checkOut <= checkIn) return translate("{value0} check-out must be after check-in", { value0: translate(String(label)) })
       }
     }
   }
@@ -251,9 +252,9 @@ function validateDraft(draft: Draft, quoteType: QuoteType): string | null {
     const outbound = flights.find((item) => item.direction !== 'return')
     if (!outbound) return 'Add an outbound flight'
     for (const [index, flight] of flights.entries()) {
-      const label = flight.direction === 'return' ? 'Return flight' : `Flight ${index + 1}`
+      const label = flight.direction === 'return' ? 'Return flight' : translate("Flight {value0}", { value0: translate(String(index + 1)) })
       if (!flight.airline?.trim() && !flight.departure_airport?.trim() && !flight.departure_city?.trim()) {
-        return `${label} needs an airline or route`
+        return translate("{value0} needs an airline or route", { value0: translate(String(label)) })
       }
     }
   }
@@ -280,9 +281,10 @@ function Field({
   children: ReactNode
   className?: string
 }) {
+  useI18n()
   return (
     <label className={`grid gap-1 text-sm ${className}`}>
-      <span className="font-medium">{label}</span>
+      <span className="font-medium">{translate(label)}</span>
       {children}
     </label>
   )
@@ -307,18 +309,18 @@ function HotelFields({
   onPatch: (patch: Partial<PredefinedQuoteItem>) => void
   onRemove: () => void
 }) {
+  useI18n()
   return (
     <article className="rounded-xl border border-shop-border bg-shop-bg/40 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="text-sm font-semibold">Hotel {index + 1}</div>
+        <div className="text-sm font-semibold">{translate("Hotel")}{' '}{index + 1}</div>
         {canRemove && (
           <button type="button" className="text-xs font-semibold text-red-700 hover:underline" onClick={onRemove}>
-            Remove
-          </button>
+            {translate("Remove")}</button>
         )}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Hotel name" className="sm:col-span-2">
+        <Field label={translate("Hotel name")} className="sm:col-span-2">
           <input
             required
             className={inputClass}
@@ -326,48 +328,48 @@ function HotelFields({
             onChange={(e) => onPatch({ hotel_name: e.target.value })}
           />
         </Field>
-        <Field label="City">
+        <Field label={translate("City")}>
           <input
             required
             className={inputClass}
-            placeholder="New York"
+            placeholder={translate("New York")}
             value={item.city || ''}
             onChange={(e) => onPatch({ city: e.target.value })}
           />
         </Field>
-        <Field label="Country">
+        <Field label={translate("Country")}>
           <input
             required
             className={inputClass}
-            placeholder="United States"
+            placeholder={translate("United States")}
             value={item.country || ''}
             onChange={(e) => onPatch({ country: e.target.value })}
           />
         </Field>
-        <Field label="Category">
+        <Field label={translate("Category")}>
           <input
             className={inputClass}
-            placeholder="5 star"
+            placeholder={translate("5 star")}
             value={item.category || ''}
             onChange={(e) => onPatch({ category: e.target.value })}
           />
         </Field>
-        <Field label="Room">
+        <Field label={translate("Room")}>
           <input
             className={inputClass}
             value={item.room_name || ''}
             onChange={(e) => onPatch({ room_name: e.target.value })}
           />
         </Field>
-        <Field label="Board">
+        <Field label={translate("Board")}>
           <input
             className={inputClass}
-            placeholder="Breakfast"
+            placeholder={translate("Breakfast")}
             value={item.board_name || ''}
             onChange={(e) => onPatch({ board_name: e.target.value })}
           />
         </Field>
-        <Field label="Price">
+        <Field label={translate("Price")}>
           <input
             type="number"
             min={0}
@@ -377,19 +379,19 @@ function HotelFields({
           />
         </Field>
         {period ? (
-          <Field label="Nights" className="sm:col-span-2">
+          <Field label={translate("Nights")} className="sm:col-span-2">
             <input
               type="number"
               min={1}
               className={inputClass}
-              placeholder="e.g. 7"
+              placeholder={translate("e.g. 7")}
               value={item.nights ?? ''}
               onChange={(e) => onPatch({ nights: optionalNumber(e.target.value) })}
             />
           </Field>
         ) : (
           <>
-            <Field label="Check-in">
+            <Field label={translate("Check-in")}>
               <input
                 type="date"
                 required
@@ -398,7 +400,7 @@ function HotelFields({
                 onChange={(e) => onPatch({ check_in: e.target.value })}
               />
             </Field>
-            <Field label="Check-out">
+            <Field label={translate("Check-out")}>
               <input
                 type="date"
                 required
@@ -410,10 +412,9 @@ function HotelFields({
           </>
         )}
         <div className="sm:col-span-2">
-          <ImageUpload label="Hotel image" value={item.image_url} onChange={(url) => onPatch({ image_url: url })} />
+          <ImageUpload label={translate("Hotel image")} value={item.image_url} onChange={(url) => onPatch({ image_url: url })} />
           <p className="mt-1.5 text-xs text-shop-muted">
-            Leave blank to auto-fetch Google photos for this hotel and place when you save.
-          </p>
+            {translate("Leave blank to auto-fetch Google photos for this hotel and place when you save.")}</p>
           {Array.isArray(item.extra?.gallery_urls) && item.extra.gallery_urls.length > 0 && (
             <div className="mt-2 flex gap-1.5 overflow-x-auto">
               {item.extra.gallery_urls.slice(0, 8).map((url) => (
@@ -427,7 +428,7 @@ function HotelFields({
             </div>
           )}
         </div>
-        <Field label="Notes" className="sm:col-span-2">
+        <Field label={translate("Notes")} className="sm:col-span-2">
           <textarea
             rows={2}
             className="rounded-lg border border-shop-border px-3 py-2"
@@ -449,18 +450,19 @@ function FlightFields({
   label: string
   onPatch: (patch: Partial<PredefinedQuoteItem>) => void
 }) {
+  useI18n()
   return (
     <article className="rounded-xl border border-shop-border bg-shop-bg/40 p-4">
-      <div className="mb-3 text-sm font-semibold">{label}</div>
+      <div className="mb-3 text-sm font-semibold">{translate(label)}</div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Airline">
+        <Field label={translate("Airline")}>
           <input
             className={inputClass}
             value={item.airline || ''}
             onChange={(e) => onPatch({ airline: e.target.value })}
           />
         </Field>
-        <Field label="Flight number">
+        <Field label={translate("Flight number")}>
           <input
             className={inputClass}
             placeholder="EK 512"
@@ -468,7 +470,7 @@ function FlightFields({
             onChange={(e) => onPatch({ flight_number: e.target.value })}
           />
         </Field>
-        <Field label="Price">
+        <Field label={translate("Price")}>
           <input
             type="number"
             min={0}
@@ -477,7 +479,7 @@ function FlightFields({
             onChange={(e) => onPatch({ price: optionalNumber(e.target.value) })}
           />
         </Field>
-        <Field label="From airport">
+        <Field label={translate("From airport")}>
           <input
             className={inputClass}
             placeholder="DXB"
@@ -485,7 +487,7 @@ function FlightFields({
             onChange={(e) => onPatch({ departure_airport: e.target.value.toUpperCase() })}
           />
         </Field>
-        <Field label="To airport">
+        <Field label={translate("To airport")}>
           <input
             className={inputClass}
             placeholder="JFK"
@@ -493,21 +495,21 @@ function FlightFields({
             onChange={(e) => onPatch({ arrival_airport: e.target.value.toUpperCase() })}
           />
         </Field>
-        <Field label="From city">
+        <Field label={translate("From city")}>
           <input
             className={inputClass}
             value={item.departure_city || ''}
             onChange={(e) => onPatch({ departure_city: e.target.value })}
           />
         </Field>
-        <Field label="To city">
+        <Field label={translate("To city")}>
           <input
             className={inputClass}
             value={item.arrival_city || ''}
             onChange={(e) => onPatch({ arrival_city: e.target.value })}
           />
         </Field>
-        <Field label="Depart time">
+        <Field label={translate("Depart time")}>
           <input
             className={inputClass}
             placeholder="10:30"
@@ -515,7 +517,7 @@ function FlightFields({
             onChange={(e) => onPatch({ departure_time: e.target.value })}
           />
         </Field>
-        <Field label="Arrive time">
+        <Field label={translate("Arrive time")}>
           <input
             className={inputClass}
             placeholder="22:15"
@@ -523,7 +525,7 @@ function FlightFields({
             onChange={(e) => onPatch({ arrival_time: e.target.value })}
           />
         </Field>
-        <Field label="Duration">
+        <Field label={translate("Duration")}>
           <input
             className={inputClass}
             placeholder="7h 45m"
@@ -531,7 +533,7 @@ function FlightFields({
             onChange={(e) => onPatch({ duration: e.target.value })}
           />
         </Field>
-        <Field label="Stops">
+        <Field label={translate("Stops")}>
           <input
             type="number"
             min={0}
@@ -541,9 +543,9 @@ function FlightFields({
           />
         </Field>
         <div className="sm:col-span-2">
-          <ImageUpload label="Flight image" value={item.image_url} onChange={(url) => onPatch({ image_url: url })} />
+          <ImageUpload label={translate("Flight image")} value={item.image_url} onChange={(url) => onPatch({ image_url: url })} />
         </div>
-        <Field label="Notes" className="sm:col-span-2">
+        <Field label={translate("Notes")} className="sm:col-span-2">
           <textarea
             rows={2}
             className="rounded-lg border border-shop-border px-3 py-2"
@@ -567,6 +569,7 @@ export default function PredefinedQuoteModal({
   onClose,
   onSaved,
 }: Props) {
+  useI18n()
   const { confirm, dialog } = useConfirm()
   const sourceQuote = quote || initialQuote
   const sessionKey = open ? (quote?.id ?? draftKey ?? (initialQuote ? 'import' : 'new')) : null
@@ -622,8 +625,8 @@ export default function PredefinedQuoteModal({
         removingFlights ? 'flights' : null,
       ].filter(Boolean)
       const ok = await confirm({
-        title: `Switch to ${quoteTypeLabel(nextType)}?`,
-        description: `This removes the ${parts.join(' and ')} you entered.`,
+        title: translate("Switch to {value0}?", { value0: translate(String(quoteTypeLabel(nextType))) }),
+        description: translate("This removes the {value0} you entered.", { value0: translate(String(parts.join(' and '))) }),
         confirmLabel: 'Switch and remove',
       })
       if (!ok) return
@@ -739,24 +742,23 @@ export default function PredefinedQuoteModal({
     <>
       <ModalDrawer
         open={open}
-        title={title || (quote ? 'Edit quote' : 'Create quote')}
+        title={title || (quote ? translate("Edit quote") : translate("Create quote"))}
         subtitle={statusLine}
         onClose={onClose}
         maxWidthClassName="max-w-4xl"
         footer={
           <div className="flex justify-end gap-2">
             <Button type="button" onClick={onClose}>
-              Cancel
-            </Button>
+              {translate("Cancel")}</Button>
             <Button type="submit" form="predefined-quote-form" variant="primary" disabled={saving}>
-              {saving ? 'Saving…' : submitLabel || 'Save quote'}
+              {saving ? translate("Saving…") : submitLabel || 'Save quote'}
             </Button>
           </div>
         }
       >
         <form id="predefined-quote-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <div className="mb-2 text-sm font-medium">Quote type</div>
+            <div className="mb-2 text-sm font-medium">{translate("Quote type")}</div>
             <div className="grid gap-2 sm:grid-cols-3">
               {QUOTE_TYPE_OPTIONS.map((option) => {
                 const active = selectedType === option.value
@@ -765,13 +767,13 @@ export default function PredefinedQuoteModal({
                     key={option.value}
                     type="button"
                     onClick={() => void changeQuoteType(option.value)}
-                    className={`rounded-xl border px-3 py-3 text-left transition ${
+                    className={`rounded-xl border px-3 py-3 text-start transition ${
                       active
                         ? 'border-shop-accent bg-shop-accent/5 ring-1 ring-shop-accent'
                         : 'border-shop-border bg-white hover:bg-shop-bg'
                     }`}
                   >
-                    <div className="text-sm font-semibold">{option.label}</div>
+                    <div className="text-sm font-semibold">{translate(option.label)}</div>
                     <div className="mt-0.5 text-xs text-shop-muted">{option.hint}</div>
                   </button>
                 )
@@ -780,16 +782,16 @@ export default function PredefinedQuoteModal({
           </div>
 
           <div className="sm:col-span-2 grid gap-4 sm:grid-cols-[minmax(0,1fr)_5.5rem]">
-            <Field label="Title">
+            <Field label={translate("Title")}>
               <input
                 required
                 className={inputClass}
-                placeholder="Dubai family package"
+                placeholder={translate("Dubai family package")}
                 value={draft.title}
                 onChange={(e) => setField('title', e.target.value)}
               />
             </Field>
-            <Field label="Currency">
+            <Field label={translate("Currency")}>
               <input
                 className={inputClass}
                 value={draft.currency}
@@ -800,7 +802,7 @@ export default function PredefinedQuoteModal({
           </div>
           {showRouteFields ? (
             <>
-              <Field label="Origin">
+              <Field label={translate("Origin")}>
                 <input
                   required
                   className={inputClass}
@@ -809,33 +811,33 @@ export default function PredefinedQuoteModal({
                   onChange={(e) => setField('origin', e.target.value)}
                 />
               </Field>
-              <Field label="Destination">
+              <Field label={translate("Destination")}>
                 <input
                   required
                   className={inputClass}
-                  placeholder="New York"
+                  placeholder={translate("New York")}
                   value={draft.destination}
                   onChange={(e) => setField('destination', e.target.value)}
                 />
               </Field>
             </>
           ) : (
-            <Field label="Destination (optional override)" className="sm:col-span-2">
+            <Field label={translate("Destination (optional override)")} className="sm:col-span-2">
               <input
                 className={inputClass}
-                placeholder="Defaults to first hotel city"
+                placeholder={translate("Defaults to first hotel city")}
                 value={draft.destination}
                 onChange={(e) => setField('destination', e.target.value)}
               />
             </Field>
           )}
           <fieldset className="sm:col-span-2 grid gap-2">
-            <legend className="mb-1 text-sm font-medium">When can this be offered?</legend>
-            <div role="radiogroup" aria-label="Availability" className="inline-flex gap-0.5 self-start rounded-[9px] bg-neutral-bg p-[3px]">
+            <legend className="mb-1 text-sm font-medium">{translate("When can this be offered?")}</legend>
+            <div role="radiogroup" aria-label={translate("Availability")} className="inline-flex gap-0.5 self-start rounded-[9px] bg-neutral-bg p-[3px]">
               {(
                 [
-                  ['fixed', 'Fixed dates'],
-                  ['period', 'Period (months)'],
+                  ['fixed', translate("Fixed dates")],
+                  ['period', translate("Period (months)")],
                 ] as const
               ).map(([mode, label]) => (
                 <button
@@ -848,14 +850,14 @@ export default function PredefinedQuoteModal({
                     draft.availability_mode === mode ? 'bg-white text-shop-ink shadow-sm' : 'text-neutral-fg hover:text-shop-ink'
                   }`}
                 >
-                  {label}
+                  {translate(label)}
                 </button>
               ))}
             </div>
           </fieldset>
           {draft.availability_mode === 'fixed' ? (
             <>
-              <Field label="Travel date">
+              <Field label={translate("Travel date")}>
                 <input
                   type="date"
                   className={inputClass}
@@ -863,7 +865,7 @@ export default function PredefinedQuoteModal({
                   onChange={(e) => setField('travel_date', e.target.value)}
                 />
               </Field>
-              <Field label="Return date">
+              <Field label={translate("Return date")}>
                 <input
                   type="date"
                   className={inputClass}
@@ -873,13 +875,13 @@ export default function PredefinedQuoteModal({
               </Field>
               <p className="sm:col-span-2 text-xs text-shop-muted">
                 {showHotels
-                  ? 'Offered to a customer who asks for this destination on exactly these dates. Dates sync from hotel stays when left blank.'
-                  : 'Offered to a customer who asks for this route on exactly these dates.'}
+                  ? translate("Offered to a customer who asks for this destination on exactly these dates. Dates sync from hotel stays when left blank.")
+                  : translate("Offered to a customer who asks for this route on exactly these dates.")}
               </p>
             </>
           ) : (
             <div className="sm:col-span-2 grid gap-2">
-              <div role="group" aria-label="Months available" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <div role="group" aria-label={translate("Months available")} className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {MONTH_NAMES.map((name, index) => {
                   const month = index + 1
                   const on = draft.available_months.includes(month)
@@ -904,14 +906,12 @@ export default function PredefinedQuoteModal({
                 })}
               </div>
               <p className="text-xs text-shop-muted">
-                Offered to a customer who asks for{' '}
-                {showHotels ? 'this destination' : 'this route'} on any days inside the chosen months — e.g. 10–19 October matches
-                October. A stay that runs into a month you did not choose is not offered.
-              </p>
+                {translate("Offered to a customer who asks for")}{' '}
+                {showHotels ? 'this destination' : 'this route'}{' '}{translate("on any days inside the chosen months — e.g. 10–19 October matches October. A stay that runs into a month you did not choose is not offered.")}</p>
             </div>
           )}
           <div className="sm:col-span-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <Field label="Adults">
+            <Field label={translate("Adults")}>
               <select
                 className={compactSelectClass}
                 value={draft.adults_count}
@@ -924,7 +924,7 @@ export default function PredefinedQuoteModal({
                 ))}
               </select>
             </Field>
-            <Field label="Children">
+            <Field label={translate("Children")}>
               <select
                 className={compactSelectClass}
                 value={draft.children_count}
@@ -948,7 +948,7 @@ export default function PredefinedQuoteModal({
           {Number(draft.children_count) > 0 && (
             <div className="sm:col-span-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {draft.children_ages.map((age, index) => (
-                <Field key={index} label={`Child ${index + 1} age`}>
+                <Field key={index} label={translate("Child {value0} age", { value0: translate(String(index + 1)) })}>
                   <select
                     required
                     className={compactSelectClass}
@@ -962,7 +962,7 @@ export default function PredefinedQuoteModal({
                       })
                     }}
                   >
-                    <option value="">Age</option>
+                    <option value="">{translate("Age")}</option>
                     {CHILD_AGE_OPTIONS.map((option) => (
                       <option key={option} value={option}>
                         {option}
@@ -973,38 +973,38 @@ export default function PredefinedQuoteModal({
               ))}
             </div>
           )}
-          <Field label="Total price override" className="sm:col-span-2 sm:max-w-xs">
+          <Field label={translate("Total price override")} className="sm:col-span-2 sm:max-w-xs">
             <input
               type="number"
               min={0}
               step="0.01"
               className={inputClass}
-              placeholder="Leave blank to sum items"
+              placeholder={translate("Leave blank to sum items")}
               value={draft.total_price}
               onChange={(e) => setField('total_price', e.target.value)}
             />
           </Field>
           <div className="sm:col-span-2">
             <ImageUpload
-              label="Cover image"
+              label={translate("Cover image")}
               value={draft.cover_image_url}
               onChange={(url) => setField('cover_image_url', url)}
             />
           </div>
-          <Field label="Description" className="sm:col-span-2">
+          <Field label={translate("Description")} className="sm:col-span-2">
             <textarea
               rows={3}
               className="rounded-lg border border-shop-border px-3 py-2"
-              placeholder="What this package includes"
+              placeholder={translate("What this package includes")}
               value={draft.description}
               onChange={(e) => setField('description', e.target.value)}
             />
           </Field>
-          <Field label="Notes / terms" className="sm:col-span-2">
+          <Field label={translate("Notes / terms")} className="sm:col-span-2">
             <textarea
               rows={2}
               className="rounded-lg border border-shop-border px-3 py-2"
-              placeholder="Shown on the downloaded quote"
+              placeholder={translate("Shown on the downloaded quote")}
               value={draft.notes}
               onChange={(e) => setField('notes', e.target.value)}
             />
@@ -1014,18 +1014,16 @@ export default function PredefinedQuoteModal({
             <div className="sm:col-span-2 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold">Hotels</h3>
+                  <h3 className="text-sm font-semibold">{translate("Hotels")}</h3>
                   <p className="text-xs text-shop-muted">
-                    Add multiple stays for split dates (e.g. 10–15 Oct, then 15–20 Oct).
-                  </p>
+                    {translate("Add multiple stays for split dates (e.g. 10–15 Oct, then 15–20 Oct).")}</p>
                 </div>
                 <button
                   type="button"
                   className="rounded-md border border-shop-border bg-white px-2.5 py-1.5 text-xs font-semibold hover:bg-shop-bg"
                   onClick={addHotel}
                 >
-                  Add hotel
-                </button>
+                  {translate("Add hotel")}</button>
               </div>
               <div className="space-y-3">
                 {hotels.map((item, index) => (
@@ -1047,8 +1045,8 @@ export default function PredefinedQuoteModal({
             <div className="sm:col-span-2 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold">Flights</h3>
-                  <p className="text-xs text-shop-muted">Outbound is required. Return is optional.</p>
+                  <h3 className="text-sm font-semibold">{translate("Flights")}</h3>
+                  <p className="text-xs text-shop-muted">{translate("Outbound is required. Return is optional.")}</p>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -1057,21 +1055,21 @@ export default function PredefinedQuoteModal({
                     checked={includeReturn}
                     onChange={(e) => toggleReturnFlight(e.target.checked)}
                   />
-                  <span className="font-medium">Include return flight</span>
+                  <span className="font-medium">{translate("Include return flight")}</span>
                 </label>
               </div>
               <div className="space-y-3">
                 {outboundFlight && (
                   <FlightFields
                     item={outboundFlight}
-                    label="Outbound flight"
+                    label={translate("Outbound flight")}
                     onPatch={(patch) => patchItem(outboundFlight.key, { ...patch, direction: 'outbound' })}
                   />
                 )}
                 {returnFlight && (
                   <FlightFields
                     item={returnFlight}
-                    label="Return flight"
+                    label={translate("Return flight")}
                     onPatch={(patch) => patchItem(returnFlight.key, { ...patch, direction: 'return' })}
                   />
                 )}
@@ -1080,7 +1078,7 @@ export default function PredefinedQuoteModal({
           )}
 
           {error && (
-            <div role="alert" className="sm:col-span-2 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{error}</div>
+            <div role="alert" className="sm:col-span-2 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{translate(error)}</div>
           )}
         </form>
       </ModalDrawer>

@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 type Clip = { blob: Blob; url: string; seconds: number | null; fileName?: string }
@@ -27,6 +28,7 @@ function clock(seconds: number) {
  * It only produces audio — what happens to it is up to the caller.
  */
 export default function VoiceNoteRecorder({ disabled, onSend }: Props) {
+  useI18n()
   const [recording, setRecording] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [clip, setClip] = useState<Clip | null>(null)
@@ -153,7 +155,7 @@ export default function VoiceNoteRecorder({ disabled, onSend }: Props) {
             className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
           >
             <span className="h-2 w-2 animate-pulse rounded-full bg-white" aria-hidden />
-            Stop · {clock(elapsed)}
+            {translate("Stop ·")}{' '}{clock(elapsed)}
           </button>
         ) : (
           <button
@@ -162,8 +164,7 @@ export default function VoiceNoteRecorder({ disabled, onSend }: Props) {
             onClick={() => void start()}
             className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-shop-border bg-white px-3 py-2 text-sm font-medium hover:bg-shop-bg disabled:opacity-50"
           >
-            🎤 Record voice note
-          </button>
+            {translate("🎤 Record voice note")}</button>
         )}
 
         <label
@@ -171,8 +172,7 @@ export default function VoiceNoteRecorder({ disabled, onSend }: Props) {
             disabled || recording ? 'pointer-events-none opacity-50' : ''
           }`}
         >
-          Attach audio file
-          <input
+          {translate("Attach audio file")}<input
             ref={fileInputRef}
             type="file"
             accept="audio/*,.ogg,.opus,.webm,.mp3,.m4a,.mp4,.wav"
@@ -187,9 +187,8 @@ export default function VoiceNoteRecorder({ disabled, onSend }: Props) {
       {clip && (
         <div className="grid gap-2 rounded-lg border border-shop-border bg-white p-3">
           <p className="text-xs text-shop-muted">
-            {clip.fileName ? clip.fileName : 'Recording'}
-            {clip.seconds ? ` · ${clock(clip.seconds)}` : ''} — listen first, then send.
-          </p>
+            {clip.fileName ? clip.fileName : translate('Recording')}
+            {clip.seconds ? ` · ${clock(clip.seconds)}` : ''}{' '}{translate("— listen first, then send.")}</p>
           <audio controls src={clip.url} className="h-10 w-full" />
           <div className="flex gap-2">
             <button
@@ -198,22 +197,20 @@ export default function VoiceNoteRecorder({ disabled, onSend }: Props) {
               onClick={send}
               className="rounded-lg bg-shop-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
             >
-              Send voice note
-            </button>
+              {translate("Send voice note")}</button>
             <button
               type="button"
               onClick={discard}
               className="rounded-lg border border-shop-border px-4 py-2 text-sm font-medium hover:bg-shop-bg"
             >
-              Discard
-            </button>
+              {translate("Discard")}</button>
           </div>
         </div>
       )}
 
       {error && (
         <p role="alert" className="text-xs text-red-700">
-          {error}
+          {translate(error)}
         </p>
       )}
     </div>

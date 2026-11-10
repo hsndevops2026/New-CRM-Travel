@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import type { ReactNode } from 'react'
 import { Check, CircleAlert, Clock, X } from 'lucide-react'
 
@@ -18,6 +19,7 @@ const STYLE: Record<Tone, { box: string; icon: ReactNode; role: 'alert' | 'statu
 
 /** Inline banner (design system): what happened, what it means, what to do. */
 export default function Banner({ tone, title, children, action }: Props) {
+  useI18n()
   const style = STYLE[tone]
   return (
     <div role={style.role} className={`flex gap-3 rounded-[10px] p-3.5 ${style.box}`}>
@@ -25,8 +27,8 @@ export default function Banner({ tone, title, children, action }: Props) {
         {tone === 'danger' ? <X className="size-4" /> : style.icon}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <strong>{title}</strong>
-        {children ? <span className="tabular-nums">{children}</span> : null}
+        <strong>{translate(title)}</strong>
+        {children ? <span className="tabular-nums">{typeof children === 'string' ? translate(children) : children}</span> : null}
         {action ? <div className="font-bold [&_a]:underline [&_button]:underline">{action}</div> : null}
       </div>
     </div>

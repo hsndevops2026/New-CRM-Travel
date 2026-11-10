@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState, type FormEvent } from 'react'
 import {
   createDealerCountryCode,
@@ -19,6 +20,7 @@ type Props = {
 const emptyForm = { name: '', iso_code: '', dial_code: '' }
 
 export default function CountryCodesModal({ open, countryCodes, onClose, onChanged }: Props) {
+  useI18n()
   const { confirm, dialog } = useConfirm()
   const [editing, setEditing] = useState<DealerCountryCode | null>(null)
   const [form, setForm] = useState(emptyForm)
@@ -59,7 +61,7 @@ export default function CountryCodesModal({ open, countryCodes, onClose, onChang
 
   const remove = async (country: DealerCountryCode) => {
     const ok = await confirm({
-      title: `Delete +${country.dial_code} ${country.name}?`,
+      title: translate("Delete +{value0} {value1}?", { value0: translate(String(country.dial_code)), value1: translate(String(country.name)) }),
       description: 'It will no longer be offered when adding or editing a dealer. Existing dealers keep their numbers.',
       confirmLabel: 'Delete code',
     })
@@ -78,18 +80,18 @@ export default function CountryCodesModal({ open, countryCodes, onClose, onChang
     <>
       <ModalDrawer
         open={open}
-        title="Manage country codes"
+        title={translate("Manage country codes")}
         subtitle="Codes are available when adding or editing a dealer."
         onClose={() => { reset(); onClose() }}
         maxWidthClassName="max-w-xl"
       >
         <form onSubmit={submit} className="grid gap-3 rounded-xl border border-shop-border bg-shop-bg p-3 sm:grid-cols-[1fr_6rem_7rem_auto] sm:items-end">
           <label className="grid gap-1 text-sm">
-            <span className="font-medium">Country name</span>
+            <span className="font-medium">{translate("Country name")}</span>
             <input
               required
               className="min-h-10 rounded-lg border border-shop-border bg-white px-3 py-2"
-              placeholder="India"
+              placeholder={translate("India")}
               value={form.name}
               onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))}
             />
@@ -105,7 +107,7 @@ export default function CountryCodesModal({ open, countryCodes, onClose, onChang
             />
           </label>
           <label className="grid gap-1 text-sm">
-            <span className="font-medium">Calling code</span>
+            <span className="font-medium">{translate("Calling code")}</span>
             <input
               required
               inputMode="numeric"
@@ -117,13 +119,13 @@ export default function CountryCodesModal({ open, countryCodes, onClose, onChang
           </label>
           <div className="flex gap-2">
             <Button type="submit" variant="primary" disabled={saving}>
-              {saving ? 'Saving…' : editing ? 'Update' : 'Add'}
+              {saving ? translate("Saving…") : editing ? translate('Update') : translate("Add")}
             </Button>
-            {editing && <Button type="button" onClick={reset}>Cancel</Button>}
+            {editing && <Button type="button" onClick={reset}>{translate("Cancel")}</Button>}
           </div>
         </form>
 
-        {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</div>}
 
         <div className="mt-4 divide-y divide-shop-border overflow-hidden rounded-xl border border-shop-border">
           {countryCodes.map((country) => (
@@ -133,13 +135,13 @@ export default function CountryCodesModal({ open, countryCodes, onClose, onChang
                 {country.iso_code && <div className="text-xs text-shop-muted">{country.iso_code}</div>}
               </div>
               <div className="flex shrink-0 gap-2">
-                <Button type="button" size="sm" onClick={() => startEdit(country)}>Edit</Button>
-                <Button type="button" size="sm" variant="danger" onClick={() => void remove(country)}>Delete</Button>
+                <Button type="button" size="sm" onClick={() => startEdit(country)}>{translate("Edit")}</Button>
+                <Button type="button" size="sm" variant="danger" onClick={() => void remove(country)}>{translate("Delete")}</Button>
               </div>
             </div>
           ))}
           {countryCodes.length === 0 && (
-            <p className="px-3 py-8 text-center text-sm text-shop-muted">No country codes configured.</p>
+            <p className="px-3 py-8 text-center text-sm text-shop-muted">{translate("No country codes configured.")}</p>
           )}
         </div>
       </ModalDrawer>

@@ -1,3 +1,4 @@
+import { locale } from './i18n'
 export type Lead = {
   id: string
   phone: string
@@ -219,7 +220,7 @@ export function formatDate(value: string) {
   const dateOnly = value.slice(0, 10)
   const date = new Date(`${dateOnly}T12:00:00`)
   if (Number.isNaN(date.getTime())) return dateOnly
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(locale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -258,7 +259,7 @@ export function formatTime(value?: string) {
   if (!value) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleTimeString(undefined, {
+  return date.toLocaleTimeString(locale(), {
     hour: '2-digit',
     minute: '2-digit',
   })

@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState } from 'react'
 import Button from './ui/Button'
 import StatusBadge from './ui/StatusBadge'
@@ -13,6 +14,7 @@ import {
 } from '../lib/ops'
 
 export default function OpsPanel() {
+  useI18n()
   const [counts, setCounts] = useState<QueueCounts>({})
   const [failedJobs, setFailedJobs] = useState<FailedQueueJob[]>([])
   const [failedDeliveries, setFailedDeliveries] = useState<FailedDelivery[]>([])
@@ -89,22 +91,21 @@ export default function OpsPanel() {
     <section id="ops" aria-labelledby="s-ops" className="scroll-mt-4 rounded-[10px] border border-shop-border bg-white p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 id="s-ops" className="text-base font-bold">Operational tools</h2>
-          <p className="text-xs text-shop-muted">Failed queue jobs and quote deliveries</p>
+          <h2 id="s-ops" className="text-base font-bold">{translate("Operational tools")}</h2>
+          <p className="text-xs text-shop-muted">{translate("Failed queue jobs and quote deliveries")}</p>
         </div>
         <Button size="sm" onClick={() => void load()} disabled={loading}>
-          Refresh
-        </Button>
+          {translate("Refresh")}</Button>
       </div>
 
       {error && (
         <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
+          {translate(error)}
         </div>
       )}
 
       {loading ? (
-        <p className="text-sm text-shop-muted">Loading ops data…</p>
+        <p className="text-sm text-shop-muted">{translate("Loading ops data…")}</p>
       ) : (
         <>
           <div className="mb-4 grid gap-2 sm:grid-cols-2">
@@ -112,10 +113,10 @@ export default function OpsPanel() {
               <div key={queue} className="rounded-lg bg-shop-bg px-3 py-2 text-sm">
                 <div className="font-medium">{queue}</div>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-shop-muted">
-                  <span>waiting: {c.waiting}</span>
-                  <span>active: {c.active}</span>
+                  <span>{translate("waiting:")}{' '}{c.waiting}</span>
+                  <span>{translate("active:")}{' '}{c.active}</span>
                   <span className={c.failed > 0 ? 'font-semibold text-red-700' : ''}>
-                    failed: {c.failed}
+                    {translate("failed:")}{' '}{c.failed}
                   </span>
                 </div>
               </div>
@@ -123,10 +124,10 @@ export default function OpsPanel() {
           </div>
 
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-shop-muted">
-            Failed queue jobs ({failedJobs.length})
+            {translate("Failed queue jobs (")}{failedJobs.length})
           </h3>
           {failedJobs.length === 0 ? (
-            <p className="mb-4 text-sm text-shop-muted">No failed jobs.</p>
+            <p className="mb-4 text-sm text-shop-muted">{translate("No failed jobs.")}</p>
           ) : (
             <div className="mb-4 space-y-2">
               {failedJobs.map((job) => (
@@ -137,11 +138,11 @@ export default function OpsPanel() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{job.queue}</span>
-                      <StatusBadge label={`attempts ${job.attempts_made}`} tone="warning" />
+                      <StatusBadge label={translate("attempts {value0}", { value0: translate(String(job.attempts_made)) })} tone="warning" />
                     </div>
                     <div className="text-xs text-shop-muted">
-                      job {job.id}
-                      {job.lead_id ? ` · lead ${job.lead_id}` : ''}
+                      {translate("job")}{' '}{job.id}
+                      {job.lead_id ? translate(" · lead {value0}", { value0: translate(String(job.lead_id)) }) : ''}
                     </div>
                     {job.failed_reason && (
                       <div className="mt-1 truncate text-xs text-red-600">{job.failed_reason}</div>
@@ -152,7 +153,7 @@ export default function OpsPanel() {
                     disabled={acting === `job:${job.id}`}
                     onClick={() => void retryJob(job)}
                   >
-                    {acting === `job:${job.id}` ? 'Retrying…' : 'Retry'}
+                    {acting === `job:${job.id}` ? translate('Retrying…') : translate("Retry")}
                   </Button>
                 </div>
               ))}
@@ -160,10 +161,10 @@ export default function OpsPanel() {
           )}
 
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-shop-muted">
-            Failed deliveries ({failedDeliveries.length})
+            {translate("Failed deliveries (")}{failedDeliveries.length})
           </h3>
           {failedDeliveries.length === 0 ? (
-            <p className="text-sm text-shop-muted">No failed deliveries.</p>
+            <p className="text-sm text-shop-muted">{translate("No failed deliveries.")}</p>
           ) : (
             <div className="space-y-2">
               {failedDeliveries.map((d) => (
@@ -173,7 +174,7 @@ export default function OpsPanel() {
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="capitalize">{d.channel}</span>
+                      <span className="capitalize">{translate(d.channel)}</span>
                       <span className="font-mono text-xs">{d.recipient}</span>
                     </div>
                     {d.error_message && (
@@ -185,7 +186,7 @@ export default function OpsPanel() {
                     disabled={acting === `delivery:${d.id}`}
                     onClick={() => void retryDelivery(d)}
                   >
-                    {acting === `delivery:${d.id}` ? 'Retrying…' : 'Retry'}
+                    {acting === `delivery:${d.id}` ? translate('Retrying…') : translate("Retry")}
                   </Button>
                 </div>
               ))}

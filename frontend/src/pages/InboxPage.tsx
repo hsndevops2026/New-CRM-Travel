@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
@@ -24,6 +25,7 @@ const FILTERS: Array<{ id: InboxFilter; label: string }> = [
 ]
 
 export default function InboxPage() {
+  useI18n()
   const navigate = useNavigate()
   const { threadId: routeThreadId } = useParams<{ threadId?: string }>()
   const [searchParams] = useSearchParams()
@@ -191,16 +193,16 @@ export default function InboxPage() {
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
         <section
-          aria-label="Conversations"
-          className={`flex w-full shrink-0 flex-col border-r border-shop-border bg-white md:w-[300px] lg:w-[340px] ${
+          aria-label={translate("Conversations")}
+          className={`flex w-full shrink-0 flex-col border-e border-shop-border bg-white md:w-[300px] lg:w-[340px] ${
             mobileShowChat && activeId ? 'hidden md:flex' : 'flex'
           }`}
         >
           <div className="flex shrink-0 flex-col gap-2.5 border-b border-shop-border px-3.5 pt-3.5 pb-2.5">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-extrabold">Inbox</h1>
+              <h1 className="text-lg font-extrabold">{translate("Inbox")}</h1>
               <span className="text-xs text-shop-muted tabular-nums">
-                {counts.all} conversation{counts.all === 1 ? '' : 's'}
+                {translate("{count} conversation{suffix}", { count: counts.all, suffix: counts.all === 1 ? '' : 's' })}
               </span>
             </div>
             <FilterPills
@@ -211,19 +213,19 @@ export default function InboxPage() {
             />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {error && !activeId && <p role="alert" className="m-3 rounded-lg bg-danger-bg p-3 text-sm text-danger-fg">{error}</p>}
+            {error && !activeId && <p role="alert" className="m-3 rounded-lg bg-danger-bg p-3 text-sm text-danger-fg">{translate(error)}</p>}
             <ChatThreadList
               threads={filteredThreads}
               activeId={activeId}
               loading={threadsLoading}
               onSelect={selectThread}
-              emptyMessage={query.trim() ? 'No conversations match this search.' : filter !== 'all' ? `No ${filter} conversations in this filter. Try All.` : undefined}
+              emptyMessage={query.trim() ? translate("No conversations match this search.") : filter !== 'all' ? translate("No {value0} conversations in this filter. Try All.", { value0: translate(String(filter)) }) : undefined}
             />
           </div>
         </section>
 
         <section
-          aria-label={activeThread ? `Conversation with ${activeThread.title}` : 'Conversation'}
+          aria-label={activeThread ? translate("Conversation with {value0}", { value0: translate(String(activeThread.title)) }) : translate("Conversation")}
           className={`min-w-0 flex-1 flex-col ${
             !mobileShowChat || !activeId ? 'hidden md:flex' : 'flex'
           }`}
@@ -231,19 +233,18 @@ export default function InboxPage() {
           {activeId && (
             <button
               type="button"
-              className="flex h-11 shrink-0 items-center gap-1.5 border-b border-shop-border bg-white px-4 text-left text-sm font-semibold text-shop-ink md:hidden"
+              className="flex h-11 shrink-0 items-center gap-1.5 border-b border-shop-border bg-white px-4 text-start text-sm font-semibold text-shop-ink md:hidden"
               onClick={() => setMobileShowChat(false)}
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
-              Conversations
-            </button>
+              {translate("Conversations")}</button>
           )}
           <ChatWindow
             thread={activeThread}
             messages={messages}
             loading={messagesLoading}
             sending={sending}
-            error={error}
+            error={translate(error)}
             onSend={handleSend}
             onRefresh={() => activeId && void loadMessages(activeId)}
             onOpenLead={(leadId) => navigate(`/leads/${leadId}`)}

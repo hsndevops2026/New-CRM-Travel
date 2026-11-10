@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useRef, useState } from 'react'
 import { Check, Eye, Lock } from 'lucide-react'
 import Button from './ui/Button'
@@ -15,9 +16,10 @@ function fmt(value: number, currency = 'USD') {
 }
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  useI18n()
   return (
     <div className={`flex items-center justify-between gap-3 py-0.5 text-sm tabular-nums ${strong ? 'font-bold' : ''}`}>
-      <span className={strong ? '' : 'text-shop-muted'}>{label}</span>
+      <span className={strong ? '' : 'text-shop-muted'}>{translate(label)}</span>
       <span>{value}</span>
     </div>
   )
@@ -29,6 +31,7 @@ const FIELD =
 const LABEL = 'text-xs font-semibold text-slate-600'
 
 export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
+  useI18n()
   const [config, setConfig] = useState<DraftConfig>({
     currency: draft?.currency ?? 'USD',
     markup_type: draft?.markup_type ?? 'percent',
@@ -96,24 +99,23 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
     <div className="flex flex-col gap-3">
       <section aria-labelledby="pricing-h" className="flex flex-col gap-3.5 rounded-[10px] border border-shop-border bg-white p-4">
         <div className="flex items-center justify-between">
-          <h2 id="pricing-h" className="text-base font-bold">Pricing</h2>
+          <h2 id="pricing-h" className="text-base font-bold">{translate("Pricing")}</h2>
           <span role="status" className={`flex items-center gap-1 text-xs ${error ? 'text-danger-fg' : 'text-shop-accent'}`}>
             {error ? (
               error
             ) : saving ? (
-              <span className="text-shop-muted">Saving…</span>
+              <span className="text-shop-muted">{translate("Saving…")}</span>
             ) : saved ? (
               <>
                 <Check className="size-3.5" aria-hidden="true" />
-                Saved
-              </>
+                {translate("Saved")}</>
             ) : null}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="grid gap-1">
-            <span className={LABEL}>Currency</span>
+            <span className={LABEL}>{translate("Currency")}</span>
             <select value={config.currency} onChange={(e) => patch({ currency: e.target.value })} className={FIELD}>
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -122,7 +124,7 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
           </label>
 
           <div className="grid gap-1">
-            <span id="markup-type" className={LABEL}>Markup type</span>
+            <span id="markup-type" className={LABEL}>{translate("Markup type")}</span>
             <div role="radiogroup" aria-labelledby="markup-type" className="flex h-9 rounded-lg border border-line-strong bg-white p-0.5 max-sm:h-11">
               {(['percent', 'fixed'] as const).map((kind) => (
                 <button
@@ -135,14 +137,14 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
                     config.markup_type === kind ? 'bg-shop-ink text-white' : 'text-neutral-fg hover:bg-neutral-bg'
                   }`}
                 >
-                  {kind === 'percent' ? '%' : 'Fixed'}
+                  {kind === 'percent' ? '%' : translate('Fixed')}
                 </button>
               ))}
             </div>
           </div>
 
           <label className="col-span-2 grid gap-1">
-            <span className={LABEL}>Markup {config.markup_type === 'percent' ? '(%)' : `(${currency})`}</span>
+            <span className={LABEL}>{translate("Markup")}{' '}{config.markup_type === 'percent' ? '(%)' : `(${currency})`}</span>
             <input
               type="number"
               min={0}
@@ -154,17 +156,17 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
           </label>
 
           <label className="grid gap-1">
-            <span className={LABEL}>Extras label</span>
+            <span className={LABEL}>{translate("Extras label")}</span>
             <input
               type="text"
-              placeholder="e.g. Visa support fee"
+              placeholder={translate("e.g. Visa support fee")}
               value={config.extras_label ?? ''}
               onChange={(e) => patch({ extras_label: e.target.value })}
               className={FIELD}
             />
           </label>
           <label className="grid gap-1">
-            <span className={LABEL}>Extras amount</span>
+            <span className={LABEL}>{translate("Extras amount")}</span>
             <input
               type="number"
               min={0}
@@ -176,20 +178,20 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
           </label>
 
           <label className="grid gap-1">
-            <span className={LABEL}>Rounding</span>
+            <span className={LABEL}>{translate("Rounding")}</span>
             <select
               value={config.rounding_mode}
               onChange={(e) => patch({ rounding_mode: e.target.value as DraftConfig['rounding_mode'] })}
               className={FIELD}
             >
-              <option value="none">None (2dp)</option>
-              <option value="round">Round to whole</option>
-              <option value="ceil">Ceiling (always up)</option>
-              <option value="floor">Floor (always down)</option>
+              <option value="none">{translate("None (2dp)")}</option>
+              <option value="round">{translate("Round to whole")}</option>
+              <option value="ceil">{translate("Ceiling (always up)")}</option>
+              <option value="floor">{translate("Floor (always down)")}</option>
             </select>
           </label>
           <label className="grid gap-1">
-            <span className={LABEL}>Valid until</span>
+            <span className={LABEL}>{translate("Valid until")}</span>
             <input
               type="date"
               value={config.valid_until ?? ''}
@@ -199,11 +201,11 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
           </label>
 
           <label className="col-span-2 grid gap-1">
-            <span className={LABEL}>Internal notes</span>
+            <span className={LABEL}>{translate("Internal notes")}</span>
             <textarea
               rows={2}
               className="resize-y rounded-lg border border-line-strong px-2.5 py-2 text-sm"
-              placeholder="Optional notes for staff"
+              placeholder={translate("Optional notes for staff")}
               value={config.notes ?? ''}
               onChange={(e) => patch({ notes: e.target.value })}
             />
@@ -212,8 +214,7 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
 
         <div className="flex justify-end">
           <Button size="sm" variant="ghost" disabled={saving} onClick={() => void save(config)} className="text-shop-accent">
-            Save now
-          </Button>
+            {translate("Save now")}</Button>
         </div>
       </section>
 
@@ -221,34 +222,33 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
         <div className="mb-1.5 flex items-center justify-between">
           <span id="internal-h" className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.06em] text-slate-700 uppercase">
             <Lock className="size-3.5" aria-hidden="true" />
-            Internal only · never sent
-          </span>
+            {translate("Internal only · never sent")}</span>
           <span className="text-xs text-shop-muted tabular-nums">
-            {items.length} item{items.length === 1 ? '' : 's'}
+            {translate("{count} item{suffix}", { count: items.length, suffix: items.length === 1 ? '' : 's' })}
           </span>
         </div>
         {!hasItems || !pricing ? (
-          <p className="py-3 text-center text-sm text-shop-muted">Select options to see pricing.</p>
+          <p className="py-3 text-center text-sm text-shop-muted">{translate("Select options to see pricing.")}</p>
         ) : (
           <>
-            <Row label="Net total" value={fmt(pricing.net_total, currency)} />
+            <Row label={translate("Net total")} value={fmt(pricing.net_total, currency)} />
             <Row
-              label={`Markup (${config.markup_type === 'percent' ? `${Number(config.markup_value)}%` : 'fixed'})`}
+              label={translate("Markup ({value0})", { value0: translate(String(config.markup_type === 'percent' ? `${Number(config.markup_value)}%` : 'fixed')) })}
               value={`+ ${fmt(pricing.markup_amount, currency)}`}
             />
             {pricing.extras_amount > 0 && (
               <Row label={config.extras_label || 'Extras'} value={`+ ${fmt(pricing.extras_amount, currency)}`} />
             )}
-            {rounding > 0.004 && <Row label="Rounding" value={`+ ${fmt(rounding, currency)}`} />}
+            {rounding > 0.004 && <Row label={translate("Rounding")} value={`+ ${fmt(rounding, currency)}`} />}
             <div className="my-1.5 h-px bg-line-strong" />
             <div className="flex items-center justify-between gap-3 text-sm font-bold tabular-nums">
-              <span>Gross margin</span>
+              <span>{translate("Gross margin")}</span>
               <span className={underCost ? 'text-danger' : 'text-shop-accent'}>
                 {fmt(pricing.gross_margin, currency)}
                 {pricing.gross_margin_pct != null ? ` · ${pricing.gross_margin_pct}%` : ''}
               </span>
             </div>
-            {underCost && <span className="text-xs font-semibold text-danger">Selling below cost</span>}
+            {underCost && <span className="text-xs font-semibold text-danger">{translate("Selling below cost")}</span>}
           </>
         )}
       </section>
@@ -256,17 +256,16 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
       <section aria-labelledby="customer-h" className="flex flex-col gap-1.5 rounded-[10px] border-2 border-shop-accent bg-white px-4 py-3.5">
         <span id="customer-h" className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.06em] text-shop-accent uppercase">
           <Eye className="size-3.5" aria-hidden="true" />
-          Customer sees
-        </span>
+          {translate("Customer sees")}</span>
         <div className="flex items-baseline justify-between gap-3">
-          <span>Selling price</span>
+          <span>{translate("Selling price")}</span>
           <span className="text-[28px] font-extrabold tracking-[-0.01em] tabular-nums">
             {hasItems && pricing ? fmt(pricing.selling_price, currency) : '—'}
           </span>
         </div>
         <span className="text-[13px] text-shop-muted">
           {customerLine}
-          {config.valid_until ? ` · valid until ${formatDate(config.valid_until)}` : ''}
+          {config.valid_until ? translate(" · valid until {value0}", { value0: translate(String(formatDate(config.valid_until))) }) : ''}
         </span>
       </section>
     </div>

@@ -1,3 +1,4 @@
+import { t as translate, translateCount, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CircleAlert, Pencil, Plus, Search } from 'lucide-react'
@@ -30,6 +31,7 @@ import { formatPhone, formatWhen } from '../lib/leads'
 import { dealerInitials, dealerStats, destinationOptions, filterDealers, GROUPS_ONLY, serviceLabel } from '../lib/dealerView'
 
 export default function DealersPage() {
+  useI18n()
   const { admin } = useAuth()
   const { query, setPlaceholder } = useSearch()
   const { confirm, dialog } = useConfirm()
@@ -117,21 +119,19 @@ export default function DealersPage() {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-24 sm:p-6">
       <PageHeader
-        title="Dealers"
+        title={translate("Dealers")}
         subtitle={
           <>
-            <strong>{dealers.length}</strong> supplier{dealers.length === 1 ? '' : 's'} ·{' '}
-            <strong>{groupCount}</strong> WhatsApp group{groupCount === 1 ? '' : 's'} · used for RFQs from any lead
-          </>
+            {translateCount('{count} supplier{suffix}', dealers.length, { suffix: dealers.length === 1 ? '' : 's' })} ·{' '}
+            {translateCount('{count} WhatsApp group{suffix}', groupCount, { suffix: groupCount === 1 ? '' : 's' })}{' '}{translate("· used for RFQs from any lead")}</>
         }
         actions={
           <>
             {admin?.role === 'admin' && (
-              <Button onClick={() => setCountryCodesOpen(true)}>Manage country codes</Button>
+              <Button onClick={() => setCountryCodesOpen(true)}>{translate("Manage country codes")}</Button>
             )}
             <Button variant="primary" icon={<Plus />} onClick={() => setDealerEditor(null)}>
-              Add dealer
-            </Button>
+              {translate("Add dealer")}</Button>
           </>
         }
       />
@@ -139,22 +139,21 @@ export default function DealersPage() {
       {unmatched.length > 0 && (
         <Banner
           tone="warning"
-          title={`${unmatched.length} unmatched dealer message${unmatched.length === 1 ? '' : 's'}`}
+          title={translate("{value0} unmatched dealer message{value1}", { value0: translate(String(unmatched.length)), value1: translate(String(unmatched.length === 1 ? '' : 's')) })}
           action={
             <button type="button" onClick={() => setUnmatchedOpen((open) => !open)} aria-expanded={unmatchedOpen}>
-              {unmatchedOpen ? 'Hide' : 'Review'}
+              {unmatchedOpen ? translate('Hide') : translate('Review')}
             </button>
           }
         >
-          These replies did not carry a REQ code, so they could not be matched to a lead.
-        </Banner>
+          {translate("These replies did not carry a REQ code, so they could not be matched to a lead.")}</Banner>
       )}
 
       {actionError && (
         <Banner
           tone="danger"
-          title="That did not work"
-          action={<button type="button" onClick={() => setActionError(null)}>Dismiss</button>}
+          title={translate("That did not work")}
+          action={<button type="button" onClick={() => setActionError(null)}>{translate("Dismiss")}</button>}
         >
           {actionError}
         </Banner>
@@ -166,7 +165,7 @@ export default function DealersPage() {
             {unmatched.slice(0, 5).map((msg: UnmatchedDealerMessage) => (
               <div key={msg.id} className="rounded-lg bg-shop-bg px-3 py-2 text-sm">
                 <div className="text-xs text-shop-muted">
-                  {msg.from_number || msg.group_id} · {formatWhen(msg.created_at || '')}
+                  {msg.from_number || msg.group_id} · <bdi dir="ltr">{formatWhen(msg.created_at || '')}</bdi>
                 </div>
                 <p className="mt-1 line-clamp-3 whitespace-pre-wrap">{msg.body}</p>
                 <button
@@ -174,8 +173,7 @@ export default function DealersPage() {
                   className="mt-1 text-xs font-semibold text-shop-accent hover:underline"
                   onClick={() => void resolveUnmatchedDealerMessage(msg.id).then(() => void load())}
                 >
-                  Mark resolved
-                </button>
+                  {translate("Mark resolved")}</button>
               </div>
             ))}
           </div>
@@ -187,45 +185,44 @@ export default function DealersPage() {
       )}
 
       <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
-        {loading && <TableSkeleton rows={5} label="Loading dealers" />}
+        {loading && <TableSkeleton rows={5} label={translate("Loading dealers")} />}
         {!loading && error && (
           <EmptyState
             tone="danger"
             icon={<CircleAlert />}
-            title="Dealers could not be loaded"
-            description={error}
-            action={<Button variant="primary" onClick={() => void load()}>Retry</Button>}
+            title={translate("Dealers could not be loaded")}
+            description={translate(error)}
+            action={<Button variant="primary" onClick={() => void load()}>{translate("Retry")}</Button>}
           />
         )}
         {!loading && !error && filtered.length === 0 && (
           <EmptyState
             tone={dealers.length ? 'neutral' : 'default'}
             icon={dealers.length ? <Search /> : undefined}
-            title={dealers.length ? 'No dealers match' : 'No dealers yet'}
-            description={dealers.length ? 'Try a different name, phone number or destination, or clear the filter.' : 'Add a dealer so you can send RFQs from a lead.'}
+            title={dealers.length ? translate("No dealers match") : translate("No dealers yet")}
+            description={dealers.length ? translate("Try a different name, phone number or destination, or clear the filter.") : translate("Add a dealer so you can send RFQs from a lead.")}
             action={
               dealers.length ? (
-                <Button onClick={() => setDestination('all')}>Clear filters</Button>
+                <Button onClick={() => setDestination('all')}>{translate("Clear filters")}</Button>
               ) : (
                 <Button variant="primary" onClick={() => setDealerEditor(null)}>
-                  Add dealer
-                </Button>
+                  {translate("Add dealer")}</Button>
               )
             }
           />
         )}
         {!loading && !error && filtered.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
+            <table className="w-full min-w-[860px] text-start text-sm">
               <thead>
                 <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
-                  <th className="px-3.5 py-2.5">Dealer</th>
+                  <th className="px-3.5 py-2.5">{translate("Dealer")}</th>
                   <th className="px-3 py-2.5">WhatsApp</th>
-                  <th className="px-3 py-2.5">Destinations</th>
-                  <th className="px-3 py-2.5">Services</th>
-                  <th className="px-3 py-2.5">Activity</th>
+                  <th className="px-3 py-2.5">{translate("Destinations")}</th>
+                  <th className="px-3 py-2.5">{translate("Services")}</th>
+                  <th className="px-3 py-2.5">{translate("Activity")}</th>
                   <th className="relative w-24 px-3.5 py-2.5">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{translate("Actions")}</span>
                   </th>
                 </tr>
               </thead>
@@ -250,10 +247,10 @@ export default function DealersPage() {
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex flex-col items-start gap-0.5">
-                          <span className="tabular-nums">{formatPhone(dealer.phone)}</span>
+                          <span className="tabular-nums"><bdi dir="ltr">{formatPhone(dealer.phone)}</bdi></span>
                           <div className="flex gap-1">
-                            <StatusBadge label="Direct" tone="success" />
-                            {dealer.whatsapp_group_id && <StatusBadge label="Group" tone="info" />}
+                            <StatusBadge label={translate("Direct")} tone="success" />
+                            {dealer.whatsapp_group_id && <StatusBadge label={translate("Group")} tone="info" />}
                           </div>
                         </div>
                       </td>
@@ -276,13 +273,12 @@ export default function DealersPage() {
                       <td className="px-3 py-3">
                         {stats.rfqs ? (
                           <div className="flex flex-col tabular-nums">
-                            <span>{stats.lastAt ? `Last RFQ ${formatWhen(stats.lastAt)}` : `${stats.rfqs} RFQs`}</span>
+                            <span>{stats.lastAt ? translate("Last RFQ {value0}", { value0: translate(String(formatWhen(stats.lastAt))) }) : translate("{value0} RFQs", { value0: translate(String(stats.rfqs)) })}</span>
                             <span className="text-xs text-shop-muted">
-                              {stats.rfqs} RFQ{stats.rfqs === 1 ? '' : 's'} · {stats.replyRate}% reply
-                            </span>
+                              {translate('{count} RFQ{suffix}', { count: stats.rfqs, suffix: stats.rfqs === 1 ? '' : 's' })} · {stats.replyRate}{translate("% reply")}</span>
                           </div>
                         ) : (
-                          <span className="text-shop-muted">No RFQs yet</span>
+                          <span className="text-shop-muted">{translate("No RFQs yet")}</span>
                         )}
                       </td>
                       <td className="px-3.5 py-3">
@@ -291,23 +287,23 @@ export default function DealersPage() {
                             variant="ghost"
                             size="sm"
                             iconOnly
-                            aria-label={`Edit ${dealer.name}`}
+                            aria-label={translate("Edit {value0}", { value0: translate(String(dealer.name)) })}
                             icon={<Pencil />}
                             onClick={() => setDealerEditor(dealer)}
                           />
                           <OverflowMenu
-                            label={`More actions for ${dealer.name}`}
+                            label={translate("More actions for {value0}", { value0: translate(String(dealer.name)) })}
                             items={[
-                              { id: 'inbox', label: 'Open Inbox', onClick: () => navigate('/inbox') },
+                              { id: 'inbox', label: translate("Open Inbox"), onClick: () => navigate('/inbox') },
                               {
                                 id: 'delete',
-                                label: 'Delete dealer…',
+                                label: translate("Delete dealer…"),
                                 tone: 'danger',
                                 onClick: async () => {
                                   const ok = await confirm({
-                                    title: `Delete ${dealer.name}?`,
-                                    description: 'The dealer is removed from the list. RFQs already sent to them stay on their leads.',
-                                    confirmLabel: 'Delete dealer',
+                                    title: translate("Delete {value0}?", { value0: translate(String(dealer.name)) }),
+                                    description: translate("The dealer is removed from the list. RFQs already sent to them stay on their leads."),
+                                    confirmLabel: translate("Delete dealer"),
                                   })
                                   if (!ok) return
                                   setActionError(null)
@@ -315,7 +311,7 @@ export default function DealersPage() {
                                     await deleteDealer(dealer.id)
                                     await load()
                                   } catch (err) {
-                                    setActionError(err instanceof Error ? err.message : 'Failed to delete dealer')
+                                    setActionError(err instanceof Error ? err.message : translate("Failed to delete dealer"))
                                   }
                                 },
                               },

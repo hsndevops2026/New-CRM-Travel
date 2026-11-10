@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -12,14 +13,14 @@ type Props = {
 }
 
 export default function ProtectedRoute({ children, customerOnly = false, staffOnly = false }: Props) {
+  useI18n()
   const { admin, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-shop-bg text-sm text-shop-muted">
-        Checking session…
-      </div>
+        {translate("Checking session…")}</div>
     )
   }
 

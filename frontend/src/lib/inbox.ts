@@ -1,3 +1,4 @@
+import { locale } from './i18n'
 import { apiFetch } from './api'
 
 export type ThreadKind = 'customer' | 'dealer' | 'group'
@@ -98,7 +99,7 @@ export function formatThreadTime(iso: string | null | undefined) {
   const now = new Date()
   const sameDay = d.toDateString() === now.toDateString()
   if (sameDay) {
-    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
   }
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return d.toLocaleDateString(locale(), { month: 'short', day: 'numeric' })
 }

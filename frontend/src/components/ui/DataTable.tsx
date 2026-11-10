@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import type { KeyboardEvent, ReactNode } from 'react'
 
 type Column<T> = {
@@ -22,8 +23,9 @@ export default function DataTable<T>({
   emptyLabel = 'No rows',
   onRowClick,
 }: Props<T>) {
+  useI18n()
   if (!rows.length) {
-    return <p className="px-4 py-16 text-center text-sm text-shop-muted">{emptyLabel}</p>
+    return <p className="px-4 py-16 text-center text-sm text-shop-muted">{translate(emptyLabel)}</p>
   }
 
   const activate = (row: T) => onRowClick?.(row)
@@ -40,12 +42,12 @@ export default function DataTable<T>({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
+      <table className="min-w-full text-start text-sm">
         <thead>
           <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
             {columns.map((col) => (
               <th key={col.key} className={`whitespace-nowrap px-3 py-2.5 ${col.className || ''}`}>
-                {col.header}
+                {translate(col.header)}
               </th>
             ))}
           </tr>

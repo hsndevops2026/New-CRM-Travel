@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState } from 'react'
 import Button from './ui/Button'
 import {
@@ -14,6 +15,7 @@ type Props = {
 }
 
 export default function PackageOfferBanner({ lead, onUpdated }: Props) {
+  useI18n()
   const [offer, setOffer] = useState<PackageOfferInfo | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,24 +56,22 @@ export default function PackageOfferBanner({ lead, onUpdated }: Props) {
 
   return (
     <section className="rounded-xl border border-violet-200 bg-violet-50 p-4">
-      <h2 className="text-sm font-semibold text-violet-900">Predefined package available</h2>
+      <h2 className="text-sm font-semibold text-violet-900">{translate("Predefined package available")}</h2>
       <p className="mt-1 text-sm text-violet-800">
-        <strong>{offer.package.title}</strong>
+        <strong>{translate(offer.package.title)}</strong>
         {offer.package.destination ? ` · ${offer.package.destination}` : ''}
-        {offer.package.nights ? ` · ${offer.package.nights} nights` : ''}
+        {offer.package.nights ? translate(" · {value0} nights", { value0: translate(String(offer.package.nights)) }) : ''}
       </p>
       <p className="mt-1 text-xs text-violet-700">
-        Accept to attach this package, or decline to search flights/hotels via APIs.
-      </p>
+        {translate("Accept to attach this package, or decline to search flights/hotels via APIs.")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="primary" disabled={busy} onClick={() => void handleAccept()}>
-          {busy ? 'Working…' : 'Accept package'}
+          {busy ? translate('Working…') : translate("Accept package")}
         </Button>
         <Button disabled={busy} onClick={() => void handleDecline()}>
-          Search APIs instead
-        </Button>
+          {translate("Search APIs instead")}</Button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-700">{translate(error)}</p>}
     </section>
   )
 }

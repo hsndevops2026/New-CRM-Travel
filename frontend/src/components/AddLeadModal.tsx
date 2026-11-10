@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState, type FormEvent } from 'react'
 import { createLead, type Lead, type LeadInput } from '../lib/leads'
 import Button from './ui/Button'
@@ -37,6 +38,7 @@ const TYPES: Array<{ id: LeadInput['booking_type']; label: string }> = [
 const inputClass = 'min-h-11 rounded-lg border border-shop-border px-3 py-2'
 
 export default function AddLeadModal({ open, onClose, onCreated, initialPhone }: Props) {
+  useI18n()
   const [form, setForm] = useState<LeadInput>({ ...emptyForm, phone: initialPhone ?? '' })
   // Opening for a different number starts the form over with that number in it.
   const [seededPhone, setSeededPhone] = useState(initialPhone ?? '')
@@ -78,24 +80,23 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
   return (
     <ModalDrawer
       open={open}
-      title="Add lead"
+      title={translate("Add lead")}
       subtitle="Contact, trip, then any notes."
       onClose={onClose}
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" onClick={onClose}>
-            Cancel
-          </Button>
+            {translate("Cancel")}</Button>
           <Button type="submit" form="add-lead-form" variant="primary" disabled={saving}>
-            {saving ? 'Saving…' : 'Save lead'}
+            {saving ? translate("Saving…") : translate("Save lead")}
           </Button>
         </div>
       }
     >
       <form id="add-lead-form" onSubmit={submit} className="space-y-6">
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-shop-muted">Contact</h3>
-          <Field label="Phone">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-shop-muted">{translate("Contact")}</h3>
+          <Field label={translate("Phone")}>
             <input
               required
               className={inputClass}
@@ -107,9 +108,9 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
         </section>
 
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-shop-muted">Trip</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-shop-muted">{translate("Trip")}</h3>
           <div>
-            <span className="mb-1 block text-sm font-medium">Booking type</span>
+            <span className="mb-1 block text-sm font-medium">{translate("Booking type")}</span>
             <div className="flex flex-wrap gap-1">
               {TYPES.map((type) => (
                 <button
@@ -122,14 +123,14 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
                       : 'bg-shop-bg text-shop-muted ring-1 ring-shop-border'
                   }`}
                 >
-                  {type.label}
+                  {translate(type.label)}
                 </button>
               ))}
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {showOrigin && (
-              <Field label="Origin" hint="Airport code or city">
+              <Field label={translate("Origin")} hint={translate("Airport code or city")}>
                 <PlaceAutocomplete
                   mode="airport"
                   required
@@ -140,7 +141,7 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
                 />
               </Field>
             )}
-            <Field label="Destination">
+            <Field label={translate("Destination")}>
               <PlaceAutocomplete
                 mode={form.booking_type === 'flight' ? 'airport' : 'hotel'}
                 required
@@ -149,7 +150,7 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
                 onChange={(value) => set('destination', value)}
               />
             </Field>
-            <Field label={form.booking_type === 'flight' ? 'Departure date' : 'Check-in'}>
+            <Field label={form.booking_type === 'flight' ? translate("Departure date") : translate("Check-in")}>
               <input
                 required
                 type="date"
@@ -158,7 +159,7 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
                 onChange={(e) => set('travel_date', e.target.value)}
               />
             </Field>
-            <Field label={form.booking_type === 'flight' ? 'Return date' : 'Check-out'}>
+            <Field label={form.booking_type === 'flight' ? translate("Return date") : translate("Check-out")}>
               <input
                 required
                 type="date"
@@ -167,7 +168,7 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
                 onChange={(e) => set('return_date', e.target.value)}
               />
             </Field>
-            <Field label="Adults">
+            <Field label={translate("Adults")}>
               <input
                 required
                 type="number"
@@ -177,7 +178,7 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
                 onChange={(e) => set('adults_count', Number(e.target.value))}
               />
             </Field>
-            <Field label="Children">
+            <Field label={translate("Children")}>
               <input
                 type="number"
                 min={0}
@@ -187,17 +188,17 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
               />
             </Field>
             {Number(form.children_count) > 0 && (
-              <Field label="Children ages (comma separated)" className="sm:col-span-2">
+              <Field label={translate("Children ages (comma separated)")} className="sm:col-span-2">
                 <input
                   className={inputClass}
-                  placeholder="5, 8"
+                  placeholder={translate("5, 8")}
                   value={typeof form.children_ages === 'string' ? form.children_ages : ''}
                   onChange={(e) => set('children_ages', e.target.value)}
                 />
               </Field>
             )}
             {form.booking_type === 'hotel' && (
-              <Field label="Hotel name (optional)" className="sm:col-span-2">
+              <Field label={translate("Hotel name (optional)")} className="sm:col-span-2">
                 <PlaceAutocomplete
                   mode="hotel"
                   className={`${inputClass} w-full`}
@@ -210,8 +211,8 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
         </section>
 
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-shop-muted">Notes</h3>
-          <Field label="Notes (optional)">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-shop-muted">{translate("Notes")}</h3>
+          <Field label={translate("Notes (optional)")}>
             <textarea
               className="min-h-24 rounded-lg border border-shop-border px-3 py-2"
               value={form.notes || ''}
@@ -220,7 +221,7 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
           </Field>
         </section>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</p>}
       </form>
     </ModalDrawer>
   )

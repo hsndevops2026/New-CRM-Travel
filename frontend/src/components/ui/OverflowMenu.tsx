@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { MoreHorizontal } from 'lucide-react'
@@ -20,6 +21,7 @@ type Props = {
 }
 
 export default function OverflowMenu({ items, label = 'More actions', align = 'right', trigger, portal = false }: Props) {
+  useI18n()
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -81,7 +83,7 @@ export default function OverflowMenu({ items, label = 'More actions', align = 'r
       role="menu"
       style={portal ? (position ? { top: position.top, left: position.left } : { top: 0, left: 0, visibility: 'hidden' }) : undefined}
       className={`${portal ? 'fixed z-[120]' : 'absolute z-20 mt-1'} min-w-44 rounded-lg border border-shop-border bg-white p-1 shadow-lg ${
-        portal ? '' : align === 'left' ? 'left-0' : 'right-0'
+        portal ? '' : align === 'left' ? 'start-0' : 'end-0'
       }`}
     >
       {visible.map((item) => (
@@ -90,7 +92,7 @@ export default function OverflowMenu({ items, label = 'More actions', align = 'r
           type="button"
           role="menuitem"
           disabled={item.disabled}
-          className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium disabled:opacity-50 max-sm:py-3 ${
+          className={`w-full rounded-md px-3 py-2 text-start text-sm font-medium disabled:opacity-50 max-sm:py-3 ${
             item.tone === 'danger'
               ? 'text-danger hover:bg-danger-bg'
               : 'text-shop-ink hover:bg-neutral-bg'
@@ -101,7 +103,7 @@ export default function OverflowMenu({ items, label = 'More actions', align = 'r
             item.onClick()
           }}
         >
-          {item.label}
+          {translate(item.label)}
         </button>
       ))}
     </div>
@@ -114,7 +116,7 @@ export default function OverflowMenu({ items, label = 'More actions', align = 'r
       ) : (
         <button
           type="button"
-          aria-label={label}
+          aria-label={translate(label)}
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={(event) => {

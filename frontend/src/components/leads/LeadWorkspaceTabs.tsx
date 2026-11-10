@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { QUOTE_STEPS, type QuoteStep } from '../../lib/lifecycle'
 import type { TabBadges } from '../../lib/leadTabs'
 import StatusBadge from '../ui/StatusBadge'
@@ -13,8 +14,9 @@ type Props = {
  * to say. Underline-style tabs (design: 44px, 2px teal rule on the current one).
  */
 export default function LeadWorkspaceTabs({ step, onSelect, badges = {} }: Props) {
+  useI18n()
   return (
-    <nav aria-label="Lead workspace steps" className="-mx-2 flex gap-0.5 overflow-x-auto max-md:mx-0 max-md:gap-1.5 max-md:px-2 max-md:pb-2">
+    <nav aria-label={translate("Lead workspace steps")} className="-mx-2 flex gap-0.5 overflow-x-auto max-md:mx-0 max-md:gap-1.5 max-md:px-2 max-md:pb-2">
       {QUOTE_STEPS.map((item, index) => {
         const on = step === item.id
         const badge = badges[item.id]
@@ -39,10 +41,10 @@ export default function LeadWorkspaceTabs({ step, onSelect, badges = {} }: Props
               {index + 1}
             </span>
             <span className="hidden max-md:inline tabular-nums">{index + 1}</span>
-            {item.label}
+            {translate(item.label)}
             {badge ? (
               <StatusBadge
-                label={badge.label}
+                label={translate(badge.label)}
                 tone={badge.tone === 'warning' ? 'warning' : badge.tone === 'success' ? 'success' : 'neutral'}
                 className="tabular-nums"
               />

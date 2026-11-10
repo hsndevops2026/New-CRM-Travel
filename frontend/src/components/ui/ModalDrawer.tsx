@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
@@ -23,6 +24,7 @@ export default function ModalDrawer({
   maxWidthClassName = 'max-w-2xl',
   variant = 'dialog',
 }: Props) {
+  useI18n()
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
@@ -95,13 +97,13 @@ export default function ModalDrawer({
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-shop-border px-4 py-4 sm:px-5">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-lg font-bold">{title}</h2>
-            {subtitle ? <p className="mt-0.5 truncate text-sm text-shop-muted">{subtitle}</p> : null}
+            <h2 id={titleId} className="text-lg font-bold">{translate(title)}</h2>
+            {subtitle ? <p className="mt-0.5 truncate text-sm text-shop-muted">{translate(subtitle)}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={translate("Close")}
             className="flex size-9 items-center justify-center rounded-lg text-neutral-fg hover:bg-neutral-bg max-sm:size-11"
           >
             <X className="size-4" aria-hidden="true" />

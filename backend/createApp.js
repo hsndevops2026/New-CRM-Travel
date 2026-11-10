@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import crypto from 'crypto';
 import Redis from 'ioredis';
+import { rateLimit } from 'express-rate-limit';
 import whatsappRoutes from './routes/whatsapp.js';
 import authRoutes from './routes/auth.js';
 import leadsRoutes from './routes/leads.js';
@@ -35,7 +36,27 @@ import { requireRole } from './middleware/requireRole.js';
 
 export function createApp() {
   const app = express();
+  const rateLimitOptions = {
+    windowMs: 60_000,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Try again shortly.' },
+  };
+  const quoteLimiter = rateLimit({ ...rateLimitOptions, limit: 120 });
+  const webhookLimiter = rateLimit({ ...rateLimitOptions, limit: 6000 });
+  const userLimiter = rateLimit({
+    ...rateLimitOptions,
+    limit: 600,
+    keyGenerator: (req) => req.admin.id,
+  });
   app.set('trust proxy', 1);
+  app.disable('x-powered-by');
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    next();
+  });
   const apiMode = String(process.env.APP_MODE || 'all').toLowerCase();
 
   const corsOrigins = String(process.env.CORS_ORIGINS || '')
@@ -150,14 +171,16 @@ export function createApp() {
     return res.status(report.ok ? 200 : 503).json(report);
   });
 
+  app.use('/webhook/whatsapp', webhookLimiter);
   app.use('/webhook', whatsappRoutes);
   app.use('/api/auth', authRoutes);
   // Public share routes must be registered before any app.use('/api', requireAuth, …)
   // mounts, otherwise requireAuth intercepts /api/q/:token with 401.
+  app.use('/api/q', quoteLimiter);
   app.use('/api', quoteVersionsPublicRoutes);
   // Customer portal — before staff agentLeadAccess (which rejects role=customer).
-  app.use('/api/portal', requireAuth, requireRole('customer'), portalRoutes);
-  app.use('/api', requireAuth, agentLeadAccess);
+  app.use('/api/portal', requireAuth, requireRole('customer'), userLimiter, portalRoutes);
+  app.use('/api', requireAuth, userLimiter, agentLeadAccess);
   app.use('/api/permissions', permissionsRoutes);
   app.use('/api', requireAuth, leadsRoutes);
   app.use('/api', requireAuth, flightsRoutes);

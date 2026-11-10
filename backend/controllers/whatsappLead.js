@@ -1,3 +1,5 @@
+import { getAiHandover, hasArabic, isHumanRequest, pauseAi } from '../services/aiHandover.js';
+import { getCustomerText } from '../services/customerTexts.js';
 import {
   getActiveConversationOrExpire,
   createConversation,
@@ -487,6 +489,19 @@ export async function handleIncomingLeadMessage({
       status: 'received',
       raw: { kind: 'customer', ...messageMeta },
     });
+  }
+
+  // Human takeover: an agent is handling this customer, so the bot stays quiet.
+  const handover = await getAiHandover(phone);
+  if (handover.paused) {
+    console.log(`[handover] AI paused for ${phone}; message stored, no bot reply`);
+    return { phone, complete: false, missing: [], collected: conversation.collected || {}, reply: '', ai_paused: true };
+  }
+  if (isHumanRequest(messageText)) {
+    await pauseAi(phone, { reason: 'customer_request' });
+    const reply = getCustomerText('humanHandover', hasArabic(messageText) ? 'ar' : 'en');
+    await replyToUser(phone, reply, skipWhatsApp, { conversationId: conversation.id, leadId: existingLead?.id || null });
+    return { phone, complete: false, missing: [], collected: conversation.collected || {}, reply, ai_paused: true, human_requested: true };
   }
 
   const pendingHotelOption = await handleHotelOptionDecision({

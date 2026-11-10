@@ -759,6 +759,19 @@ export async function runMigrations() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS contact_reminders_contact_id_idx ON contact_reminders (contact_id);
   `);
+  // Human takeover: while paused, the WhatsApp bot stores messages but never replies.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ai_handover (
+      phone VARCHAR(32) PRIMARY KEY,
+      paused BOOLEAN NOT NULL DEFAULT FALSE,
+      paused_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      paused_at TIMESTAMPTZ,
+      resumed_at TIMESTAMPTZ,
+      reason VARCHAR(32),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   // Customer reminders: opt-in per reminder, sent at remind_at by the worker sweep.
   await pool.query(`
     ALTER TABLE contact_reminders

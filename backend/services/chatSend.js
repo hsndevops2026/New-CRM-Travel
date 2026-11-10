@@ -1,3 +1,4 @@
+import { pauseAi } from './aiHandover.js';
 import { query } from '../config/database.js';
 import { normalizeGroupJid, sendTextMessage } from './wasender.js';
 import { saveMessage } from './messages.js';
@@ -35,6 +36,9 @@ export async function sendCustomerMessage({ leadId, phone, body, actorId }) {
     status: 'sent',
     raw: { kind: 'customer', actor_id: actorId || null },
   });
+
+  // An agent replying takes the chat over from the bot.
+  if (actorId) await pauseAi(targetPhone, { actorId, reason: 'agent_reply' });
 
   return { message, lead };
 }

@@ -2,6 +2,16 @@ import { Router } from 'express';
 import { listThreads, getThreadMessages, parseThreadId } from '../services/inbox.js';
 import { sendCustomerMessage, sendDealerMessage, sendGroupMessage } from '../services/chatSend.js';
 import { allocateLeads } from '../services/permissions.js';
+import { getAiHandover, pauseAi, resumeAi } from '../services/aiHandover.js';
+import { getLeadById } from '../services/leads.js';
+
+async function customerPhoneForThread(threadId) {
+  const parsed = parseThreadId(threadId);
+  if (!parsed || parsed.kind !== 'customer') return null;
+  if (parsed.byPhone) return parsed.id;
+  const lead = await getLeadById(parsed.id);
+  return lead?.phone || null;
+}
 
 const router = Router();
 
@@ -26,6 +36,30 @@ router.get('/inbox/threads/:threadId/messages', async (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message || 'Failed to load messages' });
+  }
+});
+
+router.get('/inbox/threads/:threadId/ai', async (req, res) => {
+  try {
+    const phone = await customerPhoneForThread(req.params.threadId);
+    if (!phone) return res.status(404).json({ error: 'Customer conversation not found' });
+    res.json({ handover: await getAiHandover(phone) });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message || 'Failed to load AI status' });
+  }
+});
+
+router.post('/inbox/threads/:threadId/ai', async (req, res) => {
+  try {
+    const phone = await customerPhoneForThread(req.params.threadId);
+    if (!phone) return res.status(404).json({ error: 'Customer conversation not found' });
+    if (typeof req.body?.paused !== 'boolean') return res.status(400).json({ error: 'paused must be true or false' });
+    const actor = { actorId: req.admin?.id, actorRole: req.admin?.role, reason: 'manual' };
+    if (req.body.paused) await pauseAi(phone, actor);
+    else await resumeAi(phone, actor);
+    res.json({ handover: await getAiHandover(phone) });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message || 'Failed to update AI status' });
   }
 });
 

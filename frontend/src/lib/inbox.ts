@@ -103,3 +103,29 @@ export function formatThreadTime(iso: string | null | undefined) {
   }
   return d.toLocaleDateString(locale(), { month: 'short', day: 'numeric' })
 }
+
+export type AiHandover = {
+  phone: string
+  paused: boolean
+  paused_by?: string | null
+  paused_by_email?: string | null
+  paused_at?: string | null
+  reason?: string | null
+}
+
+export async function fetchAiHandover(threadId: string): Promise<AiHandover> {
+  const res = await apiFetch(`/api/inbox/threads/${encodeURIComponent(threadId)}/ai`)
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Failed to load AI status')
+  return data.handover as AiHandover
+}
+
+export async function setAiPaused(threadId: string, paused: boolean): Promise<AiHandover> {
+  const res = await apiFetch(`/api/inbox/threads/${encodeURIComponent(threadId)}/ai`, {
+    method: 'POST',
+    body: JSON.stringify({ paused }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Failed to update AI status')
+  return data.handover as AiHandover
+}

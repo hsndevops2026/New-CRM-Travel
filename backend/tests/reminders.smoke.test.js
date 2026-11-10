@@ -9,6 +9,7 @@ import {
   createReminder,
   listRemindersForContact,
   listRemindersInRange,
+  sendDueCustomerReminders,
   updateReminder,
 } from '../services/reminders.js';
 import { getNavCounts } from '../services/navCounts.js';
@@ -35,7 +36,10 @@ describe('reminders smoke', () => {
     });
   });
 
+  const extraIds = [];
+
   after(async () => {
+    if (extraIds.length) await query(`DELETE FROM contact_reminders WHERE id = ANY($1::uuid[])`, [extraIds]);
     if (reminderId) await query(`DELETE FROM contact_reminders WHERE id = $1`, [reminderId]);
     if (contact?.id) await query(`DELETE FROM contacts WHERE id = $1`, [contact.id]);
     if (admin?.id) await query(`DELETE FROM admins WHERE id = $1`, [admin.id]);
@@ -58,17 +62,11 @@ describe('reminders smoke', () => {
       contact.id,
       { text: 'Call back', remind_at: at.toISOString() },
       admin.id,
-      {
-        sendWhatsApp: async (row) => {
-          waCalls.push(row);
-        },
-      },
     );
     reminderId = reminder.id;
     assert.equal(reminder.contact_name, 'Reminder Smoke');
-    assert.equal(waCalls.length, 1);
-    assert.equal(waCalls[0].id, reminder.id);
-    assert.equal(waCalls[0].text, 'Call back');
+    assert.equal(reminder.notify_customer, false);
+    assert.equal(waCalls.length, 0, 'creating a reminder must not message the customer');
 
     const listed = await listRemindersForContact(contact.id);
     assert.equal(listed.length, 1);
@@ -93,5 +91,52 @@ describe('reminders smoke', () => {
       listThreadsFn: async () => ({ threads: [] }),
     });
     assert.ok(afterDone.reminders_open >= 0);
+  });
+
+  it('never sends internal reminders to the customer', async () => {
+    const past = new Date(Date.now() - 60_000).toISOString();
+    const internal = await createReminder(contact.id, { text: 'Internal note', remind_at: past }, admin.id);
+    extraIds.push(internal.id);
+    const calls = [];
+    await sendDueCustomerReminders({ sendWhatsApp: async (row) => { calls.push(row.id); return { sent: true }; } });
+    assert.equal(calls.includes(internal.id), false);
+  });
+
+  it('sends an opted-in reminder once, only after its time', async () => {
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    const reminder = await createReminder(
+      contact.id,
+      { text: 'Passport copy please', remind_at: future, notify_customer: true },
+      admin.id,
+    );
+    extraIds.push(reminder.id);
+    assert.equal(reminder.notify_customer, true);
+
+    const calls = [];
+    const send = async (row) => { calls.push(row.id); return { sent: true }; };
+    await sendDueCustomerReminders({ sendWhatsApp: send });
+    assert.equal(calls.includes(reminder.id), false, 'not before remind_at');
+
+    const later = new Date(Date.now() + 2 * 3_600_000);
+    await sendDueCustomerReminders({ now: later, sendWhatsApp: send });
+    await sendDueCustomerReminders({ now: later, sendWhatsApp: send });
+    assert.equal(calls.filter((id) => id === reminder.id).length, 1, 'sent exactly once');
+  });
+
+  it('retries on the next sweep when the send fails', async () => {
+    const past = new Date(Date.now() - 60_000).toISOString();
+    const reminder = await createReminder(
+      contact.id,
+      { text: 'Retry me', remind_at: past, notify_customer: true },
+      admin.id,
+    );
+    extraIds.push(reminder.id);
+    await sendDueCustomerReminders({ sendWhatsApp: async (row) => {
+      if (row.id === reminder.id) throw new Error('wasender down');
+      return { sent: true };
+    } });
+    const calls = [];
+    await sendDueCustomerReminders({ sendWhatsApp: async (row) => { calls.push(row.id); return { sent: true }; } });
+    assert.equal(calls.filter((id) => id === reminder.id).length, 1);
   });
 });

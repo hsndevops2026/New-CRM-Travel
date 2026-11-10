@@ -1,11 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './index.css'
-import { AuthProvider, useAuth } from './context/AuthContext.tsx'
-import { LanguageProvider } from './lib/i18n'
-import type { ReactNode } from 'react'
-import { ToastProvider } from './context/ToastProvider.tsx'
+import { AuthProvider } from './context/AuthContext.tsx'
+import InterfaceProviders from './components/InterfaceProviders.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 import AppLayout from './layouts/AppLayout.tsx'
 import CustomerLayout from './layouts/CustomerLayout.tsx'
@@ -23,17 +21,6 @@ import SettingsPage from './pages/SettingsPage.tsx'
 import PermissionsPage from './pages/PermissionsPage.tsx'
 import CustomerPortalPage from './pages/CustomerPortalPage.tsx'
 import HomeRedirect from './components/HomeRedirect.tsx'
-
-function InterfaceProviders({ children }: { children: ReactNode }) {
-  const { admin } = useAuth()
-  const { pathname } = useLocation()
-  const customerPage = pathname.startsWith('/portal') || pathname.startsWith('/quote/')
-  return (
-    <LanguageProvider userId={admin?.id} forcedLanguage={customerPage ? 'en' : undefined}>
-      <ToastProvider>{children}</ToastProvider>
-    </LanguageProvider>
-  )
-}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

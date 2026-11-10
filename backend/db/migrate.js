@@ -483,6 +483,10 @@ export async function runMigrations() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_admins_role ON admins (role);
   `);
+  // New accounts default to the least privileged staff role; existing rows keep theirs.
+  await pool.query(`
+    ALTER TABLE admins ALTER COLUMN role SET DEFAULT 'agent';
+  `);
 
   // Lead assignment and extended lifecycle status
   await pool.query(`
@@ -754,6 +758,28 @@ export async function runMigrations() {
   `);
   await pool.query(`
     CREATE INDEX IF NOT EXISTS contact_reminders_contact_id_idx ON contact_reminders (contact_id);
+  `);
+  // Customer reminders: opt-in per reminder, sent at remind_at by the worker sweep.
+  await pool.query(`
+    ALTER TABLE contact_reminders
+      ADD COLUMN IF NOT EXISTS notify_customer BOOLEAN NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ;
+  `);
+  // Reminders created before this change were already sent to the customer at
+  // creation time. Mark them sent once so the new sweep never sends them again.
+  const remindersScheduled = await pool.query(`
+    INSERT INTO app_migrations (key)
+    VALUES ('contact_reminders_scheduled_send_v1')
+    ON CONFLICT (key) DO NOTHING
+    RETURNING key
+  `);
+  if (remindersScheduled.rowCount) {
+    await pool.query(`UPDATE contact_reminders SET sent_at = created_at WHERE sent_at IS NULL`);
+  }
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS contact_reminders_due_idx
+      ON contact_reminders (remind_at)
+      WHERE notify_customer = TRUE AND sent_at IS NULL AND done_at IS NULL;
   `);
 
   // Rebuild booking_documents once — an earlier draft used url/public_id instead of file_url/title.

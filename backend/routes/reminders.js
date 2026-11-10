@@ -40,6 +40,7 @@ router.post('/contacts/:id/reminders', async (req, res) => {
       {
         text: req.body?.text,
         remind_at: req.body?.remind_at,
+        notify_customer: req.body?.notify_customer === true,
       },
       req.admin?.id || null,
     );
@@ -56,6 +57,7 @@ router.patch('/reminders/:id', async (req, res) => {
       text: req.body?.text,
       remind_at: req.body?.remind_at,
       done: req.body?.done,
+      notify_customer: typeof req.body?.notify_customer === 'boolean' ? req.body.notify_customer : undefined,
     });
     if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
     res.json({ reminder });

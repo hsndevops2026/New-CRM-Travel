@@ -12,6 +12,8 @@ import { getVoiceQueue } from './queues/voiceQueue.js';
 import { closeSimulationRedis } from './services/voiceSimulation.js';
 import { expireStaleConversations } from './services/leads.js';
 import { ensureBootstrapAdmin } from './services/admins.js';
+import { sendDueCustomerReminders } from './services/reminders.js';
+import { productionConfigProblems } from './config/productionGuard.js';
 
 const app = createApp();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +23,12 @@ const root = express();
 root.use(app);
 
 async function start() {
+  const configProblems = productionConfigProblems();
+  if (configProblems.length) {
+    for (const problem of configProblems) console.error(`Config error: ${problem}`);
+    process.exit(1);
+  }
+
   try {
     await pingDb();
     await runMigrations();
@@ -94,9 +102,31 @@ async function start() {
     if (typeof idleSweep.unref === 'function') idleSweep.unref();
   }
 
+  // Customer reminders go out at their remind_at. Runs with the workers so an
+  // API-only replica never sends; the per-row claim keeps several workers safe.
+  let reminderSweep = null;
+  if (shouldRunWorkers) {
+    const reminderSweepMs = Math.max(
+      15_000,
+      Number(process.env.REMINDER_SWEEP_MS || 60_000) || 60_000,
+    );
+    reminderSweep = setInterval(() => {
+      void sendDueCustomerReminders()
+        .then((rows) => {
+          const sent = rows.filter((r) => r.sent).length;
+          if (rows.length) console.log(`[reminders] sweep: ${sent}/${rows.length} sent`);
+        })
+        .catch((error) => {
+          console.error('[reminders] sweep failed:', error.message);
+        });
+    }, reminderSweepMs);
+    if (typeof reminderSweep.unref === 'function') reminderSweep.unref();
+  }
+
   const shutdown = async (signal) => {
     console.log(`${signal} received, shutting down…`);
     if (idleSweep) clearInterval(idleSweep);
+    if (reminderSweep) clearInterval(reminderSweep);
     try {
       if (shouldRunWorkers) {
         await stopQuoteWorker();

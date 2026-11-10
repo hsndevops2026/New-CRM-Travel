@@ -1,4 +1,6 @@
+import { timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
+import { isProduction } from '../config/productionGuard.js';
 import { wasenderConfig } from '../config/wasender.js';
 import { handleIncomingLeadMessage } from '../controllers/whatsappLead.js';
 import { handleIncomingDealerReply } from '../services/dealerRequests.js';
@@ -12,12 +14,15 @@ import { handlePollResults } from '../services/whatsappPolls.js';
 
 const router = Router();
 
-function verifyWebhookSignature(req) {
-  const secret = wasenderConfig.webhookSecret;
-  if (!secret) return true;
+export function verifyWebhookSignature(req, { secret = wasenderConfig.webhookSecret, production = isProduction() } = {}) {
+  // Without a secret the webhook is only open on a developer machine.
+  if (!secret) return !production;
 
-  const signature = req.headers['x-webhook-signature'];
-  return Boolean(signature) && signature === secret;
+  const signature = String(req.headers['x-webhook-signature'] || '');
+  if (!signature) return false;
+  const given = Buffer.from(signature);
+  const expected = Buffer.from(String(secret));
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
 export function extractMessage(payload) {
@@ -175,11 +180,10 @@ async function processInboundWhatsAppMessage({ event, message, payload }) {
   });
 }
 
-/** POST /webhook/whatsapp — Wasender inbound events (public; signature optional) */
+/** POST /webhook/whatsapp — Wasender inbound events (public; signature required in production) */
 router.post('/whatsapp', (req, res) => {
   if (!verifyWebhookSignature(req)) {
-    console.warn('Webhook rejected: invalid X-Webhook-Signature');
-    console.warn('Got:', req.headers['x-webhook-signature']);
+    console.warn('Webhook rejected: invalid or missing X-Webhook-Signature');
     return res.status(401).json({ error: 'Invalid webhook signature' });
   }
 

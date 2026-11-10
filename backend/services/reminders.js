@@ -37,7 +37,7 @@ function requireRemindAt(remindAt) {
   return date.toISOString();
 }
 
-/** Customer-facing WhatsApp body for a newly created contact reminder. */
+/** Customer-facing WhatsApp body, sent at remind_at for reminders with notify_customer. */
 export function buildReminderWhatsAppMessage(reminder) {
   const when = new Date(reminder.remind_at);
   const whenLabel = Number.isNaN(when.getTime())
@@ -121,9 +121,8 @@ export async function getReminderById(id) {
 
 export async function createReminder(
   contactId,
-  { text, remind_at },
+  { text, remind_at, notify_customer = false },
   createdBy = null,
-  { sendWhatsApp = sendReminderWhatsApp } = {},
 ) {
   const contact = await getContactById(contactId);
   if (!contact) {
@@ -135,39 +134,75 @@ export async function createReminder(
   const reminderText = requireText(text);
   const remindAt = requireRemindAt(remind_at);
 
+  // Reminders are internal notes for staff by default. The customer only gets a
+  // WhatsApp message when the employee opts in, and only at remind_at (see
+  // sendDueCustomerReminders), never at creation time.
   const result = await query(
-    `INSERT INTO contact_reminders (contact_id, text, remind_at, created_by)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO contact_reminders (contact_id, text, remind_at, created_by, notify_customer)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [contactId, reminderText, remindAt, createdBy],
+    [contactId, reminderText, remindAt, createdBy, notify_customer === true],
   );
-  const reminder = await getReminderById(result.rows[0].id);
-
-  try {
-    await sendWhatsApp(reminder);
-  } catch (err) {
-    console.error('[reminders] WhatsApp send failed after create:', err.message);
-  }
-
-  return reminder;
+  return getReminderById(result.rows[0].id);
 }
 
-export async function updateReminder(id, { text, remind_at, done } = {}) {
+/**
+ * Sends every customer-facing reminder whose time has come and that has not been
+ * sent yet. Each row is claimed with a conditional UPDATE first, so two workers
+ * running the sweep at once never send the same reminder twice. A failed send
+ * releases the claim so the next sweep retries it.
+ */
+export async function sendDueCustomerReminders({
+  now = new Date(),
+  limit = 50,
+  sendWhatsApp = sendReminderWhatsApp,
+} = {}) {
+  const due = await query(
+    `SELECT id FROM contact_reminders
+     WHERE notify_customer = TRUE AND sent_at IS NULL AND done_at IS NULL AND remind_at <= $1
+     ORDER BY remind_at ASC
+     LIMIT $2`,
+    [now.toISOString(), limit],
+  );
+  const results = [];
+  for (const { id } of due.rows) {
+    const claim = await query(
+      `UPDATE contact_reminders SET sent_at = NOW()
+       WHERE id = $1 AND sent_at IS NULL
+       RETURNING id`,
+      [id],
+    );
+    if (!claim.rowCount) continue;
+    const reminder = await getReminderById(id);
+    try {
+      const outcome = await sendWhatsApp(reminder);
+      results.push({ id, ...outcome });
+    } catch (err) {
+      await query(`UPDATE contact_reminders SET sent_at = NULL WHERE id = $1`, [id]);
+      console.error('[reminders] scheduled WhatsApp send failed:', err.message);
+      results.push({ id, sent: false, reason: 'send_failed' });
+    }
+  }
+  return results;
+}
+
+export async function updateReminder(id, { text, remind_at, done, notify_customer } = {}) {
   const existing = await getReminderById(id);
   if (!existing) return null;
 
   const nextText = text !== undefined ? requireText(text) : existing.text;
   const nextRemindAt = remind_at !== undefined ? requireRemindAt(remind_at) : existing.remind_at;
+  const nextNotify = notify_customer !== undefined ? notify_customer === true : existing.notify_customer === true;
   let nextDoneAt = existing.done_at;
   if (done === true) nextDoneAt = existing.done_at || new Date().toISOString();
   if (done === false) nextDoneAt = null;
 
   const result = await query(
     `UPDATE contact_reminders
-     SET text = $2, remind_at = $3, done_at = $4
+     SET text = $2, remind_at = $3, done_at = $4, notify_customer = $5
      WHERE id = $1
      RETURNING id`,
-    [id, nextText, nextRemindAt, nextDoneAt],
+    [id, nextText, nextRemindAt, nextDoneAt, nextNotify],
   );
   if (!result.rows[0]) return null;
   return getReminderById(result.rows[0].id);

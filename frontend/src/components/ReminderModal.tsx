@@ -24,12 +24,14 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
   const textId = useId()
   const dateId = useId()
   const timeId = useId()
+  const notifyId = useId()
   const sessionKey = open ? `${contact?.id || ''}:${reminder?.id || 'new'}` : null
   const initial = reminder ? splitRemindAt(reminder.remind_at) : { date: todayYmd(), time: '09:00' }
   const [formKey, setFormKey] = useState(sessionKey)
   const [text, setText] = useState(reminder?.text || '')
   const [date, setDate] = useState(initial.date)
   const [time, setTime] = useState(initial.time)
+  const [notifyCustomer, setNotifyCustomer] = useState(reminder?.notify_customer === true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,6 +42,7 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
     const next = reminder ? splitRemindAt(reminder.remind_at) : { date: todayYmd(), time: '09:00' }
     setDate(next.date)
     setTime(next.time)
+    setNotifyCustomer(reminder?.notify_customer === true)
   }
 
   const submit = async (event: FormEvent) => {
@@ -56,7 +59,11 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
     setSaving(true)
     setError(null)
     try {
-      const payload = { text: text.trim(), remind_at: combineRemindAt(date, time) }
+      const payload = {
+        text: text.trim(),
+        remind_at: combineRemindAt(date, time),
+        notify_customer: notifyCustomer,
+      }
       const saved = reminder
         ? await updateReminder(reminder.id, payload)
         : await createReminder(contact.id, payload)
@@ -118,6 +125,24 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
             />
           </Field>
         </div>
+        <label htmlFor={notifyId} className="flex items-start gap-2 text-sm text-shop-ink">
+          <input
+            id={notifyId}
+            type="checkbox"
+            checked={notifyCustomer}
+            onChange={(e) => setNotifyCustomer(e.target.checked)}
+            disabled={reminder?.sent_at != null}
+            className="mt-0.5"
+          />
+          <span>
+            Also send this to {contact?.name || 'the customer'} on WhatsApp at the reminder time
+            <span className="block text-xs text-shop-muted">
+              {reminder?.sent_at
+                ? 'Already sent to the customer.'
+                : 'Leave unticked for an internal note that only staff see.'}
+            </span>
+          </span>
+        </label>
         {error && text.trim() ? <p className="text-sm text-red-600">{error}</p> : null}
       </form>
     </ModalDrawer>

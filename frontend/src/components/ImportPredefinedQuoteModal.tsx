@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Check, ChevronLeft, ChevronRight, CircleAlert, FileText, Pencil, Plane, Bed, Trash2 } from 'lucide-react'
 import {
@@ -36,6 +37,7 @@ type Props = {
 }
 
 export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onReview, onApproved }: Props) {
+  useI18n()
   const { confirm, dialog } = useConfirm()
   const [imports, setImports] = useState<PredefinedQuoteImport[]>([])
   // Which slide is showing. The id says WHICH package; the index remembers WHERE it was, so if
@@ -133,10 +135,10 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
         const waiting = result.importRecords.filter((r) => r.status === 'needs_review').length
         const approved = result.importRecords.filter((r) => r.status === 'approved').length
         const total = result.importRecords.length
-        const parts = [waiting ? `${waiting} waiting for review` : null, approved ? `${approved} already approved` : null].filter(Boolean)
+        const parts = [waiting ? translate("{value0} waiting for review", { value0: translate(String(waiting)) }) : null, approved ? translate("{value0} already approved", { value0: translate(String(approved)) }) : null].filter(Boolean)
         const again = await confirm({
           title: 'This file was already imported',
-          description: `“${file.name}” was read before and gave ${total} package${total === 1 ? '' : 's'}${parts.length ? ` (${parts.join(', ')})` : ''}. Read it again? Reading uses AI again${waiting ? `, and the ${waiting} package${waiting === 1 ? '' : 's'} waiting for review ${waiting === 1 ? 'is' : 'are'} replaced by the new result` : ''}. Approved packages stay in your library.`,
+          description: translate("“{value0}” was read before and gave {value1} package{value2}{value3}. Read it again? Reading uses AI again{value4}. Approved packages stay in your library.", { value0: translate(String(file.name)), value1: translate(String(total)), value2: translate(String(total === 1 ? '' : 's')), value3: translate(String(parts.length ? ` (${parts.join(', ')})` : '')), value4: translate(String(waiting ? `, and the ${waiting} package${waiting === 1 ? '' : 's'} waiting for review ${waiting === 1 ? 'is' : 'are'} replaced by the new result` : '')) }),
           confirmLabel: 'Read it again',
           cancelLabel: 'Keep what I have',
           tone: 'primary',
@@ -146,7 +148,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
           if (first) setCursor({ id: first.id, index: 0 })
           setNotice(
             waiting
-              ? `Kept the ${total} package${total === 1 ? '' : 's'} from the earlier read — ${waiting} still waiting for review.`
+              ? translate("Kept the {value0} package{value1} from the earlier read — {value2} still waiting for review.", { value0: translate(String(total)), value1: translate(String(total === 1 ? '' : 's')), value2: translate(String(waiting)) })
               : 'Kept the earlier read. Everything from this file has already been reviewed.',
           )
           setFile(null)
@@ -158,9 +160,9 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
       const count = result.importRecords.length
       setNotice(
         result.replaced
-          ? `Read again: ${count} package${count === 1 ? '' : 's'} found, replacing the ${result.replaced} that were waiting. Check each one and approve.`
+          ? translate("Read again: {value0} package{value1} found, replacing the {value2} that were waiting. Check each one and approve.", { value0: translate(String(count)), value1: translate(String(count === 1 ? '' : 's')), value2: translate(String(result.replaced)) })
           : count > 1
-            ? `Found ${count} packages in this brochure — one per hotel. Check each one and approve.`
+            ? translate("Found {value0} packages in this brochure — one per hotel. Check each one and approve.", { value0: translate(String(count)) })
             : 'Extraction finished. Check the details, then approve.',
       )
       setFile(null)
@@ -197,7 +199,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
     try {
       const quote = await approveOne(current, targetQuoteId || null)
       removeSlide(current.id)
-      setNotice(`Approved “${quote.title}”. It is now in your quotes library.`)
+      setNotice(translate("Approved “{value0}”. It is now in your quotes library.", { value0: translate(String(quote.title)) }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to approve this package')
     } finally {
@@ -209,10 +211,10 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
 
   const approveAll = async () => {
     const ok = await confirm({
-      title: `Approve ${approvable.length} package${approvable.length === 1 ? '' : 's'}?`,
+      title: translate("Approve {value0} package{value1}?", { value0: translate(String(approvable.length)), value1: translate(String(approvable.length === 1 ? '' : 's')) }),
       description:
         'Each is added to your quotes library exactly as extracted. Packages with missing details are skipped, and you can still edit any of them afterwards.',
-      confirmLabel: `Approve ${approvable.length}`,
+      confirmLabel: translate("Approve {value0}", { value0: translate(String(approvable.length)) }),
       tone: 'primary',
     })
     if (!ok) return
@@ -233,14 +235,14 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
       }
     }
     applyList(rest)
-    setNotice(`Approved ${done} package${done === 1 ? '' : 's'}.`)
-    if (failed.length) setError(`${failed.length} could not be approved — ${failed.join('; ')}`)
+    setNotice(translate("Approved {value0} package{value1}.", { value0: translate(String(done)), value1: translate(String(done === 1 ? '' : 's')) }))
+    if (failed.length) setError(translate("{value0} could not be approved — {value1}", { value0: translate(String(failed.length)), value1: translate(String(failed.join('; '))) }))
     setBusyId(null)
   }
 
   const reject = async (record: PredefinedQuoteImport) => {
     const ok = await confirm({
-      title: `Reject “${record.extracted_payload?.title || record.file_name}”?`,
+      title: translate("Reject “{value0}”?", { value0: translate(String(record.extracted_payload?.title || record.file_name)) }),
       description: 'This package is discarded. The rest of the brochure is not affected, and you can upload the file again later.',
       confirmLabel: 'Reject package',
     })
@@ -260,11 +262,11 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
   const rejectAll = async () => {
     const pending = [...slides]
     if (pending.length < 2) return
-    const label = `${pending.length} package${pending.length === 1 ? '' : 's'}`
+    const label = translate("{value0} package{value1}", { value0: translate(String(pending.length)), value1: translate(String(pending.length === 1 ? '' : 's')) })
     const ok = await confirm({
-      title: `Reject all ${label}?`,
+      title: translate("Reject all {value0}?", { value0: translate(String(label)) }),
       description: 'Every package currently waiting in this review modal is discarded. Approved quotes are not affected, and you can upload the brochures again later.',
-      confirmLabel: `Reject all ${pending.length}`,
+      confirmLabel: translate("Reject all {value0}", { value0: translate(String(pending.length)) }),
     })
     if (!ok) return
 
@@ -284,17 +286,19 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
       }
     }
     applyList(rest)
-    setNotice(`Rejected ${done} package${done === 1 ? '' : 's'}.`)
-    if (failed.length) setError(`${failed.length} could not be rejected — ${failed.join('; ')}`)
+    setNotice(translate("Rejected {value0} package{value1}.", { value0: translate(String(done)), value1: translate(String(done === 1 ? '' : 's')) }))
+    if (failed.length) setError(translate("{value0} could not be rejected — {value1}", { value0: translate(String(failed.length)), value1: translate(String(failed.join('; '))) }))
     setBusyId(null)
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/.test(event.target.tagName)) return
-    if (event.key === 'ArrowRight') {
+    const forwardKey = document.documentElement.dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
+    const backKey = forwardKey === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft'
+    if (event.key === forwardKey) {
       event.preventDefault()
       show(position + 1)
-    } else if (event.key === 'ArrowLeft') {
+    } else if (event.key === backKey) {
       event.preventDefault()
       show(position - 1)
     }
@@ -311,7 +315,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
     <>
       <ModalDrawer
         open={open}
-        title="Import brochure"
+        title={translate("Import brochure")}
         subtitle="Upload a PDF or photo of a rate sheet. Each hotel becomes a package for you to check and approve."
         onClose={onClose}
         maxWidthClassName="max-w-4xl"
@@ -319,28 +323,25 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
           current ? (
             <div className="flex flex-wrap items-end justify-between gap-3">
               <label className="grid min-w-[220px] flex-1 gap-1 text-xs font-semibold text-slate-600 sm:max-w-xs">
-                When approved
-                <select
+                {translate("When approved")}<select
                   className="h-9 rounded-lg border border-line-strong bg-white px-2.5 text-sm font-normal max-sm:h-11"
                   value={targetQuoteId}
                   disabled={busy}
                   onChange={(event) => setTargetChoice({ importId: current.id, quoteId: event.target.value })}
                 >
-                  <option value="">Create a new package</option>
+                  <option value="">{translate("Create a new package")}</option>
                   {quotes.map((quote) => (
                     <option key={quote.id} value={quote.id}>
-                      Update: {quote.title}
+                      {translate("Update:")}{' '}{quote.title}
                     </option>
                   ))}
                 </select>
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="ghost" className="text-danger" disabled={busy} onClick={() => void reject(current)}>
-                  Reject
-                </Button>
+                  {translate("Reject")}</Button>
                 <Button icon={<Pencil />} disabled={busy || loading || !payload} onClick={() => onReview(current, targetQuoteId || null)}>
-                  Edit details
-                </Button>
+                  {translate("Edit details")}</Button>
                 <Button
                   variant="primary"
                   icon={<Check />}
@@ -348,8 +349,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                   disabled={busy || loading || problems.length > 0}
                   onClick={() => void approve()}
                 >
-                  Approve
-                </Button>
+                  {translate("Approve")}</Button>
               </div>
             </div>
           ) : undefined
@@ -357,8 +357,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
       >
         <form onSubmit={upload} className="flex flex-wrap items-end gap-3 rounded-[10px] border border-shop-border bg-shop-bg p-3.5">
           <label className="grid min-w-[220px] flex-1 gap-1.5 text-xs font-semibold text-slate-600">
-            Brochure (PDF or image, up to 50 MB)
-            <input
+            {translate("Brochure (PDF or image, up to 50 MB)")}<input
               type="file"
               accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
               className="block w-full rounded-lg border border-line-strong bg-white p-1.5 text-sm font-normal"
@@ -366,7 +365,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
             />
           </label>
           <Button type="submit" variant="primary" loading={uploading}>
-            {uploading ? 'Reading brochure…' : 'Upload and extract'}
+            {uploading ? translate("Reading brochure…") : translate("Upload and extract")}
           </Button>
         </form>
 
@@ -377,18 +376,18 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
         )}
         {error && (
           <div role="alert" className="mt-3 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">
-            {error}
+            {translate(error)}
           </div>
         )}
 
-        {loading && !current && <TableSkeleton rows={3} label="Loading imports" />}
+        {loading && !current && <TableSkeleton rows={3} label={translate("Loading imports")} />}
 
         {!loading && !current && (
           <EmptyState
             icon={<FileText />}
             tone="neutral"
-            title="No brochures are waiting for review"
-            description="Upload a brochure above. Every hotel it contains shows up here as a page you can check and approve."
+            title={translate("No brochures are waiting for review")}
+            description={translate("Upload a brochure above. Every hotel it contains shows up here as a page you can check and approve.")}
           />
         )}
 
@@ -396,7 +395,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
           <section
             role="group"
             aria-roledescription="carousel"
-            aria-label="Packages waiting for review"
+            aria-label={translate("Packages waiting for review")}
             onKeyDown={onKeyDown}
             className="mt-4 flex flex-col gap-3"
           >
@@ -405,26 +404,25 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
               <Button
                 size="sm"
                 iconOnly
-                aria-label="Previous package"
+                aria-label={translate("Previous package")}
                 icon={<ChevronLeft />}
                 disabled={slides.length < 2 || busy}
                 onClick={() => show(position - 1)}
               />
               <strong className="text-sm tabular-nums">
-                {position + 1} of {slides.length}
+                {position + 1}{' '}{translate("of")}{' '}{slides.length}
               </strong>
               <Button
                 size="sm"
                 iconOnly
-                aria-label="Next package"
+                aria-label={translate("Next package")}
                 icon={<ChevronRight />}
                 disabled={slides.length < 2 || busy}
                 onClick={() => show(position + 1)}
               />
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ms-auto flex items-center gap-2">
                 <Button size="sm" variant="ghost" disabled={loading || busy} onClick={() => void load()}>
-                  Refresh
-                </Button>
+                  {translate("Refresh")}</Button>
                 {slides.length > 1 && (
                   <Button
                     size="sm"
@@ -434,18 +432,18 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                     disabled={busy}
                     onClick={() => void rejectAll()}
                   >
-                    Reject all {slides.length}
+                    {translate("Reject all")}{' '}{slides.length}
                   </Button>
                 )}
                 {approvable.length > 1 && (
                   <Button size="sm" loading={busyId === 'approve-all'} disabled={busy} onClick={() => void approveAll()}>
-                    Approve all {approvable.length}
+                    {translate("Approve all")}{' '}{approvable.length}
                   </Button>
                 )}
               </div>
             </div>
 
-            <ol aria-label="Packages" className="m-0 flex list-none gap-1.5 overflow-x-auto p-0 pb-1">
+            <ol aria-label={translate("Packages")} className="m-0 flex list-none gap-1.5 overflow-x-auto p-0 pb-1">
               {slides.map((slide, i) => {
                 const label = pageLabel(slide.source_pages)
                 const on = i === position
@@ -455,7 +453,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                     <button
                       type="button"
                       aria-current={on ? 'true' : undefined}
-                      aria-label={`Package ${i + 1}${label ? `, ${label.toLowerCase()}` : ''}${flagged ? ', needs attention' : ''}`}
+                      aria-label={translate("Package {value0}{value1}{value2}", { value0: translate(String(i + 1)), value1: translate(String(label ? `, ${label.toLowerCase()}` : '')), value2: translate(String(flagged ? ', needs attention' : '')) })}
                       disabled={busy}
                       onClick={() => show(i)}
                       className={`flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold tabular-nums max-sm:h-10 ${
@@ -473,7 +471,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
             {/* The slide. */}
             <article
               aria-roledescription="slide"
-              aria-label={`Package ${position + 1} of ${slides.length}`}
+              aria-label={translate("Package {value0} of {value1}", { value0: translate(String(position + 1)), value1: translate(String(slides.length)) })}
               className="flex flex-col gap-4 rounded-[10px] border border-shop-border bg-white p-4"
             >
               <header className="flex flex-wrap items-start justify-between gap-3">
@@ -482,7 +480,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                     {pageLabel(current.source_pages) && <StatusBadge label={pageLabel(current.source_pages)!} tone="info" />}
                     <span className="truncate text-xs text-shop-muted">
                       {current.file_name}
-                      {(current.batch_total ?? 0) > 1 ? ` · package ${(current.batch_index ?? 0) + 1} of ${current.batch_total} in this file` : ''}
+                      {(current.batch_total ?? 0) > 1 ? translate(" · package {value0} of {value1} in this file", { value0: translate(String((current.batch_index ?? 0) + 1)), value1: translate(String(current.batch_total)) }) : ''}
                     </span>
                   </div>
                   <h3 className="text-lg font-bold">{payload?.title || 'Untitled package'}</h3>
@@ -490,17 +488,17 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                     {[
                       payload?.destination,
                       payload?.travel_date && payload?.return_date ? `${payload.travel_date} → ${payload.return_date}` : payload?.travel_date,
-                      payload?.nights ? `${payload.nights} nights` : null,
-                      counts.hotels ? `${counts.hotels} hotel${counts.hotels === 1 ? '' : 's'}` : null,
-                      `${counts.offers} offer${counts.offers === 1 ? '' : 's'}`,
+                      payload?.nights ? translate("{value0} nights", { value0: translate(String(payload.nights)) }) : null,
+                      counts.hotels ? translate("{value0} hotel{value1}", { value0: translate(String(counts.hotels)), value1: translate(String(counts.hotels === 1 ? '' : 's')) }) : null,
+                      translate("{value0} offer{value1}", { value0: translate(String(counts.offers)), value1: translate(String(counts.offers === 1 ? '' : 's')) }),
                     ]
                       .filter(Boolean)
                       .join(' · ') || 'Nothing extracted'}
                   </p>
                 </div>
                 {total != null && (
-                  <div className="text-right">
-                    <span className="block text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">Total</span>
+                  <div className="text-end">
+                    <span className="block text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">{translate("Total")}</span>
                     <strong className="text-xl font-extrabold tabular-nums">
                       {formatQuoteMoney(total, payload?.currency || 'USD')}
                     </strong>
@@ -510,14 +508,14 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
 
               {rows.length > 0 ? (
                 <div className="overflow-x-auto rounded-lg border border-shop-border">
-                  <table className="relative w-full min-w-[560px] text-left text-sm">
-                    <caption className="sr-only">Offers extracted from this package</caption>
+                  <table className="relative w-full min-w-[560px] text-start text-sm">
+                    <caption className="sr-only">{translate("Offers extracted from this package")}</caption>
                     <thead>
                       <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
-                        <th className="px-3 py-2">Offer</th>
-                        <th className="px-3 py-2">Room · board</th>
-                        <th className="px-3 py-2">Dates</th>
-                        <th className="px-3 py-2 text-right">Price</th>
+                        <th className="px-3 py-2">{translate("Offer")}</th>
+                        <th className="px-3 py-2">{translate("Room · board")}</th>
+                        <th className="px-3 py-2">{translate("Dates")}</th>
+                        <th className="px-3 py-2 text-end">{translate("Price")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -526,18 +524,18 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                           <td className="px-3 py-2">
                             <span className="flex items-center gap-2 font-semibold">
                               {row.kind === 'flight' ? (
-                                <Plane className="size-4 shrink-0 text-shop-muted" aria-label="Flight" />
+                                <Plane className="size-4 shrink-0 text-shop-muted" aria-label={translate("Flight")} />
                               ) : (
-                                <Bed className="size-4 shrink-0 text-shop-muted" aria-label="Hotel" />
+                                <Bed className="size-4 shrink-0 text-shop-muted" aria-label={translate("Hotel")} />
                               )}
-                              {row.title}
+                              {translate(row.title)}
                             </span>
                           </td>
                           <td className="px-3 py-2 text-slate-700">{row.detail || <span className="text-shop-muted">—</span>}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-slate-700 tabular-nums">
                             {row.when || <span className="text-shop-muted">—</span>}
                           </td>
-                          <td className="px-3 py-2 text-right font-bold whitespace-nowrap tabular-nums">
+                          <td className="px-3 py-2 text-end font-bold whitespace-nowrap tabular-nums">
                             {row.price != null ? formatQuoteMoney(row.price, row.currency) : <span className="font-normal text-shop-muted">—</span>}
                           </td>
                         </tr>
@@ -547,12 +545,11 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                 </div>
               ) : (
                 <p className="rounded-lg border border-dashed border-line-strong px-3 py-6 text-center text-sm text-shop-muted">
-                  No offers were found on this page.
-                </p>
+                  {translate("No offers were found on this page.")}</p>
               )}
 
               {current.warnings.length > 0 && (
-                <ul className="m-0 flex list-disc flex-col gap-1 rounded-lg bg-warn-bg py-2.5 pr-3 pl-7 text-[13px] text-warn-fg">
+                <ul className="m-0 flex list-disc flex-col gap-1 rounded-lg bg-warn-bg py-2.5 pe-3 ps-7 text-[13px] text-warn-fg">
                   {current.warnings.map((warning) => (
                     <li key={warning}>{warning}</li>
                   ))}
@@ -562,8 +559,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                 <div role="alert" className="flex gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-[13px] text-danger-fg">
                   <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                   <span>
-                    Can’t approve yet: {problems.join('; ')}. Use <strong>Edit details</strong> to fix it.
-                  </span>
+                    {translate("Can’t approve yet:")}{' '}{problems.join('; ')}{translate(". Use")}{' '}<strong>{translate("Edit details")}</strong> {' '}{translate("to fix it.")}</span>
                 </div>
               )}
 

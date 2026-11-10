@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState, type FormEvent } from 'react'
 import { Send } from 'lucide-react'
 import Button from './ui/Button'
@@ -17,6 +18,7 @@ const FIELD = 'h-9 w-full rounded-lg border border-line-strong bg-white px-2.5 t
 const LABEL = 'text-xs font-semibold text-slate-600'
 
 function Form({ quote, onClose, onSent }: { quote: PredefinedQuote; onClose: () => void; onSent?: (to: string) => void }) {
+  useI18n()
   const [dial, setDial] = useState(DEFAULT_DIAL)
   const [local, setLocal] = useState('')
   const [note, setNote] = useState('')
@@ -46,33 +48,31 @@ function Form({ quote, onClose, onSent }: { quote: PredefinedQuote; onClose: () 
   return (
     <ModalDrawer
       open
-      title="Send to customer"
+      title={translate("Send to customer")}
       subtitle={quote.title}
       onClose={onClose}
       maxWidthClassName="max-w-md"
       footer={
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose}>{sentTo ? 'Close' : 'Cancel'}</Button>
+          <Button onClick={onClose}>{sentTo ? translate("Close") : translate("Cancel")}</Button>
           {!sentTo && (
             <Button variant="primary" type="submit" form="send-customer-form" icon={<Send />} loading={sending} disabled={!ready}>
-              Send on WhatsApp
-            </Button>
+              {translate("Send on WhatsApp")}</Button>
           )}
         </div>
       }
     >
       {sentTo ? (
         <div role="status" className="rounded-lg bg-shop-green-bg px-3.5 py-3 text-sm text-primary-800">
-          Sent to <strong className="tabular-nums">{formatPhone(sentTo)}</strong> on WhatsApp.
-        </div>
+          {translate("Sent to")}{' '}<strong className="tabular-nums"><bdi dir="ltr">{formatPhone(sentTo)}</bdi></strong> {' '}{translate("on WhatsApp.")}</div>
       ) : (
         <form id="send-customer-form" onSubmit={(e) => void submit(e)} className="grid gap-3.5">
           <div className="grid gap-1">
             <span className={LABEL}>
-              Customer’s WhatsApp number <span className="text-danger">*</span>
+              {translate("Customer’s WhatsApp number")}{' '}<span className="text-danger">*</span>
             </span>
             <div className="flex gap-2">
-              <label className="sr-only" htmlFor="customer-dial">Country code</label>
+              <label className="sr-only" htmlFor="customer-dial">{translate("Country code")}</label>
               <select
                 id="customer-dial"
                 className={`${FIELD.replace('w-full', 'w-[9.5rem]')} shrink-0`}
@@ -86,7 +86,7 @@ function Form({ quote, onClose, onSent }: { quote: PredefinedQuote; onClose: () 
                 ))}
               </select>
               <input
-                aria-label="Number"
+                aria-label={translate("Number")}
                 inputMode="tel"
                 autoComplete="off"
                 autoFocus
@@ -97,27 +97,26 @@ function Form({ quote, onClose, onSent }: { quote: PredefinedQuote; onClose: () 
               />
             </div>
             <span className="text-xs text-shop-muted tabular-nums">
-              {ready ? `Sends to ${formatPhone(phone)}` : 'Choose a country code, then type the number.'}
+              {ready ? translate("Sends to {value0}", { value0: translate(String(formatPhone(phone))) }) : translate("Choose a country code, then type the number.")}
             </span>
           </div>
 
           <label className="grid gap-1">
-            <span className={LABEL}>Message before the package (optional)</span>
+            <span className={LABEL}>{translate("Message before the package (optional)")}</span>
             <textarea
               rows={3}
               className="resize-y rounded-lg border border-line-strong px-2.5 py-2 text-sm"
-              placeholder="Hi Sarah, as discussed — here is the package:"
+              placeholder={translate("Hi Sarah, as discussed — here is the package:")}
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
           </label>
           <p className="text-xs text-shop-muted">
-            The customer gets the package details — trip, dates, hotels, flights and total — as a WhatsApp message.
-          </p>
+            {translate("The customer gets the package details — trip, dates, hotels, flights and total — as a WhatsApp message.")}</p>
 
           {error && (
             <div role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">
-              {error}
+              {translate(error)}
             </div>
           )}
         </form>
@@ -127,6 +126,7 @@ function Form({ quote, onClose, onSent }: { quote: PredefinedQuote; onClose: () 
 }
 
 export default function SendToCustomerModal({ open, quote, onClose, onSent }: Props) {
+  useI18n()
   if (!open || !quote) return null
   return <Form key={quote.id} quote={quote} onClose={onClose} onSent={onSent} />
 }

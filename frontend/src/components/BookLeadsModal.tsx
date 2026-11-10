@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState, type FormEvent } from 'react'
 import { formatPhone, type Lead } from '../lib/leads'
 
@@ -32,6 +33,7 @@ export default function BookLeadsModal({
   onClose,
   onConfirm,
 }: Props) {
+  useI18n()
   const sessionKey = open ? leads.map((lead) => lead.id).join(',') : ''
   const [formKey, setFormKey] = useState(sessionKey)
   const [drafts, setDrafts] = useState<Draft[]>(() => draftsFromLeads(leads))
@@ -80,27 +82,26 @@ export default function BookLeadsModal({
         className="flex max-h-[92dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-xl"
       >
         <div className="flex items-center justify-between border-b border-shop-border px-4 py-4">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-lg font-semibold">{translate(title)}</h2>
           <button type="button" onClick={onClose} className="rounded-md px-2 py-1 text-shop-muted hover:bg-shop-bg">
             ✕
           </button>
         </div>
         <div className="space-y-4 overflow-y-auto px-4 py-5">
           <p className="text-sm text-shop-muted">
-            Save the customer into Contacts and create their portal login. An auto-generated password is emailed to them.
-          </p>
+            {translate("Save the customer into Contacts and create their portal login. An auto-generated password is emailed to them.")}</p>
           {drafts.map((draft) => (
             <div key={draft.id} className="grid gap-2 rounded-lg border border-shop-border p-3">
               <span className="text-sm font-medium">
-                {formatPhone(draft.phone)}
-                <span className="ml-2 font-normal text-shop-muted">{draft.destination}</span>
+                <bdi dir="ltr">{formatPhone(draft.phone)}</bdi>
+                <span className="ms-2 font-normal text-shop-muted">{draft.destination}</span>
               </span>
               <label className="grid gap-1 text-sm">
-                <span className="text-shop-muted">Customer name</span>
+                <span className="text-shop-muted">{translate("Customer name")}</span>
                 <input
                   required
                   className="min-h-11 rounded-lg border border-shop-border px-3 py-2"
-                  placeholder="Customer name"
+                  placeholder={translate("Customer name")}
                   value={draft.name}
                   onChange={(e) =>
                     setDrafts((prev) =>
@@ -110,7 +111,7 @@ export default function BookLeadsModal({
                 />
               </label>
               <label className="grid gap-1 text-sm">
-                <span className="text-shop-muted">Email (portal login)</span>
+                <span className="text-shop-muted">{translate("Email (portal login)")}</span>
                 <input
                   required
                   type="email"
@@ -126,18 +127,17 @@ export default function BookLeadsModal({
               </label>
             </div>
           ))}
-          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</div>}
         </div>
         <div className="flex justify-end gap-2 border-t border-shop-border px-4 py-4">
           <button type="button" onClick={onClose} className="rounded-lg border border-shop-border px-3 py-2 text-sm">
-            Cancel
-          </button>
+            {translate("Cancel")}</button>
           <button
             type="submit"
             disabled={saving}
             className="rounded-lg bg-shop-ink px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {saving ? 'Saving…' : confirmLabel}
+            {saving ? translate("Saving…") : confirmLabel}
           </button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 import { LoaderCircle } from 'lucide-react'
+import { t, useI18n } from '../../lib/i18n'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
@@ -42,6 +43,7 @@ export default function Button({
   children,
   ...props
 }: Props) {
+  useI18n()
   const inactive = disabled || loading
   return (
     <button
@@ -58,7 +60,7 @@ export default function Button({
       {/* The label stays in the layout while loading, so the button does not change width. */}
       <span className={`inline-flex items-center gap-1.5 ${loading ? 'invisible' : ''}`}>
         {icon && <span className="flex shrink-0 [&_svg]:size-4">{icon}</span>}
-        {children}
+        {typeof children === 'string' ? t(children) : children}
       </span>
       {loading && (
         <LoaderCircle

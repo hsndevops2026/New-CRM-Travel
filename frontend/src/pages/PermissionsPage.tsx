@@ -1,3 +1,5 @@
+import { locale } from '../lib/i18n'
+import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Check, CircleAlert, Lock, Search } from 'lucide-react'
@@ -30,6 +32,7 @@ const EMPTY_COPY: Record<StaffTab, { title: string; description: string }> = {
 }
 
 export default function PermissionsPage() {
+  useI18n()
   const { admin } = useAuth()
   const toast = useToast()
   const { confirm, dialog } = useConfirm()
@@ -104,7 +107,7 @@ export default function PermissionsPage() {
       })
       setAmounts((current) => ({ ...current, [user.id]: '' }))
       await reload()
-      toast.show({ tone: 'success', message: `${amount} credit${amount === 1 ? '' : 's'} added to ${user.email}.` })
+      toast.show({ tone: 'success', message: translate("{value0} credit{value1} added to {value2}.", { value0: translate(String(amount)), value1: translate(String(amount === 1 ? '' : 's')), value2: translate(String(user.email)) }) })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add credits')
     } finally {
@@ -115,20 +118,20 @@ export default function PermissionsPage() {
   return (
     <div className="mx-auto w-full max-w-[1240px] space-y-4 p-4 pb-24 sm:p-6">
       <PageHeader
-        title="Permissions"
-        subtitle="Approve staff sign-ups and allocate lead credits."
-        actions={<StatusBadge label="Admin only" tone="neutral" icon={<Lock />} />}
+        title={translate("Permissions")}
+        subtitle={translate("Approve staff sign-ups and allocate lead credits.")}
+        actions={<StatusBadge label={translate("Admin only")} tone="neutral" icon={<Lock />} />}
       />
 
       {error && (
-        <Banner tone="danger" title="That did not work" action={<button type="button" onClick={() => setError(null)}>Dismiss</button>}>
-          {error}
+        <Banner tone="danger" title={translate("That did not work")} action={<button type="button" onClick={() => setError(null)}>{translate("Dismiss")}</button>}>
+          {translate(error)}
         </Banner>
       )}
 
-      <section aria-label="Staff accounts" className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
+      <section aria-label={translate("Staff accounts")} className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-shop-border px-3.5">
-          <div role="tablist" aria-label="Account status" className="flex">
+          <div role="tablist" aria-label={translate("Account status")} className="flex">
             {STAFF_TABS.map((item) => {
               const on = item.id === activeTab
               return (
@@ -142,7 +145,7 @@ export default function PermissionsPage() {
                     on ? 'border-shop-accent text-shop-ink' : 'border-transparent text-slate-600 hover:text-shop-ink'
                   }`}
                 >
-                  {item.label}
+                  {translate(item.label)}
                   <StatusBadge
                     label={String(counts[item.id])}
                     tone={item.id === 'pending' && counts.pending > 0 ? 'warning' : 'neutral'}
@@ -153,40 +156,40 @@ export default function PermissionsPage() {
             })}
           </div>
           <div className="relative w-[260px] max-w-full py-2">
-            <label htmlFor="staff-search" className="sr-only">Search staff</label>
-            <Search className="pointer-events-none absolute top-[19px] left-2.5 size-4 text-shop-muted" aria-hidden="true" />
+            <label htmlFor="staff-search" className="sr-only">{translate("Search staff")}</label>
+            <Search className="pointer-events-none absolute top-[19px] start-2.5 size-4 text-shop-muted" aria-hidden="true" />
             <input
               id="staff-search"
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Name or email"
-              className="h-9 w-full rounded-lg border border-line-strong bg-white pr-2.5 pl-8 text-sm max-sm:h-11"
+              placeholder={translate("Name or email")}
+              className="h-9 w-full rounded-lg border border-line-strong bg-white pe-2.5 ps-8 text-sm max-sm:h-11"
             />
           </div>
         </div>
 
-        {loading && <TableSkeleton rows={4} label="Loading accounts" />}
+        {loading && <TableSkeleton rows={4} label={translate("Loading accounts")} />}
 
         {!loading && rows.length === 0 && (
           <EmptyState
             tone={error ? 'danger' : query.trim() ? 'neutral' : 'default'}
             icon={error ? <CircleAlert /> : query.trim() ? <Search /> : undefined}
-            title={query.trim() ? `No account matches “${query.trim()}”` : EMPTY_COPY[activeTab].title}
-            description={query.trim() ? 'Try another name or email, or another tab.' : EMPTY_COPY[activeTab].description}
+            title={query.trim() ? translate("No account matches “{value0}”", { value0: translate(String(query.trim())) }) : EMPTY_COPY[activeTab].title}
+            description={query.trim() ? translate("Try another name or email, or another tab.") : EMPTY_COPY[activeTab].description}
           />
         )}
 
         {!loading && rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
+            <table className="w-full min-w-[820px] text-start text-sm">
               <thead>
                 <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
-                  <th className="px-3.5 py-2.5">Staff member</th>
-                  <th className="px-3 py-2.5">Requested</th>
-                  <th className="px-3 py-2.5">Lead credits</th>
-                  <th className="px-3 py-2.5">Add credits</th>
-                  <th className="px-3.5 py-2.5 text-right">Actions</th>
+                  <th className="px-3.5 py-2.5">{translate("Staff member")}</th>
+                  <th className="px-3 py-2.5">{translate("Requested")}</th>
+                  <th className="px-3 py-2.5">{translate("Lead credits")}</th>
+                  <th className="px-3 py-2.5">{translate("Add credits")}</th>
+                  <th className="px-3.5 py-2.5 text-end">{translate("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -210,18 +213,18 @@ export default function PermissionsPage() {
                         </div>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-shop-muted tabular-nums">
-                        {new Date(user.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(user.created_at).toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex w-40 flex-col gap-1">
                           <span className="tabular-nums">
-                            <strong>{credits.remaining}</strong> left
-                            <span className="text-shop-muted"> · {credits.used} of {credits.total} used</span>
+                            <strong>{credits.remaining}</strong>{' '}{translate("left")}
+                            <span className="text-shop-muted"> · {translate('{used} of {total} used', { used: credits.used, total: credits.total })}</span>
                           </span>
                           <div
                             className="h-1.5 overflow-hidden rounded-full bg-neutral-bg"
                             role="progressbar"
-                            aria-label={`Credits used by ${user.email}`}
+                            aria-label={translate("Credits used by {value0}", { value0: translate(String(user.email)) })}
                             aria-valuemin={0}
                             aria-valuemax={Math.max(1, credits.total)}
                             aria-valuenow={credits.used}
@@ -234,18 +237,17 @@ export default function PermissionsPage() {
                         {user.approval_status === 'approved' ? (
                           <div className="flex items-center gap-1.5">
                             <input
-                              aria-label={`Credits to add for ${user.email}`}
+                              aria-label={translate("Credits to add for {value0}", { value0: translate(String(user.email)) })}
                               type="number"
                               min="1"
                               step="1"
-                              placeholder="Amount"
+                              placeholder={translate("Amount")}
                               value={amounts[user.id] || ''}
                               onChange={(event) => setAmounts((current) => ({ ...current, [user.id]: event.target.value }))}
                               className="h-8 w-24 rounded-lg border border-line-strong px-2 text-sm tabular-nums max-sm:h-10"
                             />
                             <Button size="sm" disabled={working || !amounts[user.id]} onClick={() => void addCredits(user)}>
-                              Add
-                            </Button>
+                              {translate("Add")}</Button>
                           </div>
                         ) : (
                           <span className="text-shop-muted">—</span>
@@ -256,8 +258,7 @@ export default function PermissionsPage() {
                           {user.approval_status === 'pending' && (
                             <>
                               <Button size="sm" variant="ghost" disabled={working} className="text-danger" onClick={() => void revoke(user)}>
-                                Reject
-                              </Button>
+                                {translate("Reject")}</Button>
                               <Button
                                 size="sm"
                                 loading={working}
@@ -265,24 +266,21 @@ export default function PermissionsPage() {
                                 className="border-shop-accent text-shop-accent"
                                 onClick={() => void setApproval(user, 'approved', 'access approved')}
                               >
-                                Approve
-                              </Button>
+                                {translate("Approve")}</Button>
                             </>
                           )}
                           {user.approval_status === 'approved' && (
                             <>
-                              <StatusBadge label="Active" tone="success" />
+                              <StatusBadge label={translate("Active")} tone="success" />
                               <Button size="sm" variant="ghost" disabled={working} onClick={() => void revoke(user)}>
-                                Block
-                              </Button>
+                                {translate("Block")}</Button>
                             </>
                           )}
                           {user.approval_status === 'revoked' && (
                             <>
-                              <StatusBadge label="Blocked" tone="danger" />
+                              <StatusBadge label={translate("Blocked")} tone="danger" />
                               <Button size="sm" loading={working} onClick={() => void setApproval(user, 'approved', 'access restored')}>
-                                Restore
-                              </Button>
+                                {translate("Restore")}</Button>
                             </>
                           )}
                         </div>

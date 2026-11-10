@@ -1,3 +1,4 @@
+import { locale } from './i18n'
 import { apiFetch } from './api'
 
 export type ContactReminder = {
@@ -63,7 +64,7 @@ export function combineRemindAt(dateYmd: string, timeHm: string): string {
 export function formatReminderTime(iso: string) {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  return date.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' })
 }
 
 export function isReminderOverdue(reminder: ContactReminder, now = new Date()) {

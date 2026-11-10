@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { Check, Download, Link2, Lock, Mail, Send } from 'lucide-react'
 import {
@@ -73,6 +74,7 @@ function VersionCard({
   onSelect: () => void
   onRevoked: (id: string) => void
 }) {
+  useI18n()
   const { confirm, dialog } = useConfirm()
   const [openingPdf, setOpeningPdf] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -96,9 +98,9 @@ function VersionCard({
   const revoke = async () => {
     setError(null)
     const ok = await confirm({
-      title: `Revoke quote v${version.version_number}?`,
-      description: `The customer’s link for v${version.version_number} will stop working and show “This quote has been replaced”. Other versions are not affected. This can’t be undone.`,
-      confirmLabel: `Revoke v${version.version_number}`,
+      title: translate("Revoke quote v{value0}?", { value0: translate(String(version.version_number)) }),
+      description: translate("The customer’s link for v{value0} will stop working and show “This quote has been replaced”. Other versions are not affected. This can’t be undone.", { value0: translate(String(version.version_number)) }),
+      confirmLabel: translate("Revoke v{value0}", { value0: translate(String(version.version_number)) }),
     })
     if (!ok) return
     try {
@@ -111,7 +113,7 @@ function VersionCard({
 
   return (
     <article
-      aria-label={`Version ${version.version_number}, ${revoked ? 'revoked' : current ? 'current' : versionStatusLabel(version.status)}`}
+      aria-label={translate("Version {value0}, {value1}", { value0: translate(String(version.version_number)), value1: translate(String(revoked ? 'revoked' : current ? 'current' : versionStatusLabel(version.status))) })}
       className={`overflow-hidden rounded-[10px] bg-white ${
         selected && !revoked ? 'border-2 border-shop-accent' : 'border border-shop-border'
       } ${revoked ? 'opacity-85' : ''}`}
@@ -127,30 +129,30 @@ function VersionCard({
           </div>
           <div className="flex min-w-0 flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
-              <strong className="text-base">{version.snapshot?.title || `Quote v${version.version_number}`}</strong>
+              <strong className="text-base">{version.snapshot?.title || translate("Quote v{value0}", { value0: translate(String(version.version_number)) })}</strong>
               <StatusBadge
                 label={versionStatusLabel(version.status)}
                 tone={VERSION_TONE[version.status] || 'neutral'}
                 icon={version.status === 'accepted' ? <Check /> : undefined}
                 className={revoked ? 'line-through' : ''}
               />
-              {current && <StatusBadge label="Current" tone="neutral" />}
+              {current && <StatusBadge label={translate("Current")} tone="neutral" />}
             </div>
             <span className="text-[13px] text-shop-muted tabular-nums">
-              Created {created}
-              {version.snapshot?.valid_until ? ` · valid until ${version.snapshot.valid_until.slice(0, 10)}` : ''}
+              {translate("Created")}{' '}{created}
+              {version.snapshot?.valid_until ? translate(" · valid until {value0}", { value0: translate(String(version.snapshot.valid_until.slice(0, 10))) }) : ''}
             </span>
             {summary && <span className="text-[13px] tabular-nums">{summary}</span>}
-            {version.notes && <span className="text-[13px] text-shop-muted">Note: {version.notes}</span>}
+            {version.notes && <span className="text-[13px] text-shop-muted">{translate("Note:")}{' '}{version.notes}</span>}
           </div>
         </div>
-        <div className="text-right">
-          <span className={CAP}>Selling price</span>
+        <div className="text-end">
+          <span className={CAP}>{translate("Selling price")}</span>
           <div className={`text-2xl font-extrabold tabular-nums ${revoked ? 'text-shop-muted line-through' : ''}`}>
             {money(version.selling_price, version.currency)}
           </div>
           {margin != null && !revoked && (
-            <span className="text-xs text-shop-muted tabular-nums">Margin {margin}% · internal</span>
+            <span className="text-xs text-shop-muted tabular-nums">{translate("Margin")}{' '}{margin}{translate("% · internal")}</span>
           )}
         </div>
       </div>
@@ -158,20 +160,20 @@ function VersionCard({
       {version.accepted_at && (
         <div className="mx-4 mb-3 flex items-center gap-2 rounded-lg bg-shop-green-bg px-3 py-2 text-[13px] text-primary-800">
           <Check className="size-4" aria-hidden="true" />
-          Accepted {new Date(version.accepted_at).toLocaleString()}
-          {version.accepted_by ? ` by ${version.accepted_by}` : ''}
+          {translate("Accepted")}{' '}{new Date(version.accepted_at).toLocaleString()}
+          {version.accepted_by ? translate(" by {value0}", { value0: translate(String(version.accepted_by)) }) : ''}
         </div>
       )}
       {error && (
         <p role="alert" className="mx-4 mb-3 rounded-lg bg-danger-bg px-3 py-2 text-[13px] text-danger-fg">
-          {error}
+          {translate(error)}
         </p>
       )}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-shop-border bg-slate-50 px-4 py-3">
         {!revoked && (
           <Button variant={selected ? 'secondary' : 'primary'} size="sm" aria-pressed={selected} onClick={onSelect}>
-            {selected ? `Sending v${version.version_number}` : `Send v${version.version_number}`}
+            {selected ? translate("Sending v{value0}", { value0: translate(String(version.version_number)) }) : translate("Send v{value0}", { value0: translate(String(version.version_number)) })}
           </Button>
         )}
         <Button size="sm" icon={<Download />} loading={openingPdf} onClick={() => void openPdf()}>
@@ -179,8 +181,8 @@ function VersionCard({
         </Button>
         {!revoked && version.status !== 'accepted' && (
           <OverflowMenu
-            label={`More actions for v${version.version_number}`}
-            items={[{ id: 'revoke', label: 'Revoke share links', tone: 'danger', onClick: () => void revoke() }]}
+            label={translate("More actions for v{value0}", { value0: translate(String(version.version_number)) })}
+            items={[{ id: 'revoke', label: translate("Revoke share links"), tone: 'danger', onClick: () => void revoke() }]}
           />
         )}
       </div>
@@ -200,6 +202,7 @@ function SendPanel({
   leadPhone?: string | null
   leadEmail?: string | null
 }) {
+  useI18n()
   const [channel, setChannel] = useState<Channel>('whatsapp')
   const [deliveries, setDeliveries] = useState<QuoteDelivery[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
@@ -294,20 +297,20 @@ function SendPanel({
     <>
       <section aria-labelledby="snd-h" className="flex flex-col gap-3 rounded-[10px] border border-shop-border bg-white p-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 id="snd-h" className="text-base font-bold">Send v{version.version_number}</h2>
+          <h2 id="snd-h" className="text-base font-bold">{translate("Send v")}{version.version_number}</h2>
           <SegmentedControl
             ariaLabel="Channel"
             value={channel}
             onChange={(id) => setChannel(id as Channel)}
             items={[
               { id: 'whatsapp', label: 'WhatsApp' },
-              { id: 'email', label: 'Email' },
+              { id: 'email', label: translate("Email") },
             ]}
           />
         </div>
 
         <div className="grid gap-1">
-          <label className={LABEL} htmlFor="send-to">To</label>
+          <label className={LABEL} htmlFor="send-to">{translate("To")}</label>
           <input
             id="send-to"
             type={channel === 'email' ? 'email' : 'tel'}
@@ -320,20 +323,19 @@ function SendPanel({
           />
           {emailMissing && (
             <span id="send-to-hint" className="text-xs text-shop-muted">
-              There is no email on this lead — type one to send by email.
-            </span>
+              {translate("There is no email on this lead — type one to send by email.")}</span>
           )}
         </div>
 
         {shareLink && (
           <div className="grid gap-1">
-            <span className={LABEL}>Share link</span>
+            <span className={LABEL}>{translate("Share link")}</span>
             <div className="flex gap-2">
               <div className="relative min-w-0 flex-1">
-                <Link2 className="pointer-events-none absolute top-2.5 left-2.5 size-4 text-shop-muted" aria-hidden="true" />
-                <input readOnly value={shareLink} aria-label="Share link" className={`${FIELD} pl-8 tabular-nums`} />
+                <Link2 className="pointer-events-none absolute top-2.5 start-2.5 size-4 text-shop-muted" aria-hidden="true" />
+                <input readOnly value={shareLink} aria-label={translate("Share link")} className={`${FIELD} ps-8 tabular-nums`} />
               </div>
-              <Button onClick={() => void copyLink()}>{copied ? 'Copied' : 'Copy link'}</Button>
+              <Button onClick={() => void copyLink()}>{copied ? translate('Copied') : translate("Copy link")}</Button>
             </div>
           </div>
         )}
@@ -353,15 +355,15 @@ function SendPanel({
             onClick={() => void send()}
             className="border-shop-accent text-shop-accent"
           >
-            {channel === 'email' ? 'Send email' : 'Send on WhatsApp'}
+            {channel === 'email' ? translate("Send email") : translate("Send on WhatsApp")}
           </Button>
         </div>
       </section>
 
       <section aria-labelledby="his-h" className="flex flex-col rounded-[10px] border border-shop-border bg-white p-4">
-        <h2 id="his-h" className="mb-1.5 text-base font-bold">Delivery history</h2>
+        <h2 id="his-h" className="mb-1.5 text-base font-bold">{translate("Delivery history")}</h2>
         {loadingHistory ? (
-          <p role="status" className="py-2 text-[13px] text-shop-muted">Loading history…</p>
+          <p role="status" className="py-2 text-[13px] text-shop-muted">{translate("Loading history…")}</p>
         ) : (
           <ol className="m-0 list-none p-0">
             {timeline.map((event) => (
@@ -373,13 +375,12 @@ function SendPanel({
                   {event.failed ? <span className="text-sm leading-none font-bold">×</span> : event.id.startsWith('created-') ? <Lock className="size-3.5" /> : <Check className="size-3.5" />}
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <strong className="text-sm">{event.title}</strong>
+                  <strong className="text-sm">{translate(event.title)}</strong>
                   <span className={`text-[13px] tabular-nums ${event.failed ? 'text-[#7F1D1D]' : 'text-shop-muted'}`}>{event.detail}</span>
                 </div>
                 {event.failed && (
                   <Button size="sm" loading={retrying === event.id} onClick={() => void retry(event.id)}>
-                    Retry
-                  </Button>
+                    {translate("Retry")}</Button>
                 )}
               </li>
             ))}
@@ -393,6 +394,7 @@ function SendPanel({
 // ── main panel ────────────────────────────────────────────────────────────────
 
 export default function QuoteSendPanel({ leadId, leadPhone, leadEmail, draft }: Props) {
+  useI18n()
   const [versions, setVersions] = useState<QuoteVersion[]>([])
   const [loading, setLoading] = useState(true)
   const [locking, setLocking] = useState(false)
@@ -466,49 +468,46 @@ export default function QuoteSendPanel({ leadId, leadPhone, leadEmail, draft }: 
     <div className="flex flex-wrap items-start gap-6">
       <section aria-labelledby="ver-h" className="flex min-w-0 flex-[999_1_520px] flex-col gap-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="ver-h" className="text-base font-bold">Versions</h2>
+          <h2 id="ver-h" className="text-base font-bold">{translate("Versions")}</h2>
           <span className="text-[13px] text-shop-muted">
-            Versions are locked once created. Edit the draft in Build to make v{versions.length + 1}.
+            {translate("Versions are locked once created. Edit the draft in Build to make v")}{versions.length + 1}.
           </span>
         </div>
 
         <div className="flex flex-col gap-3 rounded-[10px] border border-shop-border bg-white p-4">
-          <h3 className="text-sm font-bold">Lock a new version</h3>
+          <h3 className="text-sm font-bold">{translate("Lock a new version")}</h3>
           {!hasPricing ? (
             <p className="text-[13px] text-shop-muted">
-              Select items in Build first, then come here to lock and send.
-            </p>
+              {translate("Select items in Build first, then come here to lock and send.")}</p>
           ) : (
             <>
               <input
                 type="text"
-                aria-label="Note for this version"
-                placeholder="Optional note for this version…"
+                aria-label={translate("Note for this version")}
+                placeholder={translate("Optional note for this version…")}
                 value={lockNotes}
                 onChange={(e) => setLockNotes(e.target.value)}
                 className={FIELD}
               />
               {error && (
                 <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-[13px] text-danger-fg">
-                  {error}
+                  {translate(error)}
                 </p>
               )}
               <Button variant="primary" block loading={locking} onClick={() => void handleLock()}>
-                Lock v{versions.length + 1} — {money(sellingPrice ?? null, draft?.currency)}
+                {translate("Lock v")}{versions.length + 1} — {money(sellingPrice ?? null, draft?.currency)}
               </Button>
               <p className="text-xs text-shop-muted">
-                Locking creates an immutable snapshot. Items and prices cannot be changed after locking.
-              </p>
+                {translate("Locking creates an immutable snapshot. Items and prices cannot be changed after locking.")}</p>
             </>
           )}
         </div>
 
         {loading ? (
-          <p role="status" className="py-6 text-center text-sm text-shop-muted">Loading versions…</p>
+          <p role="status" className="py-6 text-center text-sm text-shop-muted">{translate("Loading versions…")}</p>
         ) : ordered.length === 0 ? (
           <p className="rounded-[10px] border border-dashed border-line-strong bg-white py-8 text-center text-sm text-shop-muted">
-            No versions yet. Lock one above to start sending.
-          </p>
+            {translate("No versions yet. Lock one above to start sending.")}</p>
         ) : (
           ordered.map((v) => (
             <VersionCard
@@ -524,12 +523,12 @@ export default function QuoteSendPanel({ leadId, leadPhone, leadEmail, draft }: 
 
         {current && (
           <section aria-labelledby="acc-h" className="flex flex-col gap-2.5 rounded-[10px] border border-shop-border bg-white p-4">
-            <h3 id="acc-h" className="text-[15px] font-bold">Customer acceptance</h3>
+            <h3 id="acc-h" className="text-[15px] font-bold">{translate("Customer acceptance")}</h3>
             {current.accepted_at ? (
               <div className="flex items-center gap-3 rounded-lg bg-shop-green-bg p-3 text-primary-800">
                 <Check className="size-5" aria-hidden="true" />
                 <div className="flex flex-col">
-                  <strong>Accepted v{current.version_number}</strong>
+                  <strong>{translate("Accepted v")}{current.version_number}</strong>
                   <span className="text-[13px] tabular-nums">
                     {new Date(current.accepted_at).toLocaleString()}
                     {current.accepted_by ? ` · ${current.accepted_by}` : ''}
@@ -539,10 +538,9 @@ export default function QuoteSendPanel({ leadId, leadPhone, leadEmail, draft }: 
             ) : (
               <div className="flex items-center gap-3 rounded-lg border border-dashed border-line-strong p-3">
                 <div className="flex flex-col">
-                  <strong>Awaiting response</strong>
+                  <strong>{translate("Awaiting response")}</strong>
                   <span className="text-[13px] text-shop-muted">
-                    When the customer accepts, their name and the time appear here and the lead moves to Accepted.
-                  </span>
+                    {translate("When the customer accepts, their name and the time appear here and the lead moves to Accepted.")}</span>
                 </div>
               </div>
             )}

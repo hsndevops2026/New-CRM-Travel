@@ -1,5 +1,7 @@
 /** One-line facts about a lead, as the workspace header shows them. */
 
+import { t } from './i18n'
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function parts(value: string | null | undefined) {
@@ -13,17 +15,17 @@ export function formatDateRange(start: string | null | undefined, end: string | 
   const a = parts(start)
   const b = parts(end)
   if (!a) return '—'
-  const one = (p: { y: number; m: number; d: number }) => `${p.d} ${MONTHS[p.m]} ${p.y}`
+  const one = (p: { y: number; m: number; d: number }) => `${p.d} ${t(MONTHS[p.m])} ${p.y}`
   if (!b || (a.y === b.y && a.m === b.m && a.d === b.d)) return one(a)
-  if (a.y === b.y && a.m === b.m) return `${a.d}–${b.d} ${MONTHS[a.m]} ${a.y}`
-  if (a.y === b.y) return `${a.d} ${MONTHS[a.m]} – ${b.d} ${MONTHS[b.m]} ${b.y}`
+  if (a.y === b.y && a.m === b.m) return `${a.d}–${b.d} ${t(MONTHS[a.m])} ${a.y}`
+  if (a.y === b.y) return `${a.d} ${t(MONTHS[a.m])} – ${b.d} ${t(MONTHS[b.m])} ${b.y}`
   return `${one(a)} – ${one(b)}`
 }
 
 export function nightsLabel(nights: number | null | undefined): string | null {
   const n = Number(nights)
   if (!Number.isFinite(n) || n <= 0) return null
-  return `${n} night${n === 1 ? '' : 's'}`
+  return t('{count} night{suffix}', { count: n, suffix: n === 1 ? '' : 's' })
 }
 
 /** "2 adults, 1 child (8)" · "1 adult" · "2 adults, 2 children (8, 5)". */
@@ -31,20 +33,21 @@ export function travelersLabel(adults: number, children: number, childAges?: num
   const a = Math.max(0, Number(adults) || 0)
   const c = Math.max(0, Number(children) || 0)
   const bits: string[] = []
-  if (a > 0 || c === 0) bits.push(`${a} adult${a === 1 ? '' : 's'}`)
+  if (a > 0 || c === 0) bits.push(t('{count} adult{suffix}', { count: a, suffix: a === 1 ? '' : 's' }))
   if (c > 0) {
     const ages = (childAges || []).filter((age) => Number.isFinite(age))
-    bits.push(`${c} ${c === 1 ? 'child' : 'children'}${ages.length ? ` (${ages.join(', ')})` : ''}`)
+    const label = t('{count} child{suffix}', { count: c, suffix: c === 1 ? '' : 'ren' })
+    bits.push(ages.length ? `${label} (${ages.join(', ')})` : label)
   }
   return bits.join(', ')
 }
 
 /** The lead type as a customer-facing noun: "Flight + Hotel package", "Hotel", "Flight". */
 export function leadTypeLabel(type: string | null | undefined): string {
-  if (type === 'package') return 'Flight + Hotel package'
-  if (type === 'flight') return 'Flight'
-  if (type === 'hotel') return 'Hotel'
-  return type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Lead'
+  if (type === 'package') return t('Flight + Hotel package')
+  if (type === 'flight') return t('Flight')
+  if (type === 'hotel') return t('Hotel')
+  return type ? t(type.charAt(0).toUpperCase() + type.slice(1)) : t('Lead')
 }
 
 /** Breadcrumb tail: a short, stable reference for the lead. */

@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import type { ReactNode } from 'react'
 
 type Segment = {
@@ -19,6 +20,7 @@ type Props = {
  * Hotel / Flight / Package. Arrow keys move between segments.
  */
 export default function SegmentedControl({ items, value, onChange, ariaLabel }: Props) {
+  const { language } = useI18n()
   const move = (from: number, step: number) => {
     const next = items[(from + step + items.length) % items.length]
     onChange(next.id)
@@ -28,7 +30,7 @@ export default function SegmentedControl({ items, value, onChange, ariaLabel }: 
   return (
     <div
       role="tablist"
-      aria-label={ariaLabel}
+      aria-label={translate(ariaLabel)}
       className="inline-flex gap-0.5 rounded-[9px] bg-neutral-bg p-[3px]"
     >
       {items.map((item, index) => {
@@ -45,10 +47,10 @@ export default function SegmentedControl({ items, value, onChange, ariaLabel }: 
             onKeyDown={(event) => {
               if (event.key === 'ArrowRight') {
                 event.preventDefault()
-                move(index, 1)
+                move(index, language === 'ar' ? -1 : 1)
               } else if (event.key === 'ArrowLeft') {
                 event.preventDefault()
-                move(index, -1)
+                move(index, language === 'ar' ? 1 : -1)
               }
             }}
             className={`inline-flex h-[30px] items-center gap-1.5 rounded-[7px] px-3 text-[13px] font-semibold max-sm:h-10 ${
@@ -56,7 +58,7 @@ export default function SegmentedControl({ items, value, onChange, ariaLabel }: 
             }`}
           >
             {item.icon && <span className="flex [&_svg]:size-4">{item.icon}</span>}
-            {item.label}
+            {translate(item.label)}
             {item.count != null && <span className="text-xs tabular-nums text-shop-muted">{item.count}</span>}
           </button>
         )

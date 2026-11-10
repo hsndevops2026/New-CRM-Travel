@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { CircleAlert } from 'lucide-react'
@@ -8,6 +9,7 @@ import Button from '../components/ui/Button'
 import { homePathFor, isCustomer } from '../lib/auth'
 
 export default function LoginPage() {
+  useI18n()
   const { admin, loading, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -52,19 +54,19 @@ export default function LoginPage() {
     <AuthLayout>
       <form className="flex w-full max-w-[380px] flex-col gap-5" aria-labelledby="si-h" onSubmit={(e) => void onSubmit(e)}>
         <div className="flex flex-col gap-1.5">
-          <h1 id="si-h" className="text-[26px] font-extrabold tracking-[-0.01em]">Sign in</h1>
-          <p className="text-shop-muted">Staff and customer portal accounts use email and password.</p>
+          <h1 id="si-h" className="text-[26px] font-extrabold tracking-[-0.01em]">{translate("Sign in")}</h1>
+          <p className="text-shop-muted">{translate("Staff and customer portal accounts use email and password.")}</p>
         </div>
 
         {error && (
           <div role="alert" className="flex gap-2.5 rounded-[10px] bg-danger-bg px-3.5 py-3 text-[#7F1D1D]">
             <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span>{error}</span>
+            <span>{translate(error)}</span>
           </div>
         )}
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-[13px] font-semibold text-neutral-fg" htmlFor="si-email">Email</label>
+          <label className="text-[13px] font-semibold text-neutral-fg" htmlFor="si-email">{translate("Email")}</label>
           <input
             id="si-email"
             type="email"
@@ -77,7 +79,7 @@ export default function LoginPage() {
         </div>
 
         <PasswordField
-          label="Password"
+          label={translate("Password")}
           id="si-pw"
           autoComplete="current-password"
           required
@@ -88,15 +90,14 @@ export default function LoginPage() {
         />
 
         <Button type="submit" variant="primary" loading={saving} className="h-11 text-[15px] font-bold">
-          {saving ? 'Signing in…' : 'Sign in'}
+          {saving ? translate("Signing in…") : translate("Sign in")}
         </Button>
 
         <div className="h-px bg-shop-border" />
         <p className="text-center text-slate-600">
-          Agency staff?{' '}
+          {translate("Agency staff?")}{' '}
           <Link to="/signup" className="font-bold text-shop-accent hover:underline">
-            Request access
-          </Link>
+            {translate("Request access")}</Link>
         </p>
       </form>
     </AuthLayout>

@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Check, ChevronDown, LoaderCircle, RefreshCw } from 'lucide-react'
 import Button from './ui/Button'
@@ -36,18 +37,20 @@ type Row = {
 const idle: SourceState = { count: null, error: null, detail: null }
 
 function FLIGHT_PROVIDER_LABEL(provider?: string) {
+  useI18n()
   if (provider === 'google_flights') return 'Google Flights · SerpApi'
   if (provider === 'booking.com') return 'Booking.com · RapidAPI'
   return 'Booking.com · RapidAPI (Google Flights fallback)'
 }
 
 function SourceRow({ row }: { row: Row }) {
+  useI18n()
   const { state } = row
 
   const badge = !row.applies ? (
-    <StatusBadge label="not used" tone="neutral" />
+    <StatusBadge label={translate("not used")} tone="neutral" />
   ) : state.error ? (
-    <StatusBadge label="failed" tone="danger" />
+    <StatusBadge label={translate("failed")} tone="danger" />
   ) : state.count == null ? (
     <StatusBadge label="…" tone="neutral" />
   ) : state.count > 0 ? (
@@ -64,7 +67,7 @@ function SourceRow({ row }: { row: Row }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-shop-ink">{row.label}</span>
+          <span className="truncate text-sm font-medium text-shop-ink">{translate(row.label)}</span>
           <span className="shrink-0 rounded bg-shop-bg px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-shop-muted">
             {row.provides}
           </span>
@@ -93,6 +96,7 @@ type Props = {
 }
 
 export default function QuoteSourcesPanel({ lead, packageMatches = null, hotelOptions = null, onRetry, retrying }: Props) {
+  useI18n()
   const wantsFlights = lead.booking_type === 'flight' || lead.booking_type === 'package'
   const wantsHotels = lead.booking_type === 'hotel' || lead.booking_type === 'package'
   // The per-provider hotel breakdown endpoint only answers for hotel leads; a package
@@ -151,7 +155,7 @@ export default function QuoteSourcesPanel({ lead, packageMatches = null, hotelOp
           setDealers({
             count: rows.length,
             error: null,
-            detail: rows.length ? `${rows.filter((r) => r.review_status === 'pending').length} pending review` : null,
+            detail: rows.length ? translate("{value0} pending review", { value0: translate(String(rows.filter((r) => r.review_status === 'pending').length)) }) : null,
           })
         }
       })
@@ -233,49 +237,48 @@ export default function QuoteSourcesPanel({ lead, packageMatches = null, hotelOp
   const hotelLoaded = hotelParts.every((p) => p.count != null || p.error)
 
   const flightCard: CardState = processing
-    ? { badge: <StatusBadge label="Searching" tone="info" icon={<LoaderCircle className="motion-safe:animate-spin" />} />, detail: 'Fetching options…' }
+    ? { badge: <StatusBadge label={translate("Searching")} tone="info" icon={<LoaderCircle className="motion-safe:animate-spin" />} />, detail: 'Fetching options…' }
     : flights.error
-      ? { badge: <StatusBadge label="Failed" tone="danger" />, detail: flights.error, problem: true }
+      ? { badge: <StatusBadge label={translate("Failed")} tone="danger" />, detail: flights.error, problem: true }
       : flights.count == null
         ? { badge: <StatusBadge label="…" tone="neutral" />, detail: 'Checking…' }
         : flights.count > 0
-          ? { badge: <StatusBadge label="Done" tone="success" icon={<Check />} />, detail: [`${flights.count} results`, flights.detail].filter(Boolean).join(' · ') }
-          : { badge: <StatusBadge label="No results" tone="warning" />, detail: flights.detail || 'Nothing for these dates', problem: true }
+          ? { badge: <StatusBadge label={translate("Done")} tone="success" icon={<Check />} />, detail: [translate("{value0} results", { value0: translate(String(flights.count)) }), flights.detail].filter(Boolean).join(' · ') }
+          : { badge: <StatusBadge label={translate("No results")} tone="warning" />, detail: flights.detail || 'Nothing for these dates', problem: true }
 
   const hotelCard: CardState = processing
-    ? { badge: <StatusBadge label="Searching" tone="info" icon={<LoaderCircle className="motion-safe:animate-spin" />} />, detail: 'Fetching options…' }
+    ? { badge: <StatusBadge label={translate("Searching")} tone="info" icon={<LoaderCircle className="motion-safe:animate-spin" />} />, detail: 'Fetching options…' }
     : !hasHotelBreakdown
       ? hotelOptions == null
         ? { badge: <StatusBadge label="…" tone="neutral" />, detail: 'Checking…' }
         : hotelOptions > 0
-          ? { badge: <StatusBadge label="Done" tone="success" icon={<Check />} />, detail: `${hotelOptions} results` }
-          : { badge: <StatusBadge label="No results" tone="warning" />, detail: 'Nothing for these dates', problem: true }
+          ? { badge: <StatusBadge label={translate("Done")} tone="success" icon={<Check />} />, detail: translate("{value0} results", { value0: translate(String(hotelOptions)) }) }
+          : { badge: <StatusBadge label={translate("No results")} tone="warning" />, detail: 'Nothing for these dates', problem: true }
     : !hotelLoaded
       ? { badge: <StatusBadge label="…" tone="neutral" />, detail: 'Checking…' }
       : hotelFailures === 0
         ? hotelCount > 0
-          ? { badge: <StatusBadge label="Done" tone="success" icon={<Check />} />, detail: `${hotelCount} results` }
-          : { badge: <StatusBadge label="No results" tone="warning" />, detail: 'Nothing for these dates', problem: true }
+          ? { badge: <StatusBadge label={translate("Done")} tone="success" icon={<Check />} />, detail: translate("{value0} results", { value0: translate(String(hotelCount)) }) }
+          : { badge: <StatusBadge label={translate("No results")} tone="warning" />, detail: 'Nothing for these dates', problem: true }
         : hotelCount > 0
-          ? { badge: <StatusBadge label="Partial" tone="warning" />, detail: `${hotelCount} results · ${hotelFailures} provider${hotelFailures === 1 ? '' : 's'} failed`, problem: true }
-          : { badge: <StatusBadge label="Failed" tone="danger" />, detail: 'Every hotel provider failed', problem: true }
+          ? { badge: <StatusBadge label={translate("Partial")} tone="warning" />, detail: translate("{value0} results · {value1} provider{value2} failed", { value0: translate(String(hotelCount)), value1: translate(String(hotelFailures)), value2: translate(String(hotelFailures === 1 ? '' : 's')) }), problem: true }
+          : { badge: <StatusBadge label={translate("Failed")} tone="danger" />, detail: 'Every hotel provider failed', problem: true }
 
   const packageCard: CardState =
     packageMatches == null
       ? { badge: <StatusBadge label="…" tone="neutral" />, detail: 'From Quotes library' }
-      : { badge: <StatusBadge label={`${packageMatches} match${packageMatches === 1 ? '' : 'es'}`} tone={packageMatches ? 'success' : 'neutral'} />, detail: 'From Quotes library' }
+      : { badge: <StatusBadge label={translate("{value0} match{value1}", { value0: translate(String(packageMatches)), value1: translate(String(packageMatches === 1 ? '' : 'es')) })} tone={packageMatches ? 'success' : 'neutral'} />, detail: 'From Quotes library' }
 
   return (
-    <section aria-label="Source status" className="space-y-3">
+    <section aria-label={translate("Source status")} className="space-y-3">
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-3">
-        {wantsFlights && <StatusCard title="Flight API" state={flightCard} />}
-        {wantsHotels && <StatusCard title="Hotel API" state={hotelCard} />}
-        <StatusCard title="Reusable packages" state={packageCard} />
+        {wantsFlights && <StatusCard title={translate("Flight API")} state={flightCard} />}
+        {wantsHotels && <StatusCard title={translate("Hotel API")} state={hotelCard} />}
+        <StatusCard title={translate("Reusable packages")} state={packageCard} />
         {onRetry && (
           <div className="flex items-center justify-end">
             <Button icon={<RefreshCw />} loading={retrying} onClick={onRetry}>
-              Retry sourcing
-            </Button>
+              {translate("Retry sourcing")}</Button>
           </div>
         )}
       </div>
@@ -283,15 +286,15 @@ export default function QuoteSourcesPanel({ lead, packageMatches = null, hotelOp
       <details className="group rounded-[10px] border border-shop-border bg-white">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">
           <span>
-            All sources checked <span className="font-normal text-shop-muted">· {rows.filter((r) => r.applies).length}</span>
+            {translate("All sources checked")}{' '}<span className="font-normal text-shop-muted">· {rows.filter((r) => r.applies).length}</span>
           </span>
           <ChevronDown className="size-4 text-shop-muted transition-transform group-open:rotate-180" aria-hidden="true" />
         </summary>
         <div className="border-t border-shop-border">
           <p className="px-3.5 py-2 text-xs text-shop-muted">
             {processing
-              ? 'Sourcing in progress…'
-              : 'Every channel checked for this lead. A failed source does not block the others.'}
+              ? translate("Sourcing in progress…")
+              : translate("Every channel checked for this lead. A failed source does not block the others.")}
           </p>
           <ul>
             {rows.map((row) => (
@@ -307,10 +310,11 @@ export default function QuoteSourcesPanel({ lead, packageMatches = null, hotelOp
 type CardState = { badge: ReactNode; detail: string; problem?: boolean }
 
 function StatusCard({ title, state }: { title: string; state: CardState }) {
+  useI18n()
   return (
     <div className={`flex flex-col gap-1 rounded-[10px] border bg-white px-3.5 py-3 ${state.problem ? 'border-[#FCD34D]' : 'border-shop-border'}`}>
       <div className="flex items-center justify-between gap-2">
-        <strong className="text-sm">{title}</strong>
+        <strong className="text-sm">{translate(title)}</strong>
         {state.badge}
       </div>
       <span className={`text-[13px] tabular-nums ${state.problem ? 'text-warn-fg' : 'text-shop-muted'}`}>{state.detail}</span>

@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CalendarDays, ChevronLeft, CircleAlert, ChevronRight, MessageCircle, PanelRightClose, Phone, Plane, Users } from 'lucide-react'
@@ -59,19 +60,21 @@ import {
 } from '../lib/inbox'
 
 function ActivityList({ audit }: { audit: unknown[] }) {
+  useI18n()
   const items = (Array.isArray(audit) ? audit.slice(0, 8) : []).map((evt, i) => {
     const item = evt as Record<string, unknown>
     return {
       id: `${String(item.id || i)}`,
       title: String(item.action || 'event').replace(/_/g, ' '),
       subtitle: String(item.created_at || ''),
-      body: item.actor_role ? `by ${String(item.actor_role)}` : undefined,
+      body: item.actor_role ? translate("by {value0}", { value0: translate(String(String(item.actor_role))) }) : undefined,
     }
   })
   return <Timeline emptyLabel="No activity yet." items={items} />
 }
 
 export default function LeadDetailPage() {
+  useI18n()
   const { segment: leadId = '' } = useParams<{ segment: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -294,7 +297,7 @@ export default function LeadDetailPage() {
         compact
       />
       <div className="max-h-48 shrink-0 overflow-y-auto border-t border-shop-border p-3">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-shop-muted">Activity</h3>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-shop-muted">{translate("Activity")}</h3>
         <ActivityList audit={audit} />
       </div>
     </div>
@@ -302,7 +305,7 @@ export default function LeadDetailPage() {
 
   if (loading) {
     return (
-      <div role="status" aria-busy="true" aria-label="Loading lead" className="flex flex-col gap-4 p-4 sm:p-6">
+      <div role="status" aria-busy="true" aria-label={translate("Loading lead")} className="flex flex-col gap-4 p-4 sm:p-6">
         <Skeleton className="h-3 w-40" />
         <div className="flex items-center gap-3">
           <Skeleton className="h-7 w-56" />
@@ -325,12 +328,11 @@ export default function LeadDetailPage() {
       <EmptyState
         tone="danger"
         icon={<CircleAlert />}
-        title={error ? 'This lead could not be loaded' : 'Lead not found'}
+        title={error ? translate("This lead could not be loaded") : translate("Lead not found")}
         description={error || 'It may have been deleted, or you may not have access to it.'}
         action={
           <Button variant="primary" onClick={() => navigate('/leads/hotel')}>
-            Back to leads
-          </Button>
+            {translate("Back to leads")}</Button>
         }
       />
     )
@@ -371,7 +373,7 @@ export default function LeadDetailPage() {
       tone: 'danger',
       onClick: () => {
         void confirm({
-          title: `Delete ${leadPerson(lead)}?`,
+          title: translate("Delete {value0}?", { value0: translate(String(leadPerson(lead))) }),
           description: 'The lead, its quote draft and versions are removed for everyone. This can’t be undone.',
           confirmLabel: 'Delete lead',
         }).then((ok) => {
@@ -391,7 +393,7 @@ export default function LeadDetailPage() {
           <div className="flex items-center gap-1">
             <Link
               to={`/leads/${listType}`}
-              aria-label="Back to leads"
+              aria-label={translate("Back to leads")}
               className="grid size-11 shrink-0 place-items-center rounded-[10px] text-shop-ink hover:bg-neutral-bg"
             >
               <ChevronLeft className="size-5" aria-hidden="true" />
@@ -408,7 +410,7 @@ export default function LeadDetailPage() {
             </div>
             <button
               type="button"
-              aria-label={railOpen ? 'Hide chat' : 'Show chat'}
+              aria-label={railOpen ? translate("Hide chat") : translate("Show chat")}
               aria-pressed={railOpen}
               aria-controls="lead-chat-sidebar"
               onClick={() => setRailOpen((open) => !open)}
@@ -416,20 +418,19 @@ export default function LeadDetailPage() {
             >
               <MessageCircle className="size-5" aria-hidden="true" />
             </button>
-            <OverflowMenu label="More lead actions" items={menuItems} />
+            <OverflowMenu label={translate("More lead actions")} items={menuItems} />
           </div>
           <div className="flex items-center gap-2 px-2">
             <LifecycleBadge status={lead.lifecycle_status} />
             <span className="truncate text-[13px] text-shop-muted">
-              {closed ? 'No longer active' : `Stage ${stageNumber} of ${HAPPY_PATH.length} · next: ${next.text.toLowerCase()}`}
+              {closed ? translate("No longer active") : translate("Stage {value0} of {value1} · next: {value2}", { value0: translate(String(stageNumber)), value1: translate(String(HAPPY_PATH.length)), value2: translate(String(next.text.toLowerCase())) })}
             </span>
           </div>
         </div>
 
-        <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-[13px] text-shop-muted max-md:hidden">
+        <nav aria-label={translate("Breadcrumb")} className="mb-3 flex items-center gap-1.5 text-[13px] text-shop-muted max-md:hidden">
           <Link to="/leads/hotel" className="-my-3 py-3 text-slate-600 hover:text-shop-ink hover:underline">
-            Leads
-          </Link>
+            {translate("Leads")}</Link>
           <span aria-hidden="true">/</span>
           <Link to={`/leads/${listType}`} className="-my-3 py-3 text-slate-600 hover:text-shop-ink hover:underline">
             {listType.charAt(0).toUpperCase() + listType.slice(1)}
@@ -465,7 +466,7 @@ export default function LeadDetailPage() {
                   className="-my-2.5 flex items-center gap-1.5 py-2.5 text-slate-700 hover:text-shop-ink"
                 >
                   <Phone className="size-4 text-shop-muted" aria-hidden="true" />
-                  {formatPhone(lead.phone)}
+                  <bdi dir="ltr">{formatPhone(lead.phone)}</bdi>
                 </a>
               </li>
             </ul>
@@ -478,11 +479,11 @@ export default function LeadDetailPage() {
               icon={<MessageCircle className="size-4" />}
               onClick={() => setRailOpen((open) => !open)}
             >
-              {railOpen ? 'Hide chat' : 'Show chat'}
+              {railOpen ? translate("Hide chat") : translate("Show chat")}
             </Button>
-            <OverflowMenu label="More lead actions" items={menuItems} />
+            <OverflowMenu label={translate("More lead actions")} items={menuItems} />
             <Button variant="primary" loading={busy} onClick={() => void handlePrimary()}>
-              {cta.label}
+              {translate(cta.label)}
               <ChevronRight className="size-4" aria-hidden="true" />
             </Button>
           </div>
@@ -494,7 +495,7 @@ export default function LeadDetailPage() {
             allowed={lead.lifecycle_allowed}
             disabled={busy}
             onSelect={(status) => void handleLifecycle(status)}
-            hint={lead.lifecycle_status === 'lost' || lead.lifecycle_status === 'archived' ? undefined : `Next: ${next.text}`}
+            hint={lead.lifecycle_status === 'lost' || lead.lifecycle_status === 'archived' ? undefined : translate("Next: {value0}", { value0: translate(String(next.text)) })}
           />
         </div>
 
@@ -529,7 +530,7 @@ export default function LeadDetailPage() {
 
           {step === 'market' && <MarketReferencesPanel lead={lead} />}
 
-          {step === 'build' && !draft && <div role="status" className="rounded-[10px] border border-shop-border bg-white p-4 text-sm text-shop-muted">Preparing the quote builder…</div>}
+          {step === 'build' && !draft && <div role="status" className="rounded-[10px] border border-shop-border bg-white p-4 text-sm text-shop-muted">{translate("Preparing the quote builder…")}</div>}
           {step === 'build' && draft && (
             <div className="flex flex-wrap items-start gap-6">
               <section aria-labelledby="cmp-h" className="min-w-0 flex-[999_1_520px]">
@@ -545,8 +546,7 @@ export default function LeadDetailPage() {
             <div className="space-y-4">
               {!draft && (
                 <div role="status" className="rounded-[10px] border border-shop-border bg-white p-4 text-sm text-shop-muted">
-                  Preparing the quote…
-                </div>
+                  {translate("Preparing the quote…")}</div>
               )}
               {draft && <QuoteSendPanel leadId={lead.id} leadPhone={lead.phone} draft={draft} />}
               <LeadDocumentsPanel leadId={lead.id} />
@@ -556,7 +556,7 @@ export default function LeadDetailPage() {
         {!(step === 'source' && (draft?.items.length ?? 0) > 0) && (
         <div className="shrink-0 border-t border-shop-border bg-white px-4 pt-3 pb-4 md:hidden">
           <Button variant="primary" block loading={busy} onClick={() => void handlePrimary()} className="h-[52px] rounded-[14px] text-base font-bold max-sm:h-[52px]">
-            {cta.label}
+            {translate(cta.label)}
             <ChevronRight className="size-4" aria-hidden="true" />
           </Button>
         </div>
@@ -567,28 +567,27 @@ export default function LeadDetailPage() {
           <>
             <button
               type="button"
-              aria-label="Close chat"
+              aria-label={translate("Close chat")}
               className="absolute inset-0 z-20 bg-black/25 lg:hidden"
               onClick={() => setRailOpen(false)}
             />
             <aside
               id="lead-chat-sidebar"
-              aria-label={`WhatsApp chat with ${leadPerson(lead)}`}
-              className="absolute inset-y-0 right-0 z-30 flex min-h-0 w-[min(100%,21.25rem)] flex-col border-l border-shop-border bg-white shadow-xl lg:static lg:z-0 lg:w-[340px] lg:shrink-0 lg:shadow-none"
+              aria-label={translate("WhatsApp chat with {value0}", { value0: translate(String(leadPerson(lead))) })}
+              className="absolute inset-y-0 end-0 z-30 flex min-h-0 w-[min(100%,21.25rem)] flex-col border-s border-shop-border bg-white shadow-xl lg:static lg:z-0 lg:w-[340px] lg:shrink-0 lg:shadow-none"
             >
-              <div className="flex h-[52px] shrink-0 items-center gap-2.5 border-b border-shop-border pr-3 pl-4">
+              <div className="flex h-[52px] shrink-0 items-center gap-2.5 border-b border-shop-border pe-3 ps-4">
                 <MessageCircle className="size-4 text-shop-accent" aria-hidden="true" />
                 <strong className="flex-1 text-sm">WhatsApp</strong>
                 <Link
                   to={`/inbox/${encodeURIComponent(customerThreadId(lead.id))}`}
                   className="text-[13px] font-semibold text-shop-accent hover:underline"
                 >
-                  Open in Inbox
-                </Link>
+                  {translate("Open in Inbox")}</Link>
                 <Button
                   variant="ghost"
                   iconOnly
-                  aria-label="Collapse chat"
+                  aria-label={translate("Collapse chat")}
                   icon={<PanelRightClose className="size-4" />}
                   onClick={() => setRailOpen(false)}
                 />
@@ -602,7 +601,7 @@ export default function LeadDetailPage() {
         <BookLeadsModal
           open={bookOpen}
           leads={[lead]}
-          title="Mark as booked"
+          title={translate("Mark as booked")}
           confirmLabel="Book & create portal login"
           onClose={() => setBookOpen(false)}
           onConfirm={async (drafts) => {

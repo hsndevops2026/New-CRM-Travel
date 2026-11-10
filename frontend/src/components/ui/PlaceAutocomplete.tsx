@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { useEffect, useRef, useState } from 'react'
 import {
   airportOptions,
@@ -38,6 +39,7 @@ export default function PlaceAutocomplete({
   className = '',
   id,
 }: Props) {
+  useI18n()
   const [options, setOptions] = useState<Option[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -137,7 +139,7 @@ export default function PlaceAutocomplete({
       />
 
       {loading && (
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-shop-muted">
+        <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs text-shop-muted">
           …
         </span>
       )}
@@ -150,11 +152,11 @@ export default function PlaceAutocomplete({
                 type="button"
                 onMouseEnter={() => setHighlight(index)}
                 onClick={() => choose(option)}
-                className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm ${
+                className={`flex w-full flex-col items-start px-3 py-2 text-start text-sm ${
                   index === highlight ? 'bg-shop-bg' : ''
                 }`}
               >
-                <span className="font-medium">{option.label}</span>
+                <span className="font-medium">{translate(option.label)}</span>
                 {option.hint && <span className="text-xs text-shop-muted">{option.hint}</span>}
               </button>
             </li>
@@ -162,7 +164,7 @@ export default function PlaceAutocomplete({
         </ul>
       )}
 
-      {error && <span className="mt-1 block text-xs text-shop-muted">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-shop-muted">{translate(error)}</span>}
     </div>
   )
 }

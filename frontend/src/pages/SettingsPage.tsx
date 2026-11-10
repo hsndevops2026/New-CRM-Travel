@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check } from 'lucide-react'
@@ -31,6 +32,7 @@ const LABEL = 'text-xs font-semibold text-slate-600'
 const CARD = 'scroll-mt-4 flex flex-col gap-4 rounded-[10px] border border-shop-border bg-white p-5'
 
 export default function SettingsPage() {
+  useI18n()
   const { admin } = useAuth()
   const { setPlaceholder } = useSearch()
   const toast = useToast()
@@ -87,10 +89,10 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col p-4 sm:p-6">
-      <PageHeader title="Settings" subtitle="Branding and delivery settings apply to every customer quote." />
+      <PageHeader title={translate("Settings")} subtitle="Branding and delivery settings apply to every customer quote." />
 
       <div className="flex flex-wrap items-start gap-6">
-        <nav aria-label="Settings sections" className="flex flex-[0_1_200px] flex-col gap-0.5 max-lg:w-full max-lg:flex-none max-lg:flex-row max-lg:overflow-x-auto lg:sticky lg:top-0">
+        <nav aria-label={translate("Settings sections")} className="flex flex-[0_1_200px] flex-col gap-0.5 max-lg:w-full max-lg:flex-none max-lg:flex-row max-lg:overflow-x-auto lg:sticky lg:top-0">
           {sections.map((item) => (
             <a
               key={item.id}
@@ -101,28 +103,28 @@ export default function SettingsPage() {
                 section === item.id ? 'bg-tint text-shop-accent' : 'text-neutral-fg hover:bg-neutral-bg'
               }`}
             >
-              {item.label}
+              {translate(item.label)}
             </a>
           ))}
         </nav>
 
         <div className="flex max-w-[980px] min-w-0 flex-[999_1_560px] flex-col gap-4">
           <section id="account" aria-labelledby="s-acc" className={CARD}>
-            <h2 id="s-acc" className="text-base font-bold">Your account</h2>
+            <h2 id="s-acc" className="text-base font-bold">{translate("Your account")}</h2>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-3.5">
               <label className="grid gap-1">
-                <span className={LABEL}>Name</span>
+                <span className={LABEL}>{translate("Name")}</span>
                 <input className={`${FIELD} bg-neutral-bg text-slate-600`} value={nameFromEmail(admin?.email || '')} disabled readOnly />
               </label>
               <label className="grid gap-1">
-                <span className={LABEL}>Email</span>
+                <span className={LABEL}>{translate("Email")}</span>
                 <input className={`${FIELD} bg-neutral-bg text-slate-600`} value={admin?.email || '—'} disabled readOnly />
               </label>
               <div className="grid gap-1">
-                <span className={LABEL}>Role</span>
+                <span className={LABEL}>{translate("Role")}</span>
                 <div className="flex h-9 items-center">
                   {admin?.role && (
-                    <StatusBadge label={admin.role === 'admin' ? 'Administrator' : 'Agent'} tone={admin.role === 'admin' ? 'info' : 'neutral'} />
+                    <StatusBadge label={admin.role === 'admin' ? translate('Administrator') : translate('Agent')} tone={admin.role === 'admin' ? 'info' : 'neutral'} />
                   )}
                 </div>
               </div>
@@ -132,24 +134,24 @@ export default function SettingsPage() {
           {isAdmin && (
             <section id="branding" aria-labelledby="s-br" className={CARD}>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 id="s-br" className="text-base font-bold">Agency branding</h2>
-                <span className="text-[13px] text-shop-muted">Used on customer quote pages, PDFs, WhatsApp and email</span>
+                <h2 id="s-br" className="text-base font-bold">{translate("Agency branding")}</h2>
+                <span className="text-[13px] text-shop-muted">{translate("Used on customer quote pages, PDFs, WhatsApp and email")}</span>
               </div>
               {brandingLoading ? (
-                <p role="status" className="text-sm text-shop-muted">Loading branding…</p>
+                <p role="status" className="text-sm text-shop-muted">{translate("Loading branding…")}</p>
               ) : (
                 <div className="flex flex-wrap items-start gap-6">
                   <div className="flex min-w-[min(100%,320px)] flex-[1_1_360px] flex-col gap-3.5">
                     <label className="grid gap-1">
-                      <span className={LABEL}>Agency name</span>
+                      <span className={LABEL}>{translate("Agency name")}</span>
                       <input className={FIELD} value={agency.agency_name} onChange={(e) => setAgency({ ...agency, agency_name: e.target.value })} />
                     </label>
-                    <ImageUpload label="Agency logo" value={agency.logo_url} onChange={(logo_url) => setAgency({ ...agency, logo_url: logo_url || null })} />
+                    <ImageUpload label={translate("Agency logo")} value={agency.logo_url} onChange={(logo_url) => setAgency({ ...agency, logo_url: logo_url || null })} />
                     <div className="grid gap-1">
-                      <label className={LABEL} htmlFor="brand-hex">Primary brand color</label>
+                      <label className={LABEL} htmlFor="brand-hex">{translate("Primary brand color")}</label>
                       <div className="flex items-center gap-2">
                         <input
-                          aria-label="Choose primary color"
+                          aria-label={translate("Choose primary color")}
                           type="color"
                           className="size-9 shrink-0 cursor-pointer rounded-lg border border-line-strong bg-white p-0.5 max-sm:size-11"
                           value={/^#[0-9a-f]{6}$/i.test(agency.primary_color) ? agency.primary_color : '#0f766e'}
@@ -161,42 +163,42 @@ export default function SettingsPage() {
                           value={agency.primary_color}
                           onChange={(e) => setAgency({ ...agency, primary_color: e.target.value })}
                         />
-                        <StatusBadge label={verdict.label} tone={verdict.ok ? 'success' : 'warning'} icon={verdict.ok ? <Check /> : undefined} />
+                        <StatusBadge label={translate(verdict.label)} tone={verdict.ok ? 'success' : 'warning'} icon={verdict.ok ? <Check /> : undefined} />
                       </div>
                     </div>
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))] gap-3.5">
                       <label className="grid gap-1">
-                        <span className={LABEL}>Phone / WhatsApp</span>
+                        <span className={LABEL}>{translate("Phone / WhatsApp")}</span>
                         <input className={`${FIELD} tabular-nums`} value={agency.phone || ''} onChange={(e) => setAgency({ ...agency, phone: e.target.value || null })} />
                       </label>
                       <label className="grid gap-1">
-                        <span className={LABEL}>Email</span>
+                        <span className={LABEL}>{translate("Email")}</span>
                         <input className={FIELD} value={agency.email || ''} onChange={(e) => setAgency({ ...agency, email: e.target.value || null })} />
                       </label>
                       <label className="grid gap-1">
-                        <span className={LABEL}>Website</span>
+                        <span className={LABEL}>{translate("Website")}</span>
                         <input className={FIELD} value={agency.website || ''} onChange={(e) => setAgency({ ...agency, website: e.target.value || null })} />
                       </label>
                       <label className="grid gap-1">
-                        <span className={LABEL}>Quote template</span>
+                        <span className={LABEL}>{translate("Quote template")}</span>
                         <select className={FIELD} value={agency.quotation_template} onChange={(e) => setAgency({ ...agency, quotation_template: e.target.value as AgencySettings['quotation_template'] })}>
-                          <option value="classic">Classic</option>
-                          <option value="modern">Modern</option>
+                          <option value="classic">{translate("Classic")}</option>
+                          <option value="modern">{translate("Modern")}</option>
                         </select>
                       </label>
                     </div>
                     <label className="grid gap-1">
-                      <span className={LABEL}>Address</span>
+                      <span className={LABEL}>{translate("Address")}</span>
                       <textarea rows={2} className="resize-y rounded-lg border border-line-strong px-2.5 py-2 text-sm" value={agency.address || ''} onChange={(e) => setAgency({ ...agency, address: e.target.value || null })} />
                     </label>
                     <label className="grid gap-1">
-                      <span className={LABEL}>Footer</span>
+                      <span className={LABEL}>{translate("Footer")}</span>
                       <textarea rows={2} className="resize-y rounded-lg border border-line-strong px-2.5 py-2 text-sm" value={agency.quotation_footer || ''} onChange={(e) => setAgency({ ...agency, quotation_footer: e.target.value || null })} />
                     </label>
                   </div>
 
                   <figure className="m-0 flex flex-[0_1_280px] flex-col gap-2 max-lg:w-full max-lg:flex-none">
-                    <figcaption className={LABEL}>Live preview · customer quote</figcaption>
+                    <figcaption className={LABEL}>{translate("Live preview · customer quote")}</figcaption>
                     <div className="overflow-hidden rounded-[14px] border border-shop-border bg-white shadow-[0_4px_12px_rgba(15,23,42,0.06)]">
                       <div className="flex items-center gap-2 p-3.5 text-white" style={{ background: agency.primary_color }}>
                         {agency.logo_url ? (
@@ -209,19 +211,18 @@ export default function SettingsPage() {
                         <strong>{agency.agency_name || 'Your agency'}</strong>
                       </div>
                       <div className="flex flex-col gap-1.5 p-3.5">
-                        <strong>Istanbul family winter break</strong>
-                        <span className="text-xs text-shop-muted tabular-nums">12–18 Dec · 2 adults, 1 child</span>
+                        <strong>{translate("Istanbul family winter break")}</strong>
+                        <span className="text-xs text-shop-muted tabular-nums">{translate("12–18 Dec · 2 adults, 1 child")}</span>
                         <span className="text-xl font-extrabold tabular-nums" style={{ color: agency.primary_color }}>USD 2,298</span>
                         <span className="grid h-9 place-items-center rounded-lg text-[13px] font-bold text-white" style={{ background: agency.primary_color }}>
-                          Accept this quote
-                        </span>
+                          {translate("Accept this quote")}</span>
                       </div>
                     </div>
                   </figure>
                 </div>
               )}
               {brandingError && (
-                <Banner tone="danger" title="Branding could not be saved">
+                <Banner tone="danger" title={translate("Branding could not be saved")}>
                   {brandingError}
                 </Banner>
               )}
@@ -229,29 +230,26 @@ export default function SettingsPage() {
           )}
 
           <section id="delivery" aria-labelledby="s-dl" className={CARD}>
-            <h2 id="s-dl" className="text-base font-bold">Quote delivery</h2>
+            <h2 id="s-dl" className="text-base font-bold">{translate("Quote delivery")}</h2>
             <ul className="grid gap-2 text-sm text-slate-700">
-              <li className="rounded-lg bg-shop-bg px-3 py-2">WhatsApp is connected through Wasender.</li>
-              <li className="rounded-lg bg-shop-bg px-3 py-2">Email quotes need SMTP credentials on the server.</li>
-              <li className="rounded-lg bg-shop-bg px-3 py-2">Customers open quotes at the public share link.</li>
+              <li className="rounded-lg bg-shop-bg px-3 py-2">{translate("WhatsApp is connected through Wasender.")}</li>
+              <li className="rounded-lg bg-shop-bg px-3 py-2">{translate("Email quotes need SMTP credentials on the server.")}</li>
+              <li className="rounded-lg bg-shop-bg px-3 py-2">{translate("Customers open quotes at the public share link.")}</li>
             </ul>
           </section>
 
           <section id="whatsapp" aria-labelledby="s-wa" className={CARD}>
             <h2 id="s-wa" className="text-base font-bold">WhatsApp</h2>
             <p className="text-sm text-shop-muted">
-              Simulate an inbound WhatsApp message — text or a voice note — to test lead intake without a real customer.
-            </p>
+              {translate("Simulate an inbound WhatsApp message — text or a voice note — to test lead intake without a real customer.")}</p>
             <div>
-              <Button onClick={() => setTestWaOpen(true)}>Test WhatsApp</Button>
+              <Button onClick={() => setTestWaOpen(true)}>{translate("Test WhatsApp")}</Button>
             </div>
             <p className="text-sm text-shop-muted">
-              Dealer contacts and WhatsApp groups are managed on the{' '}
+              {translate("Dealer contacts and WhatsApp groups are managed on the")}{' '}
               <Link to="/dealers" className="font-semibold text-shop-accent hover:underline">
-                Dealers
-              </Link>{' '}
-              page.
-            </p>
+                {translate("Dealers")}</Link>{' '}
+              {translate("page.")}</p>
           </section>
 
           <GoogleApisPanel />
@@ -260,15 +258,13 @@ export default function SettingsPage() {
 
           {isAdmin && dirty > 0 && (
             <div className="sticky bottom-4 z-10 flex items-center gap-2 rounded-xl border border-shop-border bg-white p-2.5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-              <span role="status" className="mr-auto pl-1.5 text-sm text-shop-muted tabular-nums">
-                {dirty} unsaved change{dirty === 1 ? '' : 's'}
+              <span role="status" className="me-auto ps-1.5 text-sm text-shop-muted tabular-nums">
+                {translate("{count} unsaved change{suffix}", { count: dirty, suffix: dirty === 1 ? '' : 's' })}
               </span>
               <Button variant="ghost" disabled={brandingSaving} onClick={() => setAgency(saved)}>
-                Discard
-              </Button>
+                {translate("Discard")}</Button>
               <Button variant="primary" loading={brandingSaving} disabled={!agency.agency_name.trim()} onClick={() => void saveBranding()}>
-                Save settings
-              </Button>
+                {translate("Save settings")}</Button>
             </div>
           )}
         </div>

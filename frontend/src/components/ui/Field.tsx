@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import type { ReactNode } from 'react'
 
 type Props = {
@@ -10,12 +11,13 @@ type Props = {
 }
 
 export default function Field({ label, hint, error, htmlFor, className = '', children }: Props) {
+  useI18n()
   return (
     <label htmlFor={htmlFor} className={`grid gap-1 text-sm ${className}`}>
-      <span className="font-medium">{label}</span>
+      <span className="font-medium">{translate(label)}</span>
       {children}
       {error ? (
-        <span className="text-xs text-red-600">{error}</span>
+        <span className="text-xs text-red-600">{translate(error)}</span>
       ) : hint ? (
         <span className="text-xs text-shop-muted">{hint}</span>
       ) : null}

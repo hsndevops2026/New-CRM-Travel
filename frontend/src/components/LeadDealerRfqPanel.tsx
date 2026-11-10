@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { Check, Clock, Send } from 'lucide-react'
 import Button from './ui/Button'
@@ -34,6 +35,7 @@ function dealersForLead(dealers: Dealer[], lead: Lead) {
 }
 
 export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
+  useI18n()
   const [dealers, setDealers] = useState<Dealer[]>([])
   const [groups, setGroups] = useState<WhatsAppGroup[]>([])
   const [sessionCount, setSessionCount] = useState(0)
@@ -142,7 +144,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
       const raw = String(dealer.whatsapp_group_id || '').trim()
       if (!raw || !looksLikeGroupJid(raw) || seen.has(raw)) continue
       seen.add(raw)
-      items.push({ jid: raw, name: `${dealer.name} group`, source: 'dealer' })
+      items.push({ jid: raw, name: translate("{value0} group", { value0: translate(String(dealer.name)) }), source: 'dealer' })
     }
     return items
   }, [dealers])
@@ -192,7 +194,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
         groupName: channel === 'group' ? group?.name || 'WhatsApp group' : undefined,
         deadlineHours,
       })
-      setSuccess(`RFQ ${sent.request_code} sent via WhatsApp`)
+      setSuccess(translate("RFQ {value0} sent via WhatsApp", { value0: translate(String(sent.request_code)) }))
       await load()
       onUpdated?.()
     } catch (err) {
@@ -212,15 +214,15 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
     <div className="flex flex-col gap-5">
       {requests.length > 0 && (
         <section aria-labelledby="rq-h" className="flex flex-col gap-2.5">
-          <h2 id="rq-h" className="text-base font-bold">Requests for quotation</h2>
+          <h2 id="rq-h" className="text-base font-bold">{translate("Requests for quotation")}</h2>
           <div className="overflow-x-auto rounded-[10px] border border-shop-border bg-white">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[640px] text-start text-sm">
               <thead>
                 <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
-                  <th className="px-3.5 py-2.5">Dealer</th>
-                  <th className="px-3.5 py-2.5">Channel</th>
-                  <th className="px-3.5 py-2.5">Status</th>
-                  <th className="px-3.5 py-2.5">Offer</th>
+                  <th className="px-3.5 py-2.5">{translate("Dealer")}</th>
+                  <th className="px-3.5 py-2.5">{translate("Channel")}</th>
+                  <th className="px-3.5 py-2.5">{translate("Status")}</th>
+                  <th className="px-3.5 py-2.5">{translate("Offer")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,12 +234,12 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
                     <tr key={req.id} className="border-b border-neutral-bg last:border-0">
                       <td className="px-3.5 py-3">
                         <strong>{req.group_name || req.dealer_name || 'WhatsApp'}</strong>
-                        <div className="font-mono text-xs text-shop-muted">{req.request_code}</div>
+                        <div className="font-mono text-xs text-shop-muted"><bdi dir="ltr">{req.request_code}</bdi></div>
                       </td>
-                      <td className="px-3.5 py-3">{req.whatsapp_group_jid ? 'WhatsApp group' : 'Direct message'}</td>
+                      <td className="px-3.5 py-3">{req.whatsapp_group_jid ? translate("WhatsApp group") : translate("Direct message")}</td>
                       <td className="px-3.5 py-3">
                         <StatusBadge
-                          label={state.label}
+                          label={translate(state.label)}
                           tone={state.tone}
                           icon={state.tone === 'success' ? <Check /> : state.tone === 'warning' ? <Clock /> : undefined}
                         />
@@ -256,8 +258,8 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
 
       <section aria-labelledby="nd-h" className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="nd-h" className="text-base font-bold">{requests.length ? 'Ask more dealers' : 'Ask dealers for deals'}</h2>
-          <span className="text-[13px] text-shop-muted">Dealers must reply with the REQ code.</span>
+          <h2 id="nd-h" className="text-base font-bold">{requests.length ? translate("Ask more dealers") : translate("Ask dealers for deals")}</h2>
+          <span className="text-[13px] text-shop-muted">{translate("Dealers must reply with the REQ code.")}</span>
         </div>
 
         <div className="flex flex-col gap-3.5 rounded-[10px] border border-shop-border bg-white p-4">
@@ -267,38 +269,38 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
             value={channel}
             onChange={(id) => setChannel(id as Channel)}
             items={[
-              { id: 'group', label: 'WhatsApp group' },
-              { id: 'dealer', label: 'Dealer number' },
+              { id: 'group', label: translate("WhatsApp group") },
+              { id: 'dealer', label: translate("Dealer number") },
             ]}
           />
           </div>
 
           {loading ? (
-            <p className="text-sm text-shop-muted">Loading destinations…</p>
+            <p className="text-sm text-shop-muted">{translate("Loading destinations…")}</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               {channel === 'group' ? (
                 <div className="grid gap-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-slate-600">Group</span>
+                    <span className="text-xs font-semibold text-slate-600">{translate("Group")}</span>
                     <button
                       type="button"
                       onClick={() => void refreshGroups()}
                       className="-my-2 py-2 text-xs font-semibold text-shop-accent hover:underline max-sm:-my-3 max-sm:py-3"
                       disabled={refreshing}
                     >
-                      {refreshing ? 'Refreshing…' : 'Refresh list'}
+                      {refreshing ? translate('Refreshing…') : translate("Refresh list")}
                     </button>
                   </div>
                   {groupOptions.length === 0 ? (
                     <p className="rounded-lg border border-dashed border-line-strong px-3 py-2 text-shop-muted">
                       {sessionStatus === 'connected'
-                        ? `WhatsApp is connected${sessionName ? ` as ${sessionName}` : ''}, but Wasender has not synced groups (${sessionCount} from the session). Reconnect this number in Wasender (unlink the device and scan QR again), then Refresh. A message in the group will also make it appear here.`
-                        : 'This WhatsApp session has no groups yet. Paste a group ID below, or save one on the dealer.'}
+                        ? translate("WhatsApp is connected{value0}, but Wasender has not synced groups ({value1} from the session). Reconnect this number in Wasender (unlink the device and scan QR again), then Refresh. A message in the group will also make it appear here.", { value0: translate(String(sessionName ? ` as ${sessionName}` : '')), value1: translate(String(sessionCount)) })
+                        : translate("This WhatsApp session has no groups yet. Paste a group ID below, or save one on the dealer.")}
                     </p>
                   ) : (
                     <select
-                      aria-label="Group"
+                      aria-label={translate("Group")}
                       value={selectedGroupJid}
                       onChange={(e) => setSelectedGroupJid(e.target.value)}
                       className={FIELD}
@@ -311,7 +313,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
                     </select>
                   )}
                   <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-600">Or paste group ID</span>
+                    <span className="text-xs font-semibold text-slate-600">{translate("Or paste group ID")}</span>
                     <input
                       value={customGroupJid}
                       onChange={(e) => setCustomGroupJid(e.target.value)}
@@ -322,11 +324,10 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
                 </div>
               ) : (
                 <label className="grid gap-1 text-sm">
-                  <span className="text-xs font-semibold text-slate-600">Dealer</span>
+                  <span className="text-xs font-semibold text-slate-600">{translate("Dealer")}</span>
                   {suggestedDealers.length === 0 ? (
                     <p className="rounded-lg border border-dashed border-line-strong px-3 py-2 text-shop-muted">
-                      No dealers configured. Add dealers first.
-                    </p>
+                      {translate("No dealers configured. Add dealers first.")}</p>
                   ) : (
                     <select
                       value={selectedDealerId}
@@ -344,7 +345,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
                 </label>
               )}
               <label className="grid gap-1 text-sm">
-                <span className="text-xs font-semibold text-slate-600">Deadline (hours)</span>
+                <span className="text-xs font-semibold text-slate-600">{translate("Deadline (hours)")}</span>
                 <input
                   type="number"
                   min={1}
@@ -358,7 +359,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[13px] text-shop-muted">Sends from the agency WhatsApp number</span>
+            <span className="text-[13px] text-shop-muted">{translate("Sends from the agency WhatsApp number")}</span>
             <Button
               variant="secondary"
               icon={<Send />}
@@ -367,8 +368,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
               onClick={() => void handleDispatch()}
               className="border-shop-accent text-shop-accent"
             >
-              Send RFQ
-            </Button>
+              {translate("Send RFQ")}</Button>
           </div>
 
           {success && (
@@ -377,7 +377,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
             </div>
           )}
           {error && (
-            <div role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{error}</div>
+            <div role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{translate(error)}</div>
           )}
         </div>
       </section>

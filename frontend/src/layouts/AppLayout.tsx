@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -23,6 +24,7 @@ import { fetchAgencySettings, type AgencySettings } from '../lib/agencySettings'
 import { initialsFromName, nameFromEmail } from '../lib/people'
 import type { NavCounts } from '../lib/navCounts'
 import StatusBadge from '../components/ui/StatusBadge'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 type NavEntry = {
   to: string
@@ -75,6 +77,7 @@ function NavItem({
   counts: NavCounts | null
   onNavigate?: () => void
 }) {
+  useI18n()
   const Icon = entry.icon
   return (
     <Link
@@ -88,20 +91,21 @@ function NavItem({
       }`}
     >
       <Icon className="size-4 shrink-0" strokeWidth={1.8} />
-      <span className="flex-1">{entry.label}</span>
+      <span className="flex-1">{translate(entry.label)}</span>
       {countFor(entry.to, counts)}
     </Link>
   )
 }
 
 function SidebarNav({ counts, onNavigate }: { counts: NavCounts | null; onNavigate?: () => void }) {
+  useI18n()
   const location = useLocation()
   const { admin } = useAuth()
   const isAdmin = admin?.role === 'admin'
   const adminItems = ADMIN_NAV.filter((entry) => isAdmin || !entry.adminOnly)
 
   return (
-    <nav aria-label="Main navigation" className="flex flex-col gap-0.5">
+    <nav aria-label={translate("Main navigation")} className="flex flex-col gap-0.5">
       {PRIMARY_NAV.map((entry) => (
         <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} />
       ))}
@@ -118,6 +122,7 @@ function SidebarNav({ counts, onNavigate }: { counts: NavCounts | null; onNaviga
 }
 
 function Brand({ agency, size = 30 }: { agency: AgencySettings | null; size?: number }) {
+  useI18n()
   const name = agency?.agency_name || 'Horizon Travel'
   return (
     <div className="flex items-center gap-2.5">
@@ -134,13 +139,14 @@ function Brand({ agency, size = 30 }: { agency: AgencySettings | null; size?: nu
       )}
       <div className="flex min-w-0 flex-col leading-tight">
         <strong className="truncate">{name}</strong>
-        <span className="text-xs text-shop-muted">Agency CRM</span>
+        <span className="text-xs text-shop-muted">{translate("Agency CRM")}</span>
       </div>
     </div>
   )
 }
 
 function Avatar({ name, size = 30 }: { name: string; size?: number }) {
+  useI18n()
   return (
     <span
       aria-hidden="true"
@@ -154,6 +160,7 @@ function Avatar({ name, size = 30 }: { name: string; size?: number }) {
 
 /** Agents work from a lead allowance; admins are unlimited, so only agents see the meter. */
 function CreditsCard() {
+  useI18n()
   const { admin } = useAuth()
   if (admin?.role !== 'agent') return null
   const left = admin.lead_credits ?? 0
@@ -163,25 +170,26 @@ function CreditsCard() {
   return (
     <div className="flex flex-col gap-1.5 rounded-[10px] border border-shop-border p-2.5">
       <div className="flex justify-between">
-        <span className="text-xs font-semibold text-slate-600">Lead credits</span>
+        <span className="text-xs font-semibold text-slate-600">{translate("Lead credits")}</span>
         <span className="font-bold tabular-nums">{left}</span>
       </div>
       <div
         className="h-1.5 rounded-sm bg-neutral-bg"
         role="meter"
-        aria-label="Lead credits remaining"
+        aria-label={translate("Lead credits remaining")}
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={left}
       >
         <div className="h-1.5 rounded-sm bg-shop-accent" style={{ width: `${percent}%` }} />
       </div>
-      <span className="text-xs text-shop-muted">{used} used · {left} left</span>
+      <span className="text-xs text-shop-muted">{used}{' '}{translate("used ·")}{' '}{left}{' '}{translate("left")}</span>
     </div>
   )
 }
 
 function Shell() {
+  useI18n()
   const { admin, logout } = useAuth()
   const navigate = useNavigate()
   const { query, setQuery, placeholder } = useSearch()
@@ -241,26 +249,26 @@ function Shell() {
 
   const searchField = (
     <div className="relative w-full">
-      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-shop-muted" strokeWidth={1.8} />
+      <Search className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-shop-muted" strokeWidth={1.8} />
       <input
         type="search"
         aria-label={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-lg border border-line-strong bg-shop-bg pl-[34px] pr-3 text-sm placeholder:text-shop-muted focus:border-shop-accent focus:bg-white max-md:h-11"
+        className="h-9 w-full rounded-lg border border-line-strong bg-shop-bg ps-[34px] pe-3 text-sm placeholder:text-shop-muted focus:border-shop-accent focus:bg-white max-md:h-11"
       />
     </div>
   )
 
   return (
     <div className="flex h-dvh bg-shop-bg text-shop-ink">
-      <aside className="hidden h-full w-[232px] shrink-0 flex-col gap-0.5 border-r border-shop-border bg-shop-sidebar px-3 py-3.5 md:flex">
+      <aside className="hidden h-full w-[232px] shrink-0 flex-col gap-0.5 border-e border-shop-border bg-shop-sidebar px-3 py-3.5 md:flex">
         <button
           type="button"
           onClick={() => navigate('/inbox')}
-          className="px-2 pb-4 pt-1 text-left"
-          aria-label="Go to Inbox"
+          className="px-2 pb-4 pt-1 text-start"
+          aria-label={translate("Go to Inbox")}
         >
           <Brand agency={agency} />
         </button>
@@ -274,15 +282,15 @@ function Shell() {
         <div className="fixed inset-0 z-40 md:hidden">
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={translate("Close menu")}
             className="absolute inset-0 bg-shop-ink/45"
             onClick={() => setSidebarOpen(false)}
           />
           <aside
             role="dialog"
             aria-modal="true"
-            aria-label="Main menu"
-            className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] flex-col gap-1 bg-white px-3 py-4 shadow-[8px_0_32px_rgba(15,23,42,.2)]"
+            aria-label={translate("Main menu")}
+            className="absolute inset-y-0 start-0 flex w-[min(300px,85vw)] flex-col gap-1 bg-white px-3 py-4 shadow-[8px_0_32px_rgba(15,23,42,.2)]"
           >
             <div className="flex items-center px-2 pb-4 pt-1">
               <div className="min-w-0 flex-1">
@@ -290,7 +298,7 @@ function Shell() {
               </div>
               <button
                 type="button"
-                aria-label="Close menu"
+                aria-label={translate("Close menu")}
                 className="flex size-11 items-center justify-center text-neutral-fg"
                 onClick={() => setSidebarOpen(false)}
               >
@@ -305,13 +313,12 @@ function Shell() {
               <div className="flex min-w-0 flex-1 flex-col leading-tight">
                 <strong className="truncate">{displayName}</strong>
                 <span className="truncate text-[13px] capitalize text-shop-muted">
-                  {admin?.role}
-                  {admin?.role === 'agent' ? ` · ${admin.lead_credits ?? 0} credits` : ''}
+                  {translate(admin?.role)}
+                  {admin?.role === 'agent' ? translate(" · {value0} credits", { value0: translate(String(admin.lead_credits ?? 0)) }) : ''}
                 </span>
               </div>
               <button type="button" onClick={signOut} className="text-sm font-semibold text-shop-accent">
-                Sign out
-              </button>
+                {translate("Sign out")}</button>
             </div>
           </aside>
         </div>
@@ -319,9 +326,10 @@ function Shell() {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-shop-border bg-white px-3 md:px-6">
+          <LanguageSwitcher />
           <button
             type="button"
-            aria-label="Open menu"
+            aria-label={translate("Open menu")}
             className="flex size-11 items-center justify-center rounded-lg text-shop-ink hover:bg-neutral-bg md:hidden"
             onClick={() => setSidebarOpen(true)}
           >
@@ -329,11 +337,11 @@ function Shell() {
           </button>
           <span className="truncate font-bold md:hidden">{agency?.agency_name || 'Horizon Travel'}</span>
           {searchEnabled && <div className="hidden w-full max-w-[520px] flex-1 md:block">{searchField}</div>}
-          <div className="relative ml-auto" data-admin-menu>
+          <div className="relative ms-auto" data-admin-menu>
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              aria-label="Account menu"
+              aria-label={translate("Account menu")}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               className="flex h-9 items-center gap-2 rounded-lg px-1.5 hover:bg-neutral-bg max-sm:h-11 max-sm:min-w-11 max-sm:justify-center"
@@ -346,7 +354,7 @@ function Shell() {
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 z-30 mt-2 w-64 rounded-[10px] border border-shop-border bg-white p-1.5 shadow-[0_8px_24px_rgba(15,23,42,.12)]"
+                className="absolute end-0 z-30 mt-2 w-64 rounded-[10px] border border-shop-border bg-white p-1.5 shadow-[0_8px_24px_rgba(15,23,42,.12)]"
               >
                 <div className="px-2.5 py-2">
                   <div className="truncate font-semibold">{displayName}</div>
@@ -354,7 +362,7 @@ function Shell() {
                   <div className="mt-1.5 flex items-center gap-2">
                     {admin?.role && <StatusBadge label={admin.role} tone={admin.role === 'admin' ? 'success' : 'neutral'} />}
                     {admin?.role === 'agent' && (
-                      <span className="text-xs tabular-nums text-shop-muted">{admin.lead_credits ?? 0} credits left</span>
+                      <span className="text-xs tabular-nums text-shop-muted">{admin.lead_credits ?? 0}{' '}{translate("credits left")}</span>
                     )}
                   </div>
                 </div>
@@ -362,12 +370,11 @@ function Shell() {
                 <button
                   type="button"
                   role="menuitem"
-                  className="flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-sm font-semibold text-neutral-fg hover:bg-neutral-bg"
+                  className="flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-start text-sm font-semibold text-neutral-fg hover:bg-neutral-bg"
                   onClick={signOut}
                 >
                   <LogOut className="size-4" strokeWidth={1.8} />
-                  Sign out
-                </button>
+                  {translate("Sign out")}</button>
               </div>
             )}
           </div>
@@ -384,6 +391,7 @@ function Shell() {
 }
 
 export default function AppLayout() {
+  useI18n()
   return (
     <SearchProvider>
       <Shell />

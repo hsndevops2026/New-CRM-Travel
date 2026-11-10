@@ -1,3 +1,5 @@
+import { locale } from '../lib/i18n'
+import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, ChevronLeft, ChevronRight, CircleAlert, Pencil, Trash2 } from 'lucide-react'
@@ -19,6 +21,7 @@ import {
 } from '../lib/reminders'
 
 export default function RemindersPage() {
+  useI18n()
   const { confirm, dialog } = useConfirm()
   const [day, setDay] = useState(() => todayYmd())
   const [reminders, setReminders] = useState<ContactReminder[]>([])
@@ -74,7 +77,7 @@ export default function RemindersPage() {
 
   const label = (() => {
     const [y, m, d] = day.split('-').map(Number)
-    return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    return new Date(y, m - 1, d).toLocaleDateString(locale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'short',
@@ -96,15 +99,15 @@ export default function RemindersPage() {
   return (
     <div className="mx-auto w-full max-w-[900px] p-4 pb-24 sm:p-6">
       <PageHeader
-        title="Reminders"
-        subtitle={label}
+        title={translate("Reminders")}
+        subtitle={translate(label)}
         actions={
           <div className="flex items-center gap-1">
             <Button
               size="sm"
               variant="ghost"
               iconOnly
-              aria-label="Previous day"
+              aria-label={translate("Previous day")}
               icon={<ChevronLeft />}
               onClick={() => setDay((d) => shiftYmd(d, -1))}
             />
@@ -113,45 +116,43 @@ export default function RemindersPage() {
               value={day}
               onChange={(e) => setDay(e.target.value || todayYmd())}
               className="rounded-md border border-shop-border px-2 py-1.5 text-sm outline-none focus:border-primary-500"
-              aria-label="Reminder day"
+              aria-label={translate("Reminder day")}
             />
             <Button
               size="sm"
               variant="ghost"
               iconOnly
-              aria-label="Next day"
+              aria-label={translate("Next day")}
               icon={<ChevronRight />}
               onClick={() => setDay((d) => shiftYmd(d, 1))}
             />
             {day !== todayYmd() && (
               <Button size="sm" variant="secondary" onClick={() => setDay(todayYmd())}>
-                Today
-              </Button>
+                {translate("Today")}</Button>
             )}
           </div>
         }
       />
 
       <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
-        {loading && <p className="px-3.5 py-6 text-sm text-shop-muted">Loading reminders…</p>}
+        {loading && <p className="px-3.5 py-6 text-sm text-shop-muted">{translate("Loading reminders…")}</p>}
         {!loading && error && (
           <EmptyState
             tone="danger"
             icon={<CircleAlert />}
-            title="Reminders could not be loaded"
-            description={error}
-            action={<Button variant="primary" onClick={() => void applyDay(day)}>Retry</Button>}
+            title={translate("Reminders could not be loaded")}
+            description={translate(error)}
+            action={<Button variant="primary" onClick={() => void applyDay(day)}>{translate("Retry")}</Button>}
           />
         )}
         {!loading && !error && reminders.length === 0 && (
           <EmptyState
             icon={<Bell />}
-            title="No reminders for this day"
-            description="Add one from a contact’s menu or profile."
+            title={translate("No reminders for this day")}
+            description={translate("Add one from a contact’s menu or profile.")}
             action={
               <Button variant="secondary" onClick={() => window.location.assign('/contacts')}>
-                Go to contacts
-              </Button>
+                {translate("Go to contacts")}</Button>
             }
           />
         )}
@@ -170,7 +171,7 @@ export default function RemindersPage() {
                   <input
                     type="checkbox"
                     checked={done}
-                    aria-label={done ? 'Mark reminder not done' : 'Mark reminder done'}
+                    aria-label={done ? translate("Mark reminder not done") : translate("Mark reminder done")}
                     className="mt-1"
                     onChange={() => {
                       void updateReminder(reminder.id, { done: !done }).then((saved) => {
@@ -194,8 +195,7 @@ export default function RemindersPage() {
                       )}
                       {overdue && (
                         <span className="text-[11px] font-bold tracking-wide text-amber-800 uppercase">
-                          Overdue
-                        </span>
+                          {translate("Overdue")}</span>
                       )}
                     </div>
                     <p className={`text-sm ${done ? 'line-through text-shop-muted' : ''}`}>{reminder.text}</p>
@@ -205,7 +205,7 @@ export default function RemindersPage() {
                       size="sm"
                       variant="ghost"
                       iconOnly
-                      aria-label="Edit reminder"
+                      aria-label={translate("Edit reminder")}
                       icon={<Pencil />}
                       onClick={() => setEditing(reminder)}
                     />
@@ -213,13 +213,13 @@ export default function RemindersPage() {
                       size="sm"
                       variant="ghost"
                       iconOnly
-                      aria-label="Delete reminder"
+                      aria-label={translate("Delete reminder")}
                       icon={<Trash2 />}
                       onClick={() => {
                         void confirm({
-                          title: 'Delete reminder?',
+                          title: translate("Delete reminder?"),
                           description: reminder.text,
-                          confirmLabel: 'Delete',
+                          confirmLabel: translate("Delete"),
                         }).then((ok) => {
                           if (!ok) return
                           void deleteReminder(reminder.id).then(() => {

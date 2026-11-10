@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
 import Button from './ui/Button'
@@ -14,6 +15,7 @@ type Props = {
 }
 
 export default function UploadDocumentButton({ leadId, onUploaded, size = 'sm' }: Props) {
+  useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,9 +58,9 @@ export default function UploadDocumentButton({ leadId, onUploaded, size = 'sm' }
         disabled={uploading}
         onClick={() => inputRef.current?.click()}
       >
-        {uploading ? 'Uploading…' : 'Upload document'}
+        {uploading ? translate('Uploading…') : translate("Upload document")}
       </Button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-red-600">{translate(error)}</span>}
     </div>
   )
 }

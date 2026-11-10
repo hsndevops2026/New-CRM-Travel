@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { t, useI18n } from '../../lib/i18n'
 
 /**
  * Pill badge from the design system. Status is always text + colour (never colour alone),
@@ -51,6 +52,7 @@ function sentenceCase(text: string) {
 }
 
 export default function StatusBadge({ label, tone = 'neutral', className = '', icon, dot }: Props) {
+  useI18n()
   return (
     <span
       className={`inline-flex h-[22px] items-center gap-[5px] whitespace-nowrap rounded-full px-2 text-xs font-semibold ${toneStyles[tone]} ${className}`}
@@ -62,7 +64,7 @@ export default function StatusBadge({ label, tone = 'neutral', className = '', i
       ) : dot ? (
         <span className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
       ) : null}
-      {sentenceCase(label)}
+      {t(sentenceCase(label))}
     </span>
   )
 }

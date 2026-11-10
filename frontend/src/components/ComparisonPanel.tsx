@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CircleAlert, Clock } from 'lucide-react'
 import { fetchComparison, setDraftItems, type ComparisonItem, type QuoteDraft } from '../lib/quoteDrafts'
@@ -30,6 +31,7 @@ const BADGE_SOURCE: Record<string, OptionSource> = {
 const money = (value: number, currency: string) => `${currency} ${Math.round(value).toLocaleString()}`
 
 function MetaDetail({ item }: { item: ComparisonItem }) {
+  useI18n()
   const m = item.meta
   const rows: [string, string][] = []
 
@@ -87,6 +89,7 @@ function ItemCard({
   rank: number | null
   onToggle: (id: string) => void
 }) {
+  useI18n()
   const terms = item.source_type === 'dealer' && item.meta?.extracted
     ? (item.meta.extracted as Record<string, unknown>).cancellation_terms
     : item.meta?.cancellation_policy
@@ -105,14 +108,14 @@ function ItemCard({
         type="checkbox"
         checked={selected}
         onChange={() => onToggle(item.id)}
-        aria-label={`Include ${plainOptionLabel(item.label)}`}
+        aria-label={translate("Include {value0}", { value0: translate(String(plainOptionLabel(item.label))) })}
         className="mt-0.5 size-[18px] shrink-0 accent-shop-accent"
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex flex-wrap gap-1.5">
           <SourceBadge source={BADGE_SOURCE[item.source_type] ?? 'market'} />
           {dealerName && <StatusBadge label={dealerName} tone="dealer" />}
-          {provider && <StatusBadge label={provider === 'google_flights' ? 'Google · SerpApi' : provider} tone="info" />}
+          {provider && <StatusBadge label={provider === 'google_flights' ? translate("Google · SerpApi") : provider} tone="info" />}
           {rank === 1 && <HighlightBadge kind="lowest" rank={1} />}
           {Boolean(item.meta?.is_best) && <HighlightBadge kind="best_value" />}
           {!item.meta?.is_best && Boolean(item.meta?.is_recommended) && <HighlightBadge kind="ai_pick" />}
@@ -130,12 +133,12 @@ function ItemCard({
           <span className="rounded-lg bg-[#F5F3FF] px-2.5 py-2 text-[13px] text-dealer-fg">{String(why)}</span>
         ) : null}
       </div>
-      <div className="shrink-0 text-right">
-        <span className="block text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">Net</span>
+      <div className="shrink-0 text-end">
+        <span className="block text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">{translate("Net")}</span>
         {item.net_cost != null ? (
           <div className="text-base font-extrabold tabular-nums">{money(item.net_cost, item.currency)}</div>
         ) : (
-          <span className="text-xs text-shop-muted italic">No price</span>
+          <span className="text-xs text-shop-muted italic">{translate("No price")}</span>
         )}
       </div>
     </label>
@@ -153,11 +156,11 @@ function ItemList({
   priceRankedIds: Map<string, number>
   onToggle: (id: string) => void
 }) {
+  useI18n()
   if (!items.length) {
     return (
       <p className="rounded-[10px] border border-dashed border-line-strong py-6 text-center text-sm text-shop-muted">
-        Nothing in this section yet.
-      </p>
+        {translate("Nothing in this section yet.")}</p>
     )
   }
   return (
@@ -188,6 +191,7 @@ function ComparisonSections({
   priceRankedIds: Map<string, number>
   onToggle: (id: string) => void
 }) {
+  useI18n()
   const [referenceOpen, setReferenceOpen] = useState(false)
   const dealers = items.filter((item) => item.source_type === 'dealer')
   const reference = items.filter((item) => item.source_type === 'hotel_api')
@@ -196,8 +200,7 @@ function ComparisonSections({
   if (!items.length) {
     return (
       <p className="rounded-[10px] border border-dashed border-line-strong py-10 text-center text-sm text-shop-muted">
-        No options available yet. Send a dealer RFQ, or use API hotels as market reference.
-      </p>
+        {translate("No options available yet. Send a dealer RFQ, or use API hotels as market reference.")}</p>
     )
   }
 
@@ -210,12 +213,12 @@ function ComparisonSections({
   return (
     <div className="space-y-5">
       <section>
-        <h3 className="mb-2 text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">Dealer offers</h3>
+        <h3 className="mb-2 text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">{translate("Dealer offers")}</h3>
         <ItemList items={dealers} selectedIds={selectedIds} priceRankedIds={priceRankedIds} onToggle={onToggle} />
       </section>
       {other.length > 0 && (
         <section>
-          <h3 className="mb-2 text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">Packages &amp; flights</h3>
+          <h3 className="mb-2 text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">{translate("Packages &amp; flights")}</h3>
           <ItemList items={other} selectedIds={selectedIds} priceRankedIds={priceRankedIds} onToggle={onToggle} />
         </section>
       )}
@@ -225,12 +228,11 @@ function ComparisonSections({
             type="button"
             aria-expanded={referenceOpen}
             onClick={() => setReferenceOpen((open) => !open)}
-            className="mb-2 flex min-h-9 w-full items-center justify-between text-left max-sm:min-h-11"
+            className="mb-2 flex min-h-9 w-full items-center justify-between text-start max-sm:min-h-11"
           >
             <h3 className="text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">
-              Market reference (API hotels)
-            </h3>
-            <span className="text-[13px] font-semibold text-shop-accent">{referenceOpen ? 'Hide' : `Show ${reference.length}`}</span>
+              {translate("Market reference (API hotels)")}</h3>
+            <span className="text-[13px] font-semibold text-shop-accent">{referenceOpen ? translate('Hide') : translate("Show {value0}", { value0: translate(String(reference.length)) })}</span>
           </button>
           {referenceOpen && (
             <ItemList
@@ -247,6 +249,7 @@ function ComparisonSections({
 }
 
 export default function ComparisonPanel({ leadId, draft, onDraftChange }: Props) {
+  useI18n()
   const [items, setItems] = useState<ComparisonItem[]>([])
   const [sourceErrors, setSourceErrors] = useState<{ source: string; error: string }[]>([])
   const [loading, setLoading] = useState(true)
@@ -382,14 +385,13 @@ export default function ComparisonPanel({ leadId, draft, onDraftChange }: Props)
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="cmp-h" className="text-base font-bold">
-            Compare options <span className="font-medium text-shop-muted tabular-nums">· {items.length} eligible</span>
+            {translate("Compare options")}{' '}<span className="font-medium text-shop-muted tabular-nums">· {items.length}{' '}{translate("eligible")}</span>
           </h2>
           <p className="text-xs text-shop-muted">
-            Dealer offers first. API hotels are market reference — add one to the quote only if needed.
-          </p>
+            {translate("Dealer offers first. API hotels are market reference — add one to the quote only if needed.")}</p>
         </div>
         <Button variant="primary" loading={saving} disabled={!dirty} onClick={() => void applySelection()}>
-          {`Apply (${selectedCount} selected)`}
+          {translate("Apply ({value0} selected)", { value0: translate(String(selectedCount)) })}
         </Button>
       </div>
 
@@ -401,22 +403,21 @@ export default function ComparisonPanel({ leadId, draft, onDraftChange }: Props)
         <div role="alert" className="flex gap-2.5 rounded-[10px] bg-warn-bg px-3.5 py-3 text-[#78350F]">
           <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <span>
-            A package already includes flights and hotel. Remove the separate items or the package to avoid double counting.
-          </span>
+            {translate("A package already includes flights and hotel. Remove the separate items or the package to avoid double counting.")}</span>
         </div>
       )}
 
       {sourceErrors.length > 0 && (
         <div className="rounded-lg border border-[#FCD34D] bg-warn-bg px-3 py-2 text-xs text-warn-fg">
-          Some sources had errors: {sourceErrors.map((e) => e.source).join(', ')}
+          {translate("Some sources had errors:")}{' '}{sourceErrors.map((e) => e.source).join(', ')}
         </div>
       )}
 
       {error && (
-        <div role="alert" className="rounded-lg border border-red-200 bg-danger-bg px-3 py-2 text-sm text-danger-fg">{error}</div>
+        <div role="alert" className="rounded-lg border border-red-200 bg-danger-bg px-3 py-2 text-sm text-danger-fg">{translate(error)}</div>
       )}
 
-      {loading && <p role="status" className="py-8 text-center text-sm text-shop-muted">Loading options…</p>}
+      {loading && <p role="status" className="py-8 text-center text-sm text-shop-muted">{translate("Loading options…")}</p>}
 
       {!loading && (
         <ComparisonSections

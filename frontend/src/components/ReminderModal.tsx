@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useId, useState, type FormEvent } from 'react'
 import Button from './ui/Button'
 import Field from './ui/Field'
@@ -21,6 +22,7 @@ type Props = {
 }
 
 export default function ReminderModal({ open, contact, reminder, onClose, onSaved }: Props) {
+  useI18n()
   const textId = useId()
   const dateId = useId()
   const timeId = useId()
@@ -79,34 +81,33 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
   return (
     <ModalDrawer
       open={open}
-      title={reminder ? 'Edit reminder' : 'Add reminder'}
-      subtitle={contact ? `For ${contact.name}` : undefined}
+      title={reminder ? translate("Edit reminder") : translate("Add reminder")}
+      subtitle={contact ? translate("For {value0}", { value0: translate(String(contact.name)) }) : undefined}
       onClose={onClose}
       maxWidthClassName="max-w-md"
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
+            {translate("Cancel")}</Button>
           <Button variant="primary" type="submit" form="reminder-form" disabled={saving || !contact}>
-            {saving ? 'Saving…' : reminder ? 'Save changes' : 'Add reminder'}
+            {saving ? translate("Saving…") : reminder ? translate("Save changes") : translate("Add reminder")}
           </Button>
         </div>
       }
     >
       <form id="reminder-form" onSubmit={(e) => void submit(e)} className="grid gap-4">
-        <Field label="Reminder" htmlFor={textId} error={error && !text.trim() ? error : null}>
+        <Field label={translate("Reminder")} htmlFor={textId} error={error && !text.trim() ? error : null}>
           <textarea
             id={textId}
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
             className="w-full rounded-md border border-shop-border px-3 py-2 text-sm outline-none focus:border-primary-500"
-            placeholder="Follow up about hotel confirmation…"
+            placeholder={translate("Follow up about hotel confirmation…")}
           />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Date" htmlFor={dateId}>
+          <Field label={translate("Date")} htmlFor={dateId}>
             <input
               id={dateId}
               type="date"
@@ -115,7 +116,7 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
               className="w-full rounded-md border border-shop-border px-3 py-2 text-sm outline-none focus:border-primary-500"
             />
           </Field>
-          <Field label="Time" htmlFor={timeId}>
+          <Field label={translate("Time")} htmlFor={timeId}>
             <input
               id={timeId}
               type="time"
@@ -135,15 +136,17 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
             className="mt-0.5"
           />
           <span>
-            Also send this to {contact?.name || 'the customer'} on WhatsApp at the reminder time
+            {translate('Also send this to {value0} on WhatsApp at the reminder time', {
+              value0: contact?.name || translate('the customer'),
+            })}
             <span className="block text-xs text-shop-muted">
               {reminder?.sent_at
-                ? 'Already sent to the customer.'
-                : 'Leave unticked for an internal note that only staff see.'}
+                ? translate('Already sent to the customer.')
+                : translate('Leave unticked for an internal note that only staff see.')}
             </span>
           </span>
         </label>
-        {error && text.trim() ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error && text.trim() ? <p className="text-sm text-red-600">{translate(error)}</p> : null}
       </form>
     </ModalDrawer>
   )

@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useMemo, useState, type FormEvent } from 'react'
 import { createContact, updateContact, type Contact } from '../lib/contacts'
 import { formatPhone } from '../lib/leads'
@@ -16,6 +17,7 @@ type Props = {
 }
 
 export default function ContactModal({ open, contact, onClose, onSaved }: Props) {
+  useI18n()
   const sessionKey = open ? (contact?.id ?? 'new') : null
   const initialPhone = contact?.phone ? splitInternationalPhone(contact.phone) : null
   const [formKey, setFormKey] = useState(sessionKey)
@@ -72,14 +74,14 @@ export default function ContactModal({ open, contact, onClose, onSaved }: Props)
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4">
       <div className="w-full max-w-md rounded-t-2xl bg-white shadow-2xl sm:rounded-xl">
         <div className="flex items-center justify-between border-b border-shop-border px-4 py-4">
-          <h2 className="text-lg font-semibold">{contact ? 'Edit contact' : 'Add contact'}</h2>
+          <h2 className="text-lg font-semibold">{contact ? translate("Edit contact") : translate("Add contact")}</h2>
           <button type="button" onClick={onClose} className="rounded-md px-2 py-1 text-shop-muted hover:bg-shop-bg">
             ✕
           </button>
         </div>
         <form onSubmit={submit} className="grid gap-4 px-4 py-5">
           <label className="grid gap-1 text-sm">
-            <span className="font-medium">Customer name</span>
+            <span className="font-medium">{translate("Customer name")}</span>
             <input
               required
               className="min-h-11 rounded-lg border border-shop-border px-3 py-2"
@@ -88,11 +90,10 @@ export default function ContactModal({ open, contact, onClose, onSaved }: Props)
             />
           </label>
           <div className="grid gap-1 text-sm">
-            <span className="font-medium">WhatsApp number</span>
+            <span className="font-medium">{translate("WhatsApp number")}</span>
             <div className="flex gap-2">
               <label className="sr-only" htmlFor="contact-country-code">
-                Country code
-              </label>
+                {translate("Country code")}</label>
               <select
                 id="contact-country-code"
                 className="min-h-11 w-[8.5rem] shrink-0 rounded-lg border border-shop-border bg-white px-2 py-2"
@@ -115,20 +116,19 @@ export default function ContactModal({ open, contact, onClose, onSaved }: Props)
               />
             </div>
             <span className="text-xs text-shop-muted">
-              {preview ? `Saves as ${preview}` : 'Choose a country code, then enter the local number.'}
+              {preview ? translate("Saves as {value0}", { value0: translate(String(preview)) }) : translate("Choose a country code, then enter the local number.")}
             </span>
           </div>
-          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</div>}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={onClose} className="rounded-lg border border-shop-border px-3 py-2 text-sm">
-              Cancel
-            </button>
+              {translate("Cancel")}</button>
             <button
               type="submit"
               disabled={saving}
               className="rounded-lg bg-shop-ink px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? translate("Saving…") : translate("Save")}
             </button>
           </div>
         </form>

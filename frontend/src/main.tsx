@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './index.css'
 import { AuthProvider } from './context/AuthContext.tsx'
-import { ToastProvider } from './context/ToastProvider.tsx'
+import InterfaceProviders from './components/InterfaceProviders.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 import AppLayout from './layouts/AppLayout.tsx'
 import CustomerLayout from './layouts/CustomerLayout.tsx'
@@ -26,7 +26,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <ToastProvider>
+        <InterfaceProviders>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
@@ -64,7 +64,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<HomeRedirect />} />
             <Route path="*" element={<HomeRedirect />} />
           </Routes>
-        </ToastProvider>
+        </InterfaceProviders>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

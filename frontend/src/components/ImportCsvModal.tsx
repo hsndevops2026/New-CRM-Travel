@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useRef, useState } from 'react'
 import {
   CSV_TEMPLATE,
@@ -14,6 +15,7 @@ type Props = {
 }
 
 export default function ImportCsvModal({ open, onClose, onImported }: Props) {
+  useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [previewCount, setPreviewCount] = useState(0)
@@ -57,8 +59,8 @@ export default function ImportCsvModal({ open, onClose, onImported }: Props) {
       const result = await bulkCreateLeads(rows)
       onImported(result.created || [])
       setMessage(
-        `Imported ${result.created_count} lead(s)` +
-          (result.failed_count ? `, ${result.failed_count} failed` : ''),
+        translate("Imported {value0} lead(s)", { value0: translate(String(result.created_count)) }) +
+          (result.failed_count ? translate(", {value0} failed", { value0: translate(String(result.failed_count)) }) : ''),
       )
       if (!result.failed_count) {
         setTimeout(() => {
@@ -80,7 +82,7 @@ export default function ImportCsvModal({ open, onClose, onImported }: Props) {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4">
       <div className="flex max-h-[92dvh] w-full max-w-xl flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-xl">
         <div className="flex shrink-0 items-center justify-between border-b border-shop-border px-4 py-4 sm:px-5">
-          <h2 className="text-lg font-semibold">Import leads from CSV</h2>
+          <h2 className="text-lg font-semibold">{translate("Import leads from CSV")}</h2>
           <button type="button" onClick={onClose} className="rounded-md px-2 py-1 text-shop-muted hover:bg-shop-bg">
             ✕
           </button>
@@ -88,9 +90,7 @@ export default function ImportCsvModal({ open, onClose, onImported }: Props) {
 
         <div className="space-y-4 overflow-y-auto px-4 py-5 sm:px-5">
           <p className="text-sm text-shop-muted">
-            Upload a CSV with columns: phone, booking_type, origin, destination, travel_date,
-            return_date, adults_count, children_count, children_ages, hotel_name, notes, status.
-          </p>
+            {translate("Upload a CSV with columns: phone, booking_type, origin, destination, travel_date, return_date, adults_count, children_count, children_ages, hotel_name, notes, status.")}</p>
 
           <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
             <button
@@ -98,15 +98,13 @@ export default function ImportCsvModal({ open, onClose, onImported }: Props) {
               onClick={downloadTemplate}
               className="min-h-11 rounded-lg border border-shop-border px-3 py-2 text-sm font-medium hover:bg-shop-bg"
             >
-              Download template
-            </button>
+              {translate("Download template")}</button>
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               className="min-h-11 rounded-lg border border-shop-border px-3 py-2 text-sm font-medium hover:bg-shop-bg"
             >
-              Choose CSV
-            </button>
+              {translate("Choose CSV")}</button>
             <input
               ref={inputRef}
               type="file"
@@ -118,12 +116,11 @@ export default function ImportCsvModal({ open, onClose, onImported }: Props) {
 
           {fileName && (
             <div className="rounded-lg bg-shop-bg px-3 py-2 text-sm break-all">
-              <strong>{fileName}</strong> · {previewCount} row(s) ready
-            </div>
+              <strong>{fileName}</strong> · {previewCount}{' '}{translate("row(s) ready")}</div>
           )}
 
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          {message && <p className="rounded-lg bg-shop-green-bg px-3 py-2 text-sm text-shop-green">{message}</p>}
+          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</p>}
+          {message && <p className="rounded-lg bg-shop-green-bg px-3 py-2 text-sm text-shop-green">{translate(message)}</p>}
 
           <div className="sticky bottom-0 -mx-4 grid grid-cols-2 gap-2 border-t border-shop-border bg-white px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:flex sm:justify-end sm:px-0 sm:pb-0">
             <button
@@ -131,15 +128,14 @@ export default function ImportCsvModal({ open, onClose, onImported }: Props) {
               onClick={onClose}
               className="min-h-11 rounded-lg border border-shop-border px-4 py-2 text-sm font-medium hover:bg-shop-bg"
             >
-              Cancel
-            </button>
+              {translate("Cancel")}</button>
             <button
               type="button"
               disabled={saving || !rows.length}
               onClick={() => void importRows()}
               className="min-h-11 rounded-lg bg-shop-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-60"
             >
-              {saving ? 'Importing…' : 'Import CSV'}
+              {saving ? translate('Importing…') : translate("Import CSV")}
             </button>
           </div>
         </div>

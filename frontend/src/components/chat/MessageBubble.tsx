@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { Check, CheckCheck, CircleAlert } from 'lucide-react'
 import type { BubbleState } from '../../lib/inboxView'
 
@@ -18,6 +19,7 @@ type Props = {
 
 /** Chat bubble (design system): white for the customer, teal tint for us. */
 export default function MessageBubble({ direction, body, time, delivery = 'none', sender, voice, poll, onRetry }: Props) {
+  useI18n()
   const outbound = direction === 'outbound'
   const failed = delivery === 'failed'
   return (
@@ -32,11 +34,11 @@ export default function MessageBubble({ direction, body, time, delivery = 'none'
           }`}
         >
           {voice && (
-            <p className="mb-1 text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">Voice message · transcribed</p>
+            <p className="mb-1 text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">{translate("Voice message · transcribed")}</p>
           )}
           {poll && (
             <p className="mb-1 text-[11px] font-bold tracking-[0.06em] text-shop-muted uppercase">
-              {poll === 'sent' ? 'WhatsApp poll' : 'Poll vote'}
+              {poll === 'sent' ? translate("WhatsApp poll") : translate("Poll vote")}
             </p>
           )}
           {body}
@@ -46,20 +48,18 @@ export default function MessageBubble({ direction, body, time, delivery = 'none'
             }`}
           >
             {time}
-            {delivery === 'sent' && <Check className="size-3.5" aria-label="Sent" role="img" />}
-            {delivery === 'delivered' && <CheckCheck className="size-3.5 text-shop-accent" aria-label="Delivered" role="img" />}
+            {delivery === 'sent' && <Check className="size-3.5" aria-label={translate("Sent")} role="img" />}
+            {delivery === 'delivered' && <CheckCheck className="size-3.5 text-shop-accent" aria-label={translate("Delivered")} role="img" />}
           </div>
         </div>
         {failed && (
           <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold text-danger-fg">
             <CircleAlert className="size-3.5" aria-hidden="true" />
-            Not delivered
-            {onRetry && (
+            {translate("Not delivered")}{onRetry && (
               <>
                 {' · '}
                 <button type="button" onClick={onRetry} className="underline hover:text-danger">
-                  Retry
-                </button>
+                  {translate("Retry")}</button>
               </>
             )}
           </p>

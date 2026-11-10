@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState } from 'react'
 import { formatDate } from '../lib/leads'
 import {
@@ -20,6 +21,7 @@ type Props = {
 }
 
 export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }: Props) {
+  useI18n()
   const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -44,16 +46,15 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
     <ModalDrawer
       open={open && Boolean(quote)}
       title={quote?.title || 'Quote'}
-      subtitle={quote ? `${quoteTypeLabel(quote.quote_type)} quote` : undefined}
+      subtitle={quote ? translate("{value0} quote", { value0: translate(String(quoteTypeLabel(quote.quote_type))) }) : undefined}
       onClose={onClose}
       maxWidthClassName="max-w-3xl"
       footer={
         <div className="flex flex-wrap justify-end gap-2">
           <Button type="button" onClick={onEdit}>
-            Edit
-          </Button>
+            {translate("Edit")}</Button>
           <Button type="button" variant="primary" onClick={() => void download()} disabled={downloading}>
-            {downloading ? 'Downloading…' : 'Download quote'}
+            {downloading ? translate('Downloading…') : translate("Download quote")}
           </Button>
         </div>
       }
@@ -69,7 +70,7 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
           )}
           <div className="grid gap-2 text-sm text-shop-muted sm:grid-cols-2">
             <div>
-              <div className="text-xs uppercase tracking-wide">Trip</div>
+              <div className="text-xs uppercase tracking-wide">{translate("Trip")}</div>
               <div className="font-medium text-shop-ink">
                 {quote.origin && quote.destination
                   ? `${quote.origin} → ${quote.destination}`
@@ -77,14 +78,14 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wide">Dates</div>
+              <div className="text-xs uppercase tracking-wide">{translate("Dates")}</div>
               <div className="font-medium text-shop-ink">
                 {availabilityLabel(quote) || '—'}
                 {quote.nights ? ` · ${quote.nights}n` : ''}
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wide">Guests</div>
+              <div className="text-xs uppercase tracking-wide">{translate("Guests")}</div>
               <div className="font-medium text-shop-ink">
                 {quote.adults_count}A · {quote.children_count}C
               </div>
@@ -94,7 +95,7 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
 
           {hotels.length > 0 && (
             <section className="space-y-3">
-              <h3 className="text-sm font-semibold">Hotels</h3>
+              <h3 className="text-sm font-semibold">{translate("Hotels")}</h3>
               {hotels.map((item) => (
                 <article key={item.id || item.hotel_name} className="rounded-xl border border-shop-border p-4">
                   <div className="flex gap-3">
@@ -142,7 +143,7 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
 
           {flights.length > 0 && (
             <section className="space-y-3">
-              <h3 className="text-sm font-semibold">Flights</h3>
+              <h3 className="text-sm font-semibold">{translate("Flights")}</h3>
               {flights.map((item) => (
                 <article key={item.id || `${item.airline}-${item.flight_number}`} className="rounded-xl border border-shop-border p-4">
                   <div className="flex gap-3">
@@ -165,15 +166,15 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
                       </p>
                       <p className="text-xs capitalize text-shop-muted">
                         {[
-                          item.direction === 'return' ? 'Return' : item.direction === 'outbound' ? 'Outbound' : item.direction,
+                          item.direction === 'return' ? translate("Return") : item.direction === 'outbound' ? translate("Outbound") : item.direction,
                           item.departure_time,
                           item.arrival_time,
                           item.duration,
                           item.stops == null
                             ? null
                             : item.stops === 0
-                              ? 'Non-stop'
-                              : `${item.stops} stop${item.stops === 1 ? '' : 's'}`,
+                              ? translate('Non-stop')
+                              : translate("{value0} stop{value1}", { value0: translate(String(item.stops)), value1: translate(String(item.stops === 1 ? '' : 's')) }),
                         ]
                           .filter(Boolean)
                           .join(' · ')}
@@ -187,16 +188,16 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
           )}
 
           <div className="flex items-center justify-between border-t border-shop-border pt-4">
-            <span className="text-sm text-shop-muted">Total</span>
+            <span className="text-sm text-shop-muted">{translate("Total")}</span>
             <span className="text-xl font-bold">{formatQuoteMoney(total, quote.currency)}</span>
           </div>
           {quote.notes && (
             <p className="text-sm text-shop-muted">
-              <span className="font-medium text-shop-ink">Notes: </span>
+              <span className="font-medium text-shop-ink">{translate("Notes:")}{' '}</span>
               {quote.notes}
             </p>
           )}
-          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</div>}
         </div>
       ) : null}
     </ModalDrawer>

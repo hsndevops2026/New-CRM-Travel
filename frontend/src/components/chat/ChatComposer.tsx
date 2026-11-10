@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Send } from 'lucide-react'
 import Button from '../ui/Button'
@@ -22,6 +23,7 @@ export default function ChatComposer({
   quickReplies = false,
   label = 'Message',
 }: Props) {
+  useI18n()
   const [text, setText] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -57,15 +59,15 @@ export default function ChatComposer({
               onClick={() => setText((current) => (current.trim() ? `${current.trim()} ${reply.text}` : reply.text))}
               className="h-7 rounded-full border border-shop-border bg-white px-3 text-xs font-semibold text-neutral-fg hover:bg-neutral-bg disabled:opacity-50 max-sm:h-9"
             >
-              {reply.label}
+              {translate(reply.label)}
             </button>
           ))}
         </div>
       )}
-      {error && <p role="alert" className="text-xs text-danger-fg">{error}</p>}
+      {error && <p role="alert" className="text-xs text-danger-fg">{translate(error)}</p>}
       <div className="flex items-end gap-2">
         <textarea
-          aria-label={label}
+          aria-label={translate(label)}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
@@ -75,8 +77,7 @@ export default function ChatComposer({
           className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-line-strong bg-white px-3 py-[9px] text-sm disabled:opacity-50"
         />
         <Button type="submit" variant="primary" icon={<Send />} loading={sending} disabled={disabled || !text.trim()} className="h-10">
-          Send
-        </Button>
+          {translate("Send")}</Button>
       </div>
     </form>
   )

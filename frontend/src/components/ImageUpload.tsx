@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useRef, useState } from 'react'
 import { uploadQuoteImage } from '../lib/predefinedQuotes'
 import Button from './ui/Button'
@@ -9,6 +10,7 @@ type Props = {
 }
 
 export default function ImageUpload({ label, value, onChange }: Props) {
+  useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,17 +40,16 @@ export default function ImageUpload({ label, value, onChange }: Props) {
 
   return (
     <div className="grid gap-1.5 text-sm">
-      <span className="font-medium">{label}</span>
+      <span className="font-medium">{translate(label)}</span>
       {value ? (
         <div className="flex items-start gap-3">
           <img src={value} alt="" className="size-16 rounded-lg object-cover ring-1 ring-shop-border" />
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
-              {uploading ? 'Uploading…' : 'Replace'}
+              {uploading ? translate('Uploading…') : translate('Replace')}
             </Button>
             <Button size="sm" variant="ghost" className="text-danger" onClick={() => onChange('')} disabled={uploading}>
-              Remove
-            </Button>
+              {translate("Remove")}</Button>
           </div>
         </div>
       ) : (
@@ -58,7 +59,7 @@ export default function ImageUpload({ label, value, onChange }: Props) {
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
         >
-          {uploading ? 'Uploading to Cloudinary…' : 'Upload image'}
+          {uploading ? translate("Uploading to Cloudinary…") : translate("Upload image")}
         </button>
       )}
       <input
@@ -68,7 +69,7 @@ export default function ImageUpload({ label, value, onChange }: Props) {
         className="hidden"
         onChange={(event) => void onFile(event.target.files?.[0])}
       />
-      {error && <p className="text-xs text-red-700">{error}</p>}
+      {error && <p className="text-xs text-red-700">{translate(error)}</p>}
     </div>
   )
 }

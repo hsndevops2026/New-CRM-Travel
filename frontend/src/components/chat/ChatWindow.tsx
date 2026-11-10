@@ -1,3 +1,5 @@
+import { locale } from '../../lib/i18n'
+import { t as translate, useI18n } from '../../lib/i18n'
 import { useEffect, useRef } from 'react'
 import MessageBubble from './MessageBubble'
 import ChatComposer from './ChatComposer'
@@ -26,17 +28,17 @@ type Props = {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 }
 
 function dateLabel(iso: string) {
   const d = new Date(iso)
   const today = new Date()
-  if (d.toDateString() === today.toDateString()) return 'Today'
+  if (d.toDateString() === today.toDateString()) return translate('Today')
   const yesterday = new Date(today)
   yesterday.setDate(today.getDate() - 1)
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
+  if (d.toDateString() === yesterday.toDateString()) return translate('Yesterday')
+  return d.toLocaleDateString(locale(), { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
 export default function ChatWindow({
@@ -52,6 +54,7 @@ export default function ChatWindow({
   leadPanelOpen,
   onToggleLeadPanel,
 }: Props) {
+  useI18n()
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const previousThreadId = useRef<string | null>(null)
@@ -69,8 +72,8 @@ export default function ChatWindow({
     return (
       <div className="flex flex-1 flex-col items-center justify-center bg-shop-bg p-8">
         <EmptyState
-          title="Select a conversation"
-          description="Customer chats, dealer RFQs, and WhatsApp groups appear here. Open a group to message everyone in it."
+          title={translate("Select a conversation")}
+          description={translate("Customer chats, dealer RFQs, and WhatsApp groups appear here. Open a group to message everyone in it.")}
         />
       </div>
     )
@@ -102,8 +105,7 @@ export default function ChatWindow({
           </div>
           {thread.lead_id && onOpenLead && (
             <Button icon={<Briefcase />} onClick={() => onOpenLead(thread.lead_id!)}>
-              Lead
-              {thread.lifecycle_status ? ` · ${lifecycleLabel(thread.lifecycle_status)}` : ''}
+              {translate("Lead")}{thread.lifecycle_status ? ` · ${lifecycleLabel(thread.lifecycle_status)}` : ''}
             </Button>
           )}
           {onToggleLeadPanel && (
@@ -111,7 +113,7 @@ export default function ChatWindow({
               variant="ghost"
               iconOnly
               className="max-xl:hidden"
-              aria-label={leadPanelOpen ? 'Hide lead panel' : 'Show lead panel'}
+              aria-label={leadPanelOpen ? translate("Hide lead panel") : translate("Show lead panel")}
               aria-pressed={leadPanelOpen}
               icon={<PanelRight />}
               onClick={onToggleLeadPanel}
@@ -122,28 +124,26 @@ export default function ChatWindow({
 
       {pending && (
         <div className="shrink-0 border-b border-[#FCD34D] bg-warn-bg px-4 py-3">
-          <p className="text-[11px] font-bold tracking-[0.06em] text-warn-fg uppercase">Pending quote review</p>
+          <p className="text-[11px] font-bold tracking-[0.06em] text-warn-fg uppercase">{translate("Pending quote review")}</p>
           <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-[#78350F]">{pending.raw_text}</p>
           <div className="mt-2 flex gap-2">
             <Button size="sm" variant="primary" onClick={() => void reviewResponse(pending.id, true).then(() => onRefresh?.())}>
-              Approve
-            </Button>
+              {translate("Approve")}</Button>
             <Button size="sm" onClick={() => void reviewResponse(pending.id, false).then(() => onRefresh?.())}>
-              Reject
-            </Button>
+              {translate("Reject")}</Button>
           </div>
         </div>
       )}
 
       <div ref={scrollRef} role="log" aria-live="polite" className="min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-6">
-        {loading && <p role="status" className="py-8 text-center text-sm text-shop-muted">Loading messages…</p>}
+        {loading && <p role="status" className="py-8 text-center text-sm text-shop-muted">{translate("Loading messages…")}</p>}
         {!loading && error && (
           <div role="alert" className="rounded-lg border border-red-200 bg-danger-bg px-3 py-2 text-sm text-danger-fg">
-            {error}
+            {translate(error)}
           </div>
         )}
         {!loading && !error && messages.length === 0 && (
-          <p className="py-8 text-center text-sm text-shop-muted">No messages yet. Send the first reply.</p>
+          <p className="py-8 text-center text-sm text-shop-muted">{translate("No messages yet. Send the first reply.")}</p>
         )}
         {!loading &&
           messages.map((msg) => {
@@ -185,8 +185,8 @@ export default function ChatWindow({
         sending={sending}
         onSend={onSend}
         quickReplies={customer && !compact}
-        label={`Message ${thread.title}`}
-        placeholder={thread.kind === 'group' ? 'Message this group…' : `Message ${thread.title}… (Enter to send)`}
+        label={translate("Message {value0}", { value0: translate(String(thread.title)) })}
+        placeholder={thread.kind === 'group' ? translate("Message this group…") : translate("Message {value0}… (Enter to send)", { value0: translate(String(thread.title)) })}
       />
     </div>
   )

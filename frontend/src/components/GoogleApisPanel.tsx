@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState } from 'react'
 import Button from './ui/Button'
 import StatusBadge from './ui/StatusBadge'
@@ -58,6 +59,7 @@ function defaultDate(offsetDays: number) {
 }
 
 export default function GoogleApisPanel() {
+  useI18n()
   const [card, setCard] = useState<Card>('airports')
 
   const [placeQuery, setPlaceQuery] = useState('dubai')
@@ -112,10 +114,9 @@ export default function GoogleApisPanel() {
 
   return (
     <section id="integrations" aria-labelledby="s-google" className="scroll-mt-4 rounded-[10px] border border-shop-border bg-white p-5">
-      <h2 id="s-google" className="text-base font-bold">Google APIs (SerpApi)</h2>
+      <h2 id="s-google" className="text-base font-bold">{translate("Google APIs (SerpApi)")}</h2>
       <p className="mt-1 text-sm text-shop-muted">
-        Run each integration live. Every call spends one SerpApi search credit.
-      </p>
+        {translate("Run each integration live. Every call spends one SerpApi search credit.")}</p>
 
       <div className="mt-3 flex flex-wrap gap-1">
         {CARDS.map((item) => (
@@ -129,7 +130,7 @@ export default function GoogleApisPanel() {
                 : 'bg-shop-bg text-shop-muted ring-1 ring-shop-border'
             }`}
           >
-            {item.label}
+            {translate(item.label)}
           </button>
         ))}
       </div>
@@ -154,7 +155,7 @@ export default function GoogleApisPanel() {
           <input
             className={`${inputClass} sm:col-span-2`}
             value={imageQuery}
-            placeholder="Maldives overwater villa"
+            placeholder={translate("Maldives overwater villa")}
             onChange={(event) => setImageQuery(event.target.value)}
           />
         )}
@@ -164,18 +165,17 @@ export default function GoogleApisPanel() {
             <input
               className={inputClass}
               value={origin}
-              placeholder="Origin (DXB or dubai)"
+              placeholder={translate("Origin (DXB or dubai)")}
               onChange={(event) => setOrigin(event.target.value)}
             />
             <input
               className={inputClass}
               value={destination}
-              placeholder="Destination (LHR or london)"
+              placeholder={translate("Destination (LHR or london)")}
               onChange={(event) => setDestination(event.target.value)}
             />
             <label className="grid gap-1 text-xs text-shop-muted">
-              Depart
-              <input
+              {translate("Depart")}<input
                 type="date"
                 className={inputClass}
                 value={travelDate}
@@ -183,8 +183,7 @@ export default function GoogleApisPanel() {
               />
             </label>
             <label className="grid gap-1 text-xs text-shop-muted">
-              Return (blank = one way)
-              <input
+              {translate("Return (blank = one way)")}<input
                 type="date"
                 className={inputClass}
                 value={returnDate}
@@ -197,7 +196,7 @@ export default function GoogleApisPanel() {
 
       <div className="mt-3 flex items-center gap-3">
         <Button variant="primary" onClick={() => void run()} disabled={busy}>
-          {busy ? 'Running…' : 'Run'}
+          {busy ? translate('Running…') : translate('Run')}
         </Button>
         {elapsed != null && !busy && (
           <span className="text-xs text-shop-muted">{(elapsed / 1000).toFixed(1)}s</span>
@@ -205,7 +204,7 @@ export default function GoogleApisPanel() {
       </div>
 
       {error && (
-        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</p>
       )}
 
       {/* ── Results ─────────────────────────────────────────────────────── */}
@@ -251,7 +250,7 @@ export default function GoogleApisPanel() {
                   <div className="truncate text-xs text-shop-muted">{suggestion.location}</div>
                 )}
               </div>
-              {suggestion.is_property && <StatusBadge label="property" tone="info" />}
+              {suggestion.is_property && <StatusBadge label={translate("property")} tone="info" />}
             </li>
           ))}
         </ul>
@@ -265,17 +264,17 @@ export default function GoogleApisPanel() {
               tone="info"
             />
             <StatusBadge
-              label={flights.search.metro_search ? 'metro search' : 'single airport'}
+              label={translate(flights.search.metro_search ? 'metro search' : 'single airport')}
               tone={flights.search.metro_search ? 'warning' : 'neutral'}
             />
             <span>{flights.search.trip_type.replace('_', ' ')}</span>
-            <span>· {flights.count} results</span>
+            <span>· {flights.count}{' '}{translate("results")}</span>
           </div>
 
           {flights.quotes.map((quote) => (
             <div key={quote.id} className="rounded-lg bg-shop-bg px-3 py-2 text-sm">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="font-semibold">
+                <span className="font-semibold" dir="ltr">
                   {quote.currency} {quote.price ?? '—'}
                 </span>
                 <span className="text-xs text-shop-muted">
@@ -287,7 +286,7 @@ export default function GoogleApisPanel() {
                   {quote.outbound.departure_airport} {quote.outbound.departure_time} →{' '}
                   {quote.outbound.arrival_airport} {quote.outbound.arrival_time} ·{' '}
                   {quote.outbound.duration} ·{' '}
-                  {quote.outbound.stops === 0 ? 'nonstop' : `${quote.outbound.stops} stop`}
+                  {quote.outbound.stops === 0 ? 'nonstop' : translate("{value0} stop", { value0: translate(String(quote.outbound.stops)) })}
                 </div>
               )}
               {quote.inbound ? (
@@ -297,8 +296,7 @@ export default function GoogleApisPanel() {
                 </div>
               ) : quote.outbound_only ? (
                 <div className="text-xs text-amber-700">
-                  outbound only — return not resolved
-                </div>
+                  {translate("outbound only — return not resolved")}</div>
               ) : null}
             </div>
           ))}

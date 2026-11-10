@@ -1,3 +1,4 @@
+import { t as translate, translateCount, useI18n } from '../lib/i18n'
 import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -31,6 +32,7 @@ import { BOARD_STAGES, lifecycleLabel, nextActionFor } from '../lib/lifecycle'
 type LeadType = 'hotel' | 'flight' | 'package'
 
 export default function LeadsPage() {
+  useI18n()
   const { segment = 'hotel' } = useParams<{ segment: string }>()
   const leadType: LeadType =
     segment === 'flight' ? 'flight' : segment === 'package' ? 'package' : 'hotel'
@@ -195,14 +197,17 @@ export default function LeadsPage() {
   return (
     <div className="p-3 pb-24 sm:p-4 lg:p-5">
       <PageHeader
-        title="Leads"
+        title={translate("Leads")}
         subtitle={
           <>
-            <strong>{filtered.length}</strong> {leadType} lead{filtered.length === 1 ? '' : 's'}
+            {translateCount('{count} {type} lead{suffix}', filtered.length, {
+              type: translate(leadType),
+              suffix: filtered.length === 1 ? '' : 's',
+            })}
             {todayCount > 0 && (
               <>
                 {' · '}
-                <strong className="!text-shop-accent">{todayCount} created today</strong>
+                <strong className="!text-shop-accent">{todayCount}{' '}{translate("created today")}</strong>
               </>
             )}
           </>
@@ -212,13 +217,12 @@ export default function LeadsPage() {
             <ViewToggle value={view} onChange={setView} />
             <OverflowMenu
               items={[
-                { id: 'import', label: 'Import CSV', onClick: () => setImportOpen(true) },
-                { id: 'export', label: 'Export CSV', onClick: exportCsv },
+                { id: 'import', label: translate("Import CSV"), onClick: () => setImportOpen(true) },
+                { id: 'export', label: translate("Export CSV"), onClick: exportCsv },
               ]}
             />
             <Button variant="primary" icon={<Plus strokeWidth={1.8} />} onClick={() => setAddOpen(true)}>
-              New lead
-            </Button>
+              {translate("New lead")}</Button>
           </>
         }
       />
@@ -229,9 +233,9 @@ export default function LeadsPage() {
           value={leadType}
           onChange={(id) => navigate(`/leads/${id}`)}
           items={[
-            { id: 'hotel', label: 'Hotel', count: typeCounts.hotel },
-            { id: 'flight', label: 'Flight', count: typeCounts.flight },
-            { id: 'package', label: 'Package', count: typeCounts.package },
+            { id: 'hotel', label: translate("Hotel"), count: typeCounts.hotel },
+            { id: 'flight', label: translate("Flight"), count: typeCounts.flight },
+            { id: 'package', label: translate('Package'), count: typeCounts.package },
           ]}
         />
         {filtered.length > 0 && view === 'table' && (
@@ -241,31 +245,27 @@ export default function LeadsPage() {
               checked={filtered.length > 0 && filtered.every((lead) => selected.has(lead.id))}
               onChange={(e) => toggleAll(e.target.checked)}
             />
-            Select all
-          </label>
+            {translate("Select all")}</label>
         )}
       </div>
 
       {selected.size > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-shop-border bg-white px-4 py-3 text-sm">
-          <span className="font-medium">{selected.size} selected</span>
+          <span className="font-medium">{selected.size}{' '}{translate("selected")}</span>
           <Button size="sm" onClick={() => void markSelected('contacted')}>
-            Contacted
-          </Button>
+            {translate("Contacted")}</Button>
           <Button size="sm" onClick={() => void markSelected('booked')}>
-            Booked
-          </Button>
+            {translate("Booked")}</Button>
           <Button size="sm" onClick={() => void markSelected('archived')}>
-            Archive
-          </Button>
+            {translate("Archive")}</Button>
           <Button
             size="sm"
             variant="danger"
             onClick={() => {
               void confirm({
-                title: `Delete ${selected.size} lead${selected.size === 1 ? '' : 's'}?`,
-                description: 'They are removed for everyone, with their quote drafts and versions. This can’t be undone.',
-                confirmLabel: `Delete ${selected.size} lead${selected.size === 1 ? '' : 's'}`,
+                title: translate("Delete {value0} lead{value1}?", { value0: translate(String(selected.size)), value1: translate(String(selected.size === 1 ? '' : 's')) }),
+                description: translate("They are removed for everyone, with their quote drafts and versions. This can’t be undone."),
+                confirmLabel: translate("Delete {value0} lead{value1}", { value0: translate(String(selected.size)), value1: translate(String(selected.size === 1 ? '' : 's')) }),
               }).then((ok) => {
                 if (!ok) return
                 void deleteLeadsBulk([...selected]).then(() => {
@@ -275,24 +275,22 @@ export default function LeadsPage() {
               })
             }}
           >
-            Delete
-          </Button>
+            {translate("Delete")}</Button>
         </div>
       )}
 
-      {!loading && error && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      {!loading && error && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{translate(error)}</div>}
 
       <section className="overflow-hidden rounded-xl border border-shop-border bg-white">
-        {loading && <TableSkeleton rows={6} label="Loading leads" />}
-        {!loading && error && filtered.length === 0 && <EmptyState title="Could not load leads" description="Try loading this list again." action={<Button onClick={() => void load()}>Retry</Button>} />}
+        {loading && <TableSkeleton rows={6} label={translate("Loading leads")} />}
+        {!loading && error && filtered.length === 0 && <EmptyState title={translate("Could not load leads")} description={translate("Try loading this list again.")} action={<Button onClick={() => void load()}>{translate("Retry")}</Button>} />}
         {!loading && !error && filtered.length === 0 && (
           <EmptyState
-            title={query.trim() ? 'No matching leads' : `No ${leadType} leads yet`}
-            description={query.trim() ? 'Try a different name, phone number, or destination.' : 'Add a lead or wait for WhatsApp intake to start quoting.'}
+            title={query.trim() ? translate("No matching leads") : translate("No {value0} leads yet", { value0: translate(String(leadType)) })}
+            description={query.trim() ? translate("Try a different name, phone number, or destination.") : translate("Add a lead or wait for WhatsApp intake to start quoting.")}
             action={
               <Button variant="primary" onClick={() => setAddOpen(true)}>
-                Add lead
-              </Button>
+                {translate("Add lead")}</Button>
             }
           />
         )}
@@ -306,9 +304,9 @@ export default function LeadsPage() {
             onChat={openChat}
             onDelete={(id) => {
               void confirm({
-                title: 'Delete this lead?',
-                description: 'It is removed for everyone, with its quote draft and versions. This can’t be undone.',
-                confirmLabel: 'Delete lead',
+                title: translate("Delete this lead?"),
+                description: translate("It is removed for everyone, with its quote draft and versions. This can’t be undone."),
+                confirmLabel: translate("Delete lead"),
               }).then((ok) => {
                 if (ok) void deleteLead(id).then(load)
               })
@@ -317,7 +315,7 @@ export default function LeadsPage() {
         )}
 
         {!loading && filtered.length > 0 && view === 'board' && (
-          <div className="overflow-x-auto p-3" role="region" aria-label="Leads by stage" tabIndex={0}>
+          <div className="overflow-x-auto p-3" role="region" aria-label={translate("Leads by stage")} tabIndex={0}>
             <div className="flex min-w-max items-start gap-3">
               {BOARD_STAGES.map((stage) => {
                 // Exact stage: a lost or archived lead is not "intake", so it is not on the board.
@@ -325,7 +323,7 @@ export default function LeadsPage() {
                 return (
                   <section
                     key={stage}
-                    aria-label={`${lifecycleLabel(stage).toLowerCase()} leads`}
+                    aria-label={translate("{value0} leads", { value0: translate(String(lifecycleLabel(stage).toLowerCase())) })}
                     className="flex w-[248px] flex-none flex-col gap-2 rounded-xl bg-neutral-bg p-2.5"
                   >
                     <div className="flex items-center justify-between px-1 pb-1 pt-0.5">
@@ -343,12 +341,12 @@ export default function LeadsPage() {
                           <div className="flex justify-between gap-2">
                             <strong className="min-w-0 truncate">{leadPerson(lead)}</strong>
                             <span className="shrink-0 text-xs tabular-nums text-shop-muted">
-                              {formatWhen(lead.created_at)}
+                              <bdi dir="ltr">{formatWhen(lead.created_at)}</bdi>
                             </span>
                           </div>
                           <span className="truncate font-semibold">{leadTitle(lead)}</span>
                           <span className="text-xs tabular-nums text-shop-muted">
-                            {formatDate(lead.travel_date)} → {formatDate(lead.return_date)} · {lead.adults_count}A
+                            <bdi dir="ltr">{formatDate(lead.travel_date)}</bdi> → <bdi dir="ltr">{formatDate(lead.return_date)}</bdi> · {lead.adults_count}A
                             {lead.children_count ? ` · ${lead.children_count}C` : ''}
                           </span>
                           <div className="h-px bg-neutral-bg" />

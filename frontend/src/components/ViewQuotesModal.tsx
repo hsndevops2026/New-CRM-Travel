@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import {
   fetchFlightQuotes,
@@ -25,6 +26,7 @@ type Props = {
 }
 
 function FlightQuoteCard({ quote }: { quote: FlightQuote }) {
+  useI18n()
   const outbound = quote.outbound
   const inbound = quote.inbound
 
@@ -34,35 +36,34 @@ function FlightQuoteCard({ quote }: { quote: FlightQuote }) {
         <div>
           <div className="text-sm font-semibold">{outbound?.airline || 'Flight'}</div>
           {outbound?.flight_number && (
-            <div className="text-xs text-shop-muted">{outbound.flight_number}</div>
+            <div className="text-xs text-shop-muted"><bdi dir="ltr">{outbound.flight_number}</bdi></div>
           )}
         </div>
-        <div className="text-right">
+        <div className="text-end">
           <div className="text-lg font-bold tracking-tight">
-            {formatMoney(quote.price, quote.currency)}
+            <bdi dir="ltr">{formatMoney(quote.price, quote.currency)}</bdi>
           </div>
-          <div className="text-xs text-shop-muted">total</div>
+          <div className="text-xs text-shop-muted">{translate("total")}</div>
         </div>
       </div>
 
       {outbound && (
         <div className="mt-4 grid gap-1 text-sm">
           <div className="text-xs font-semibold uppercase tracking-wide text-shop-muted">
-            Outbound
-          </div>
+            {translate("Outbound")}</div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold">
-              {outbound.departure_airport} {formatTime(outbound.departure_time)}
+              {outbound.departure_airport} <bdi dir="ltr">{formatTime(outbound.departure_time)}</bdi>
             </span>
             <span className="text-shop-muted">→</span>
             <span className="font-semibold">
-              {outbound.arrival_airport} {formatTime(outbound.arrival_time)}
+              {outbound.arrival_airport} <bdi dir="ltr">{formatTime(outbound.arrival_time)}</bdi>
             </span>
           </div>
           <div className="text-xs text-shop-muted">
             {outbound.departure_city} → {outbound.arrival_city} · {outbound.duration}
             {outbound.stops != null
-              ? ` · ${outbound.stops === 0 ? 'Non-stop' : `${outbound.stops} stop${outbound.stops === 1 ? '' : 's'}`}`
+              ? ` · ${outbound.stops === 0 ? translate('Non-stop') : translate("{value0} stop{value1}", { value0: translate(String(outbound.stops)), value1: translate(String(outbound.stops === 1 ? '' : 's')) })}`
               : ''}
           </div>
         </div>
@@ -71,21 +72,20 @@ function FlightQuoteCard({ quote }: { quote: FlightQuote }) {
       {inbound && (
         <div className="mt-3 grid gap-1 border-t border-shop-border pt-3 text-sm">
           <div className="text-xs font-semibold uppercase tracking-wide text-shop-muted">
-            Return
-          </div>
+            {translate("Return")}</div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold">
-              {inbound.departure_airport} {formatTime(inbound.departure_time)}
+              {inbound.departure_airport} <bdi dir="ltr">{formatTime(inbound.departure_time)}</bdi>
             </span>
             <span className="text-shop-muted">→</span>
             <span className="font-semibold">
-              {inbound.arrival_airport} {formatTime(inbound.arrival_time)}
+              {inbound.arrival_airport} <bdi dir="ltr">{formatTime(inbound.arrival_time)}</bdi>
             </span>
           </div>
           <div className="text-xs text-shop-muted">
             {inbound.departure_city} → {inbound.arrival_city} · {inbound.duration}
             {inbound.stops != null
-              ? ` · ${inbound.stops === 0 ? 'Non-stop' : `${inbound.stops} stop${inbound.stops === 1 ? '' : 's'}`}`
+              ? ` · ${inbound.stops === 0 ? translate('Non-stop') : translate("{value0} stop{value1}", { value0: translate(String(inbound.stops)), value1: translate(String(inbound.stops === 1 ? '' : 's')) })}`
               : ''}
           </div>
         </div>
@@ -95,6 +95,7 @@ function FlightQuoteCard({ quote }: { quote: FlightQuote }) {
 }
 
 function HotelQuoteCard({ quote }: { quote: HotelQuote }) {
+  useI18n()
   const freeCancel = Boolean(quote.free_cancellation)
   const cancelLabel =
     quote.cancellation_summary ||
@@ -135,11 +136,11 @@ function HotelQuoteCard({ quote }: { quote: HotelQuote }) {
                 </div>
               )}
             </div>
-            <div className="shrink-0 text-right">
+            <div className="shrink-0 text-end">
               <div className="text-lg font-bold tracking-tight">
-                {formatMoney(quote.price, quote.currency)}
+                <bdi dir="ltr">{formatMoney(quote.price, quote.currency)}</bdi>
               </div>
-              <div className="text-xs text-shop-muted">total stay</div>
+              <div className="text-xs text-shop-muted">{translate("total stay")}</div>
             </div>
           </div>
 
@@ -169,8 +170,7 @@ function HotelQuoteCard({ quote }: { quote: HotelQuote }) {
             )}
             {freeCancel ? (
               <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
-                Free cancellation
-              </span>
+                {translate("Free cancellation")}</span>
             ) : cancelLabel ? (
               <span className="rounded-md bg-amber-50 px-2 py-0.5 font-medium text-amber-800">
                 {cancelLabel}
@@ -184,6 +184,7 @@ function HotelQuoteCard({ quote }: { quote: HotelQuote }) {
 }
 
 export default function ViewQuotesModal({ open, lead, onClose, onRetried }: Props) {
+  useI18n()
   const [loading, setLoading] = useState(false)
   const [retrying, setRetrying] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -376,8 +377,8 @@ export default function ViewQuotesModal({ open, lead, onClose, onRetried }: Prop
       <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-xl">
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-shop-border px-4 py-4 sm:px-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold">{title}</h2>
-            <p className="mt-0.5 truncate text-sm text-shop-muted">{subtitle}</p>
+            <h2 className="text-lg font-semibold">{translate(title)}</h2>
+            <p className="mt-0.5 truncate text-sm text-shop-muted">{translate(subtitle)}</p>
           </div>
           <button
             type="button"
@@ -391,8 +392,7 @@ export default function ViewQuotesModal({ open, lead, onClose, onRetried }: Prop
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
           {loading && (
             <div className="py-16 text-center text-sm text-shop-muted">
-              Loading saved quotes…
-            </div>
+              {translate("Loading saved quotes…")}</div>
           )}
 
           {!loading && error && (
@@ -403,7 +403,7 @@ export default function ViewQuotesModal({ open, lead, onClose, onRetried }: Prop
                   : 'bg-red-50 text-red-700'
               }`}
             >
-              {error}
+              {translate(error)}
             </div>
           )}
 
@@ -418,14 +418,13 @@ export default function ViewQuotesModal({ open, lead, onClose, onRetried }: Prop
 
           {!loading && isHotel && hotelQuotes.length > 0 && filteredHotelQuotes.length === 0 && (
             <div className="py-8 text-center text-sm text-shop-muted">
-              No hotels match these filters.
-            </div>
+              {translate("No hotels match these filters.")}</div>
           )}
 
           {!loading && isHotel && groupedHotelQuotes.map((source) => (
             <section key={source.id} className="space-y-2">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-shop-muted">
-                {source.label}
+                {translate(source.label)}
               </h3>
               {source.quotes.map((quote) => (
                 <HotelQuoteCard key={quote.id} quote={quote} />
@@ -446,7 +445,7 @@ export default function ViewQuotesModal({ open, lead, onClose, onRetried }: Prop
               onClick={() => void handleRetry()}
               className="min-h-11 rounded-lg bg-shop-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-60"
             >
-              {retrying ? 'Retrying…' : 'Retry fetch'}
+              {retrying ? translate('Retrying…') : translate("Retry fetch")}
             </button>
           )}
           <button
@@ -454,8 +453,7 @@ export default function ViewQuotesModal({ open, lead, onClose, onRetried }: Prop
             onClick={onClose}
             className="min-h-11 rounded-lg border border-shop-border px-4 py-2 text-sm font-medium hover:bg-shop-bg"
           >
-            Close
-          </button>
+            {translate("Close")}</button>
         </div>
       </div>
     </div>

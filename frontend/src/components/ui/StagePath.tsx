@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../../lib/i18n'
 import { Check } from 'lucide-react'
 import type { LifecycleStatus } from '../../lib/leads'
 import { HAPPY_PATH, LIFECYCLE_STEP_LABELS, lifecycleLabel } from '../../lib/lifecycle'
@@ -28,6 +29,7 @@ const STEP = 'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs f
  * (with Reopen when the API allows it).
  */
 export default function StagePath({ current, allowed, onSelect, disabled, hint }: Props) {
+  useI18n()
   if (current === 'lost' || current === 'archived') {
     const canReopen = Boolean(onSelect) && !disabled && (allowed ? allowed.includes('intake') : current === 'lost')
     return (
@@ -39,8 +41,7 @@ export default function StagePath({ current, allowed, onSelect, disabled, hint }
             onClick={() => onSelect?.('intake')}
             className="text-xs font-semibold text-shop-accent hover:underline"
           >
-            Reopen
-          </button>
+            {translate("Reopen")}</button>
         )}
       </div>
     )
@@ -52,7 +53,7 @@ export default function StagePath({ current, allowed, onSelect, disabled, hint }
   )
 
   return (
-    <ol className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5" aria-label="Lead stage">
+    <ol className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5" aria-label={translate("Lead stage")}>
       {HAPPY_PATH.map((stage, index) => {
         const active = index === currentIndex
         const done = index < currentIndex
@@ -73,7 +74,7 @@ export default function StagePath({ current, allowed, onSelect, disabled, hint }
           <>
             {done && <Check className="size-3" strokeWidth={2.2} aria-hidden="true" />}
             {active && <span className="size-1.5 rounded-full bg-white" aria-hidden="true" />}
-            {label}
+            {translate(label)}
           </>
         )
 
@@ -96,7 +97,7 @@ export default function StagePath({ current, allowed, onSelect, disabled, hint }
             ) : (
               <span
                 aria-current={active ? 'step' : undefined}
-                title={active || reachable ? undefined : `Not available from “${lifecycleLabel(current)}”`}
+                title={active || reachable ? undefined : translate("Not available from “{value0}”", { value0: translate(String(lifecycleLabel(current))) })}
                 className={`${STEP} ${look}`}
               >
                 {content}
@@ -105,7 +106,7 @@ export default function StagePath({ current, allowed, onSelect, disabled, hint }
           </li>
         )
       })}
-      {hint ? <li className="ml-2 text-[13px] text-slate-600">{hint}</li> : null}
+      {hint ? <li className="ms-2 text-[13px] text-slate-600">{hint}</li> : null}
     </ol>
   )
 }

@@ -1,3 +1,4 @@
+import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { Download, Send, Trash2, X } from 'lucide-react'
 import { useConfirm } from '../hooks/useConfirm'
@@ -35,6 +36,7 @@ type Props = {
 }
 
 function TypeBadge({ type }: { type: string }) {
+  useI18n()
   const tone = type === 'package' ? 'success' : type === 'flight' ? 'neutral' : 'info'
   return <StatusBadge label={quoteTypeLabel(type)} tone={tone} />
 }
@@ -43,6 +45,7 @@ const COVER_TONES = ['#0F766E', '#134E4A', '#1E3A8A', '#7C2D12', '#0369A1', '#3F
 
 /** 56×40 cover: the photo when there is one, else a flat colour with the destination code. */
 function Cover({ quote, className = 'h-10 w-14' }: { quote: PredefinedQuote; className?: string }) {
+  useI18n()
   if (quote.cover_image_url) {
     return <img src={quote.cover_image_url} alt="" className={`${className} shrink-0 rounded-md object-cover`} />
   }
@@ -54,7 +57,7 @@ function Cover({ quote, className = 'h-10 w-14' }: { quote: PredefinedQuote; cla
       className={`${className} grid shrink-0 place-items-center rounded-md text-[10px] font-bold text-white/85`}
       style={{ background: tone }}
     >
-      {label}
+      {translate(label)}
     </div>
   )
 }
@@ -68,6 +71,7 @@ export default function PredefinedQuotesPanel({
   onEditorOpenChange,
   onImportOpenChange,
 }: Props) {
+  useI18n()
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
   const [quotes, setQuotes] = useState<PredefinedQuote[]>([])
@@ -168,7 +172,7 @@ export default function PredefinedQuotesPanel({
 
   const handleDelete = async (quote: PredefinedQuote) => {
     const ok = await confirm({
-      title: `Delete “${quote.title}”?`,
+      title: translate("Delete “{value0}”?", { value0: translate(String(quote.title)) }),
       description: 'The template is removed from the library. Leads that already used it keep their copy. This can’t be undone.',
       confirmLabel: 'Delete template',
     })
@@ -191,11 +195,11 @@ export default function PredefinedQuotesPanel({
     const ids = [...selected].filter((id) => quotes.some((quote) => quote.id === id))
     if (!ids.length) return
 
-    const label = `${ids.length} template${ids.length === 1 ? '' : 's'}`
+    const label = translate("{value0} template{value1}", { value0: translate(String(ids.length)), value1: translate(String(ids.length === 1 ? '' : 's')) })
     const ok = await confirm({
-      title: `Delete ${label}?`,
+      title: translate("Delete {value0}?", { value0: translate(String(label)) }),
       description: 'The selected templates are removed from the library. Leads that already used them keep their copies. This can’t be undone.',
-      confirmLabel: `Delete ${label}`,
+      confirmLabel: translate("Delete {value0}", { value0: translate(String(label)) }),
     })
     if (!ok) return
 
@@ -216,11 +220,11 @@ export default function PredefinedQuotesPanel({
       toast.show({
         tone: 'error',
         message: deletedIds.length
-          ? `Deleted ${deletedIds.length}; ${failedIds.length} failed and remain selected.`
-          : `Could not delete ${label}. Please try again.`,
+          ? translate("Deleted {value0}; {value1} failed and remain selected.", { value0: translate(String(deletedIds.length)), value1: translate(String(failedIds.length)) })
+          : translate("Could not delete {value0}. Please try again.", { value0: translate(String(label)) }),
       })
     } else {
-      toast.show({ tone: 'success', message: `Deleted ${label}.` })
+      toast.show({ tone: 'success', message: translate("Deleted {value0}.", { value0: translate(String(label)) }) })
     }
   }
 
@@ -277,32 +281,30 @@ export default function PredefinedQuotesPanel({
             value={typeFilter}
             onChange={(id) => setTypeFilter(id as TypeFilter)}
             items={[
-              { id: 'all', label: 'All', count: typeCounts.all },
-              { id: 'package', label: 'Flight + Hotel', count: typeCounts.package },
-              { id: 'hotel', label: 'Hotel', count: typeCounts.hotel },
-              { id: 'flight', label: 'Flight', count: typeCounts.flight },
+              { id: 'all', label: translate("All"), count: typeCounts.all },
+              { id: 'package', label: translate("Flight + Hotel"), count: typeCounts.package },
+              { id: 'hotel', label: translate("Hotel"), count: typeCounts.hotel },
+              { id: 'flight', label: translate("Flight"), count: typeCounts.flight },
             ]}
           />
           {filteredQuotes.length > 0 && (
             <label className="flex min-h-9 items-center gap-2 text-xs font-semibold text-shop-muted">
               <input
                 type="checkbox"
-                aria-label="Select all visible templates"
+                aria-label={translate("Select all visible templates")}
                 checked={allVisibleSelected}
                 disabled={deletingSelected}
                 onChange={(event) => toggleAllVisible(event.target.checked)}
               />
-              Select all
-            </label>
+              {translate("Select all")}</label>
           )}
         </div>
       )}
 
       {selected.size > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[10px] border border-shop-border bg-white px-3.5 py-2.5 text-sm shadow-sm">
-          <span className="mr-auto font-semibold">
-            {selected.size} template{selected.size === 1 ? '' : 's'} selected
-          </span>
+          <span className="me-auto font-semibold">
+            {translate("{count} template{suffix} selected", { count: selected.size, suffix: selected.size === 1 ? '' : 's' })}</span>
           <Button
             size="sm"
             variant="ghost"
@@ -310,8 +312,7 @@ export default function PredefinedQuotesPanel({
             disabled={deletingSelected}
             onClick={() => setSelected(new Set())}
           >
-            Clear
-          </Button>
+            {translate("Clear")}</Button>
           <Button
             size="sm"
             variant="danger"
@@ -319,27 +320,25 @@ export default function PredefinedQuotesPanel({
             loading={deletingSelected}
             onClick={() => void handleDeleteSelected()}
           >
-            Delete
-          </Button>
+            {translate("Delete")}</Button>
         </div>
       )}
 
       <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
-        {loading && <div role="status" className="px-4 py-16 text-center text-shop-muted">Loading quotes…</div>}
-        {!loading && error && <div role="alert" className="px-4 py-16 text-center text-danger-fg">{error}</div>}
+        {loading && <div role="status" className="px-4 py-16 text-center text-shop-muted">{translate("Loading quotes…")}</div>}
+        {!loading && error && <div role="alert" className="px-4 py-16 text-center text-danger-fg">{translate(error)}</div>}
         {!loading && !error && quotes.length === 0 && (
           <EmptyState
-            title="No templates yet"
-            description="Create a hotel, flight, or flight + hotel template to reuse on leads."
+            title={translate("No templates yet")}
+            description={translate("Create a hotel, flight, or flight + hotel template to reuse on leads.")}
             action={
               <Button type="button" variant="primary" onClick={() => onEditorOpenChange(true)}>
-                New template
-              </Button>
+                {translate("New template")}</Button>
             }
           />
         )}
         {!loading && !error && quotes.length > 0 && filteredQuotes.length === 0 && (
-          <div className="px-4 py-16 text-center text-shop-muted">No templates match this search.</div>
+          <div className="px-4 py-16 text-center text-shop-muted">{translate("No templates match this search.")}</div>
         )}
 
         {!loading && !error && filteredQuotes.length > 0 && (
@@ -353,7 +352,7 @@ export default function PredefinedQuotesPanel({
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
-                      aria-label={`Select ${quote.title}`}
+                      aria-label={translate("Select {value0}", { value0: translate(String(quote.title)) })}
                       checked={selected.has(quote.id)}
                       disabled={deletingSelected}
                       onChange={(event) => toggleOne(quote.id, event.target.checked)}
@@ -373,36 +372,35 @@ export default function PredefinedQuotesPanel({
                   </div>
                   <div className="mt-3 flex items-center gap-1">
                     <Button size="sm" variant="ghost" onClick={() => setPreview(quote)}>
-                      Preview
-                    </Button>
-                    <OverflowMenu portal align="left" label={`More actions for ${quote.title}`} items={quoteMenu(quote)} />
+                      {translate("Preview")}</Button>
+                    <OverflowMenu portal align="left" label={translate("More actions for {value0}", { value0: translate(String(quote.title)) })} items={quoteMenu(quote)} />
                   </div>
                 </article>
               ))}
             </div>
 
             <div className="hidden overflow-x-auto lg:block">
-              <table className="w-full min-w-[980px] text-left text-sm">
+              <table className="w-full min-w-[980px] text-start text-sm">
                 <thead>
                   <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
                     <th className="w-10 px-3 py-2.5">
                       <input
                         type="checkbox"
-                        aria-label="Select all visible templates in table"
+                        aria-label={translate("Select all visible templates in table")}
                         checked={allVisibleSelected}
                         disabled={deletingSelected}
                         onChange={(event) => toggleAllVisible(event.target.checked)}
                       />
                     </th>
                     <th className="relative w-[72px] px-3.5 py-2.5">
-                      <span className="sr-only">Cover</span>
+                      <span className="sr-only">{translate("Cover")}</span>
                     </th>
-                    <th className="px-3 py-2.5">Template</th>
-                    <th className="px-3 py-2.5">Type</th>
-                    <th className="px-3 py-2.5">Trip</th>
-                    <th className="px-3 py-2.5 text-right">Total</th>
-                    <th className="px-3 py-2.5">Updated</th>
-                    <th className="px-3.5 py-2.5 text-right">Actions</th>
+                    <th className="px-3 py-2.5">{translate("Template")}</th>
+                    <th className="px-3 py-2.5">{translate("Type")}</th>
+                    <th className="px-3 py-2.5">{translate("Trip")}</th>
+                    <th className="px-3 py-2.5 text-end">{translate("Total")}</th>
+                    <th className="px-3 py-2.5">{translate("Updated")}</th>
+                    <th className="px-3.5 py-2.5 text-end">{translate("Actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -414,7 +412,7 @@ export default function PredefinedQuotesPanel({
                       <td className="px-3 py-2.5">
                         <input
                           type="checkbox"
-                          aria-label={`Select ${quote.title}`}
+                          aria-label={translate("Select {value0}", { value0: translate(String(quote.title)) })}
                           checked={selected.has(quote.id)}
                           disabled={deletingSelected}
                           onChange={(event) => toggleOne(quote.id, event.target.checked)}
@@ -430,22 +428,21 @@ export default function PredefinedQuotesPanel({
                         <TypeBadge type={quote.quote_type} />
                       </td>
                       <td className="px-3 py-2.5 text-slate-700">{quoteSummary(quote)}</td>
-                      <td className="px-3 py-2.5 text-right font-bold whitespace-nowrap tabular-nums">
+                      <td className="px-3 py-2.5 text-end font-bold whitespace-nowrap tabular-nums">
                         {formatQuoteMoney(displayTotal(quote), quote.currency)}
                       </td>
                       <td className="px-3 py-2.5 whitespace-nowrap text-shop-muted tabular-nums">
-                        {formatWhen(quote.updated_at || quote.created_at)}
+                        <bdi dir="ltr">{formatWhen(quote.updated_at || quote.created_at)}</bdi>
                       </td>
                       <td className="px-3.5 py-2.5">
                         <div className="flex items-center justify-end gap-0.5">
                           <Button size="sm" variant="ghost" onClick={() => setPreview(quote)}>
-                            Preview
-                          </Button>
+                            {translate("Preview")}</Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             iconOnly
-                            aria-label={`Download PDF of ${quote.title}`}
+                            aria-label={translate("Download PDF of {value0}", { value0: translate(String(quote.title)) })}
                             loading={downloadingId === quote.id}
                             icon={<Download />}
                             onClick={() => void handleDownload(quote)}
@@ -454,13 +451,13 @@ export default function PredefinedQuotesPanel({
                             size="sm"
                             variant="ghost"
                             iconOnly
-                            aria-label={`Send ${quote.title} to a customer`}
+                            aria-label={translate("Send {value0} to a customer", { value0: translate(String(quote.title)) })}
                             icon={<Send />}
                             onClick={() => setSendToCustomer(quote)}
                           />
                           <OverflowMenu
                             portal
-                            label={`More actions for ${quote.title}`}
+                            label={translate("More actions for {value0}", { value0: translate(String(quote.title)) })}
                             items={quoteMenu(quote).filter((i) => !['view', 'download', 'send'].includes(i.id))}
                           />
                         </div>
@@ -495,8 +492,8 @@ export default function PredefinedQuotesPanel({
         open={Boolean(importReview)}
         initialQuote={importReview?.record.extracted_payload || null}
         draftKey={importReview?.record.id}
-        title="Review AI-imported quote"
-        submitLabel={importReview?.targetQuoteId ? 'Approve and update quote' : 'Approve and create quote'}
+        title={translate("Review AI-imported quote")}
+        submitLabel={importReview?.targetQuoteId ? translate("Approve and update quote") : translate("Approve and create quote")}
         onSubmitInput={approveImport}
         onClose={() => {
           const record = importReview?.record

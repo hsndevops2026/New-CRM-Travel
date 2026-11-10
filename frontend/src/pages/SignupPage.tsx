@@ -1,3 +1,5 @@
+import { locale } from '../lib/i18n'
+import { t as translate, useI18n } from '../lib/i18n'
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { Check, CircleAlert, Clock, X } from 'lucide-react'
@@ -8,6 +10,7 @@ import Button from '../components/ui/Button'
 import { passwordChecks } from '../lib/passwordRules'
 
 export default function SignupPage() {
+  useI18n()
   const { admin, loading, signup } = useAuth()
   const [submittedAt, setSubmittedAt] = useState<Date | null>(null)
   const [email, setEmail] = useState('')
@@ -51,32 +54,30 @@ export default function SignupPage() {
             <Clock className="size-[26px]" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <h1 className="text-2xl font-extrabold">Waiting for approval</h1>
+            <h1 className="text-2xl font-extrabold">{translate("Waiting for approval")}</h1>
             <p className="text-slate-600">
-              Your request for <strong>{email.trim()}</strong> went to the agency admins. Come back and sign in once
-              they have approved it.
-            </p>
+              {translate("Your request for")}{' '}<strong>{email.trim()}</strong> {' '}{translate("went to the agency admins. Come back and sign in once they have approved it.")}</p>
           </div>
           <ol className="m-0 flex list-none flex-col rounded-[10px] border border-shop-border p-0">
             <li className="flex items-center gap-3 border-b border-shop-border px-3.5 py-3">
               <span aria-hidden="true" className="grid size-6 place-items-center rounded-full bg-shop-accent text-white">
                 <Check className="size-3.5" />
               </span>
-              <span className="flex-1">Request submitted</span>
+              <span className="flex-1">{translate("Request submitted")}</span>
               <span className="text-[13px] text-shop-muted tabular-nums">
-                Today, {submittedAt.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                {translate("Today,")}{' '}{submittedAt.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}
               </span>
             </li>
             <li aria-current="step" className="flex items-center gap-3 border-b border-shop-border bg-[#FFFBEB] px-3.5 py-3">
               <span aria-hidden="true" className="grid size-6 place-items-center rounded-full border-2 border-[#B45309]">
                 <span className="size-2 rounded-full bg-[#B45309]" />
               </span>
-              <span className="flex-1 font-semibold">Admin review</span>
-              <span className="text-[13px] font-semibold text-warn-fg">In progress</span>
+              <span className="flex-1 font-semibold">{translate("Admin review")}</span>
+              <span className="text-[13px] font-semibold text-warn-fg">{translate("In progress")}</span>
             </li>
             <li className="flex items-center gap-3 px-3.5 py-3">
               <span aria-hidden="true" className="size-6 rounded-full border-2 border-line-strong" />
-              <span className="flex-1 text-shop-muted">Sign in to the CRM</span>
+              <span className="flex-1 text-shop-muted">{translate("Sign in to the CRM")}</span>
             </li>
           </ol>
           <div>
@@ -84,8 +85,7 @@ export default function SignupPage() {
               to="/login"
               className="inline-flex h-10 items-center rounded-lg border border-line-strong px-4 font-semibold hover:bg-neutral-bg"
             >
-              Back to sign in
-            </Link>
+              {translate("Back to sign in")}</Link>
           </div>
         </section>
       ) : (
@@ -94,13 +94,12 @@ export default function SignupPage() {
           onSubmit={(e) => void onSubmit(e)}
           className="flex w-full max-w-[460px] flex-col gap-4 rounded-[14px] border border-shop-border bg-white p-7"
         >
-          <h1 id="su-h" className="text-2xl font-extrabold">Request staff access</h1>
+          <h1 id="su-h" className="text-2xl font-extrabold">{translate("Request staff access")}</h1>
           <p className="text-shop-muted">
-            An administrator reviews every request before you can sign in. New accounts start with 3 lead credits.
-          </p>
+            {translate("An administrator reviews every request before you can sign in. New accounts start with 3 lead credits.")}</p>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-semibold text-neutral-fg" htmlFor="su-e">Work email</label>
+            <label className="text-[13px] font-semibold text-neutral-fg" htmlFor="su-e">{translate("Work email")}</label>
             <input
               id="su-e"
               type="email"
@@ -112,14 +111,14 @@ export default function SignupPage() {
             />
           </div>
 
-          <PasswordField label="Password" id="su-p" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-          <PasswordField label="Confirm password" id="su-c" autoComplete="new-password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <PasswordField label={translate("Password")} id="su-p" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordField label={translate("Confirm password")} id="su-c" autoComplete="new-password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
 
-          <ul aria-label="Password requirements" className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px]">
+          <ul aria-label={translate("Password requirements")} className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px]">
             {checks.map((check) => (
               <li key={check.id} className={`flex items-center gap-1.5 ${check.ok ? 'text-shop-accent' : 'text-slate-600'}`}>
                 {check.ok ? <Check className="size-3.5" aria-hidden="true" /> : <X className="size-3.5" aria-hidden="true" />}
-                {check.label}
+                {translate(check.label)}
                 <span className="sr-only">{check.ok ? ' — met' : ' — not met yet'}</span>
               </li>
             ))}
@@ -128,18 +127,16 @@ export default function SignupPage() {
           {error && (
             <div role="alert" className="flex gap-2.5 rounded-[10px] bg-danger-bg px-3.5 py-3 text-[#7F1D1D]">
               <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>{error}</span>
+              <span>{translate(error)}</span>
             </div>
           )}
 
           <Button type="submit" variant="primary" loading={saving} disabled={!canSubmit} className="h-11 text-[15px] font-bold">
-            Send request
-          </Button>
+            {translate("Send request")}</Button>
           <p className="text-center text-slate-600">
-            Already approved?{' '}
+            {translate("Already approved?")}{' '}
             <Link to="/login" className="font-bold text-shop-accent hover:underline">
-              Sign in
-            </Link>
+              {translate("Sign in")}</Link>
           </p>
         </form>
       )}

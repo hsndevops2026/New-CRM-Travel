@@ -759,6 +759,9 @@ export async function runMigrations() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS contact_reminders_contact_id_idx ON contact_reminders (contact_id);
   `);
+  // Customer language override set by staff (null = follow the WhatsApp conversation).
+  await pool.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(2)`);
+
   // Trip program per lead: activities, day trips and packages the employee picked.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS trip_plan_items (

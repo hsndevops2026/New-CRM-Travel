@@ -153,3 +153,21 @@ describe('QuoteSharePage — accessibility', () => {
     expect(screen.getByLabelText(/Email/)).toBeTruthy()
   })
 })
+
+describe('QuoteSharePage — Arabic for customers', () => {
+  it('shows the quote in Arabic, right to left', async () => {
+    const { setLanguage } = await import('../lib/i18n')
+    setLanguage('ar')
+    try {
+      renderPage()
+      const ar = (await import('../locales/ar.json')).default as Record<string, string>
+      expect(await screen.findByRole('button', { name: ar['Accept this quote'] })).toBeTruthy()
+      expect(screen.getByText(ar['Total price'])).toBeTruthy()
+      expect(screen.getByText(ar['Happy with this quote?'])).toBeTruthy()
+      expect(screen.queryByText('Accept this quote')).toBeNull()
+      expect(document.documentElement.dir).toBe('rtl')
+    } finally {
+      setLanguage('en')
+    }
+  })
+})

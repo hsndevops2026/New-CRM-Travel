@@ -55,6 +55,7 @@ router.patch('/contacts/:id', async (req, res) => {
       name: req.body?.name,
       phone: req.body?.phone,
       email: req.body?.email,
+      preferred_language: req.body?.preferred_language,
     });
     if (!contact) return res.status(404).json({ error: 'Contact not found' });
     res.json({ contact });

@@ -30,6 +30,7 @@ import {
 import {
   fetchContactProfile,
   type Contact,
+  setContactLanguage,
   type ContactBooking,
   type ContactProfile,
 } from '../lib/contacts'
@@ -299,7 +300,27 @@ export default function ContactProfilePage() {
         }
         subtitle={formatPhone(contact.phone)}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-shop-muted">
+              {translate('Message language')}
+              <select
+                value={contact.preferred_language || ''}
+                onChange={async (e) => {
+                  const value = e.target.value === 'ar' || e.target.value === 'en' ? e.target.value : null
+                  try {
+                    const updated = await setContactLanguage(contact.id, value)
+                    setProfile((prev) => (prev ? { ...prev, contact: { ...prev.contact, ...updated } } : prev))
+                  } catch {
+                    // The select keeps showing the saved value; nothing else to undo.
+                  }
+                }}
+                className="rounded-lg border border-shop-border bg-white px-2 py-1.5 text-sm text-shop-ink"
+              >
+                <option value="">{translate('Automatic (from WhatsApp)')}</option>
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+              </select>
+            </label>
             {threads.length > 0 && (
               <Button variant="secondary" icon={<MessageSquare />} onClick={() => messageThread(threads)}>
                 {translate("Message")}</Button>

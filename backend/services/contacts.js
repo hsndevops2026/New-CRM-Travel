@@ -120,7 +120,7 @@ export async function listContacts({ query: search = '', limit = 200 } = {}) {
   return result.rows;
 }
 
-export async function updateContact(id, { name, phone, email } = {}) {
+export async function updateContact(id, { name, phone, email, preferred_language } = {}) {
   const existing = await getContactById(id);
   if (!existing) return null;
 
@@ -128,14 +128,25 @@ export async function updateContact(id, { name, phone, email } = {}) {
   const contactPhone = phone !== undefined ? requirePhone(phone) : existing.phone;
   const contactEmail =
     email !== undefined ? optionalEmail(email) : existing.email || null;
+  // '' or null clears the override (the WhatsApp conversation decides again).
+  let language = existing.preferred_language ?? null;
+  if (preferred_language !== undefined) {
+    if (preferred_language === null || preferred_language === '') language = null;
+    else if (['ar', 'en'].includes(preferred_language)) language = preferred_language;
+    else {
+      const error = new Error('preferred_language must be ar or en');
+      error.status = 400;
+      throw error;
+    }
+  }
 
   try {
     const result = await query(
       `UPDATE contacts
-       SET name = $2, phone = $3, email = $4, updated_at = NOW()
+       SET name = $2, phone = $3, email = $4, preferred_language = $5, updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [id, contactName, contactPhone, contactEmail],
+      [id, contactName, contactPhone, contactEmail, language],
     );
     return result.rows[0] || null;
   } catch (error) {

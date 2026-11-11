@@ -11,7 +11,7 @@ describe('reminder WhatsApp message', () => {
       contact_name: 'Ajay',
       text: 'Please share passport copy',
       remind_at: '2026-10-28T09:00:00.000Z',
-    });
+    }, 'en');
     assert.match(message, /^Hi Ajay,/);
     assert.match(message, /Reminder:/);
     assert.match(message, /Please share passport copy/);
@@ -22,10 +22,16 @@ describe('reminder WhatsApp message', () => {
     const message = buildReminderWhatsAppMessage({
       text: 'Call back',
       remind_at: 'not-a-date',
-    });
+    }, 'en');
     assert.match(message, /^Hi,/);
     assert.match(message, /Call back/);
     assert.equal(message.includes('When:'), false);
+  });
+
+  it('is Arabic by default', () => {
+    const message = buildReminderWhatsAppMessage({ contact_name: 'Ajay', text: 'x', remind_at: 'not-a-date' });
+    assert.match(message, /^مرحباً Ajay،/);
+    assert.equal(message.includes('الموعد:'), false);
   });
 
   it('skips send when contact has no phone', async () => {

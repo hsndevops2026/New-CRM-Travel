@@ -9,6 +9,8 @@ export type Contact = {
   phone: string
   name: string
   email?: string | null
+  /** Staff override for the customer's message language; null = follow WhatsApp. */
+  preferred_language?: 'ar' | 'en' | null
   created_at: string
   updated_at?: string
 }
@@ -76,4 +78,14 @@ export async function fetchContactProfile(id: string): Promise<ContactProfile> {
     threads: (data.threads || []) as Thread[],
     reminders: (data.reminders || []) as ContactReminder[],
   }
+}
+
+export async function setContactLanguage(id: string, language: 'ar' | 'en' | null): Promise<Contact> {
+  const response = await apiFetch(`/api/contacts/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ preferred_language: language }),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to update contact')
+  return data.contact as Contact
 }

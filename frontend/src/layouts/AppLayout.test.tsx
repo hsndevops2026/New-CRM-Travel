@@ -53,7 +53,7 @@ describe('AppLayout — navigation', () => {
     renderAt()
     const nav = mainNav()
     const labels = within(nav).getAllByRole('link').map((a) => a.textContent?.replace(/\d+$/, '').trim())
-    expect(labels).toEqual(['Inbox', 'Leads', 'Quotes', 'Dealers', 'Contacts', 'Reminders', 'Assistant', 'Settings', 'Permissions'])
+    expect(labels).toEqual(['Inbox', 'Leads', 'Quotes', 'Dealers', 'Contacts', 'Reminders', 'Assistant', 'Reports', 'Settings', 'Permissions'])
     expect(within(nav).getByRole('separator')).toBeTruthy()
   })
 
@@ -64,6 +64,7 @@ describe('AppLayout — navigation', () => {
     expect(within(nav).queryByRole('link', { name: /Settings/ })).toBeNull()
     expect(within(nav).queryByRole('link', { name: /Permissions/ })).toBeNull()
     expect(within(nav).queryByRole('separator')).toBeNull()
+    expect(within(nav).queryByRole('link', { name: /Reports/ })).toBeNull()
   })
 
   it('marks the current area for assistive tech — and Leads stays current on a lead page', () => {

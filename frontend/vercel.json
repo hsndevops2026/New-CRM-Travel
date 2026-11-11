@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.dimyon.ai/travel/api/:path*"
+      "destination": "https://travel-crm-api.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",

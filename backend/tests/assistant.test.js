@@ -13,6 +13,7 @@ let admin;
 let agent;
 let leadA;
 let leadB;
+let pkg;
 
 async function insertLead(phone, destination) {
   const { rows } = await query(
@@ -59,10 +60,16 @@ describe('staff assistant', () => {
     leadA = await insertLead(phoneA, `Istanbul-${tag}`);
     leadB = await insertLead(phoneB, `Dubai-${tag}`);
     await query(`INSERT INTO user_leads (user_id, lead_id) VALUES ($1, $2)`, [agent.id, leadA]);
+    pkg = (await query(
+      `INSERT INTO predefined_quotes (title, destination, nights, total_price, currency)
+       VALUES ($1, $2, 5, 1890, 'USD') RETURNING id`,
+      [`Istanbul family ${tag}`, `Istanbul-${tag}`],
+    )).rows[0];
   });
 
   after(async () => {
     await query(`DELETE FROM leads WHERE id = ANY($1::uuid[])`, [[leadA, leadB]]);
+    if (pkg) await query(`DELETE FROM predefined_quotes WHERE id = $1`, [pkg.id]);
     await query(`DELETE FROM contacts WHERE phone = ANY($1)`, [[phoneA, phoneB]]);
     await query(`DELETE FROM admins WHERE id = ANY($1::uuid[])`, [[admin.id, agent.id]]);
     await pool.end();
@@ -102,7 +109,9 @@ describe('staff assistant', () => {
     assert.deepEqual(result.tools_used, ['search_leads']);
     assert.match(result.reply, new RegExp(`Istanbul-${tag}`));
     assert.doesNotMatch(result.reply, new RegExp(`Dubai-${tag}`));
-    assert.match(client.seen[0][0].content, /Never invent/);
+    assert.match(client.seen[0][0].content, /DATA MODE/);
+    assert.equal(result.mode, 'data');
+    assert.deepEqual(result.suggestions, []);
   });
 
   it('works with Claude through the Messages API', async () => {
@@ -132,5 +141,55 @@ describe('staff assistant', () => {
   it('rejects empty or malformed conversations', async () => {
     assert.deepEqual(cleanHistory([{ role: 'system', content: 'x' }, { role: 'user', content: '  ' }]), []);
     await assert.rejects(() => askAssistant({ messages: [], user: agent, env: {} }), /question/);
+  });
+
+  it('finds agency packages with their real price', async () => {
+    const found = await runAssistantTool('search_packages', { destination: `Istanbul-${tag}`, max_price: 2000 }, agent);
+    assert.equal(found.count, 1);
+    assert.equal(Number(found.packages[0].total_price), 1890);
+    const tooCheap = await runAssistantTool('search_packages', { destination: `Istanbul-${tag}`, max_price: 1000 }, agent);
+    assert.equal(tooCheap.count, 0);
+  });
+
+  it('keeps data mode free of suggestion tools', async () => {
+    let tools;
+    const client = { chat: { completions: { create: async (req) => {
+      tools = req.tools.map((t) => t.function.name);
+      return { choices: [{ message: { role: 'assistant', content: 'غير موجود في النظام' } }] };
+    } } } };
+    const result = await askAssistant({ messages: [{ role: 'user', content: 'اقترح وجهة' }], user: agent, env: {}, openaiClient: client });
+    assert.equal(result.mode, 'data');
+    assert.equal(tools.includes('propose_suggestions'), false);
+  });
+
+  it('returns planner cards, with prices only from real packages', async () => {
+    let round = 0;
+    let systemText = '';
+    const client = { chat: { completions: { create: async ({ messages, tools }) => {
+      round += 1;
+      systemText = messages[0].content;
+      assert.ok(tools.some((t) => t.function.name === 'propose_suggestions'));
+      if (round === 1) {
+        return { choices: [{ message: { role: 'assistant', content: null, tool_calls: [{
+          id: 'c1', type: 'function', function: { name: 'propose_suggestions', arguments: JSON.stringify({ suggestions: [
+            { title: 'Package', details: 'Fits the budget', kind: 'package', source: 'system', package_id: pkg.id },
+            { title: 'Bosphorus cruise', details: 'Good in mild weather', kind: 'activity', source: 'general', price: 50 },
+            { title: 'Fake package', details: 'x', kind: 'package', source: 'system', package_id: '00000000-0000-0000-0000-000000000000' },
+          ] }) },
+        }] } }] };
+      }
+      return { choices: [{ message: { role: 'assistant', content: 'جهزت 3 اقتراحات' } }] };
+    } } } };
+    const result = await askAssistant({
+      messages: [{ role: 'user', content: 'اقترح نشاطات لعائلة في اسطنبول' }],
+      mode: 'planner', user: agent, env: {}, openaiClient: client,
+    });
+    assert.match(systemText, /TRIP PLANNER MODE/);
+    assert.equal(result.mode, 'planner');
+    assert.equal(result.suggestions.length, 3);
+    const [real, general, fake] = result.suggestions;
+    assert.deepEqual([real.source, real.price, real.currency], ['system', 1890, 'USD']);
+    assert.deepEqual([general.source, general.price], ['general', null]);
+    assert.deepEqual([fake.source, fake.price, fake.package_id], ['general', null, null]);
   });
 });

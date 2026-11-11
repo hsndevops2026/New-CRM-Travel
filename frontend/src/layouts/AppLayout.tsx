@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react'
 import { SearchProvider } from '../context/SearchProvider'
+import NotificationBell from '../components/NotificationBell'
 import { useSearch } from '../hooks/useSearch'
 import { useNavCounts } from '../hooks/useNavCounts'
 import { useAuth } from '../context/AuthContext'
@@ -343,6 +344,9 @@ function Shell() {
           </button>
           <span className="truncate font-bold md:hidden">{agency?.agency_name || 'Horizon Travel'}</span>
           {searchEnabled && <div className="hidden w-full max-w-[520px] flex-1 md:block">{searchField}</div>}
+          <div className="ms-auto">
+            <NotificationBell />
+          </div>
           <div className="relative ms-auto" data-admin-menu>
             <button
               type="button"

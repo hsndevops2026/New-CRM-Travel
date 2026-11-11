@@ -1,3 +1,4 @@
+import { notifyCustomerMessage, notifyNewLead, safeNotify } from '../services/notifications.js';
 import { getAiHandover, hasArabic, isHumanRequest, pauseAi } from '../services/aiHandover.js';
 import { getCustomerText } from '../services/customerTexts.js';
 import {
@@ -495,10 +496,12 @@ export async function handleIncomingLeadMessage({
   const handover = await getAiHandover(phone);
   if (handover.paused) {
     console.log(`[handover] AI paused for ${phone}; message stored, no bot reply`);
+    await safeNotify(() => notifyCustomerMessage(phone, { text: messageText }));
     return { phone, complete: false, missing: [], collected: conversation.collected || {}, reply: '', ai_paused: true };
   }
   if (isHumanRequest(messageText)) {
     await pauseAi(phone, { reason: 'customer_request' });
+    await safeNotify(() => notifyCustomerMessage(phone, { text: messageText, humanRequested: true }));
     const reply = getCustomerText('humanHandover', hasArabic(messageText) ? 'ar' : 'en');
     await replyToUser(phone, reply, skipWhatsApp, { conversationId: conversation.id, leadId: existingLead?.id || null });
     return { phone, complete: false, missing: [], collected: conversation.collected || {}, reply, ai_paused: true, human_requested: true };
@@ -583,11 +586,12 @@ export async function handleIncomingLeadMessage({
       collected: result.collected,
       summary: result.summary,
       status: 'new',
-      source: ['whatsapp', 'crm', 'csv'].includes(source) ? source : 'whatsapp',
+      source: ['whatsapp', 'crm', 'csv', 'web'].includes(source) ? source : 'whatsapp',
       skipQuoteFetch: Boolean(matchedPackage),
       pendingPackageOfferId: matchedPackage?.id || null,
     });
     console.log('Lead created:', lead.id, result.summary);
+    void safeNotify(() => notifyNewLead(lead.id));
     await linkConversationMessagesToLead(conversation.id, lead.id);
 
     if (matchedPackage) {

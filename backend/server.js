@@ -13,6 +13,7 @@ import { closeSimulationRedis } from './services/voiceSimulation.js';
 import { expireStaleConversations } from './services/leads.js';
 import { ensureBootstrapAdmin } from './services/admins.js';
 import { sendDueCustomerReminders } from './services/reminders.js';
+import { notifyDueReminders, pruneNotifications } from './services/notifications.js';
 import { productionConfigProblems } from './config/productionGuard.js';
 
 const app = createApp();
@@ -111,6 +112,8 @@ async function start() {
       Number(process.env.REMINDER_SWEEP_MS || 60_000) || 60_000,
     );
     reminderSweep = setInterval(() => {
+      void notifyDueReminders().catch((error) => console.error('[notifications] reminder sweep failed:', error.message));
+      if (new Date().getMinutes() === 0) void pruneNotifications().catch(() => {});
       void sendDueCustomerReminders()
         .then((rows) => {
           const sent = rows.filter((r) => r.sent).length;

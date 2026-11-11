@@ -171,7 +171,7 @@ describe('staff assistant', () => {
       assert.ok(tools.some((t) => t.function.name === 'propose_suggestions'));
       if (round === 1) {
         return { choices: [{ message: { role: 'assistant', content: null, tool_calls: [{
-          id: 'c1', type: 'function', function: { name: 'propose_suggestions', arguments: JSON.stringify({ suggestions: [
+          id: 'c1', type: 'function', function: { name: 'propose_suggestions', arguments: JSON.stringify({ lead_id: leadA, suggestions: [
             { title: 'Package', details: 'Fits the budget', kind: 'package', source: 'system', package_id: pkg.id },
             { title: 'Bosphorus cruise', details: 'Good in mild weather', kind: 'activity', source: 'general', price: 50 },
             { title: 'Fake package', details: 'x', kind: 'package', source: 'system', package_id: '00000000-0000-0000-0000-000000000000' },
@@ -191,5 +191,7 @@ describe('staff assistant', () => {
     assert.deepEqual([real.source, real.price, real.currency], ['system', 1890, 'USD']);
     assert.deepEqual([general.source, general.price], ['general', null]);
     assert.deepEqual([fake.source, fake.price, fake.package_id], ['general', null, null]);
+    assert.equal(result.lead.id, leadA);
+    assert.equal(result.lead.customer_name, 'Assistant Test A');
   });
 });

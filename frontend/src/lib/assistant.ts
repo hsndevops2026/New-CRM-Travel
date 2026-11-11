@@ -12,23 +12,32 @@ export type AssistantSuggestion = {
   currency: string | null
 }
 
+export type AssistantLead = { id: string; customer_name: string; destination: string }
+
 export type AssistantMessage = {
   role: 'user' | 'assistant'
   content: string
   suggestions?: AssistantSuggestion[]
+  lead?: AssistantLead | null
 }
 
 export async function askAssistant(
   messages: AssistantMessage[],
   mode: AssistantMode = 'data',
-): Promise<{ reply: string; tools_used: string[]; suggestions: AssistantSuggestion[]; mode: AssistantMode }> {
+): Promise<{
+  reply: string
+  tools_used: string[]
+  suggestions: AssistantSuggestion[]
+  lead: AssistantLead | null
+  mode: AssistantMode
+}> {
   const res = await apiFetch('/api/assistant/chat', {
     method: 'POST',
     body: JSON.stringify({ messages: messages.map(({ role, content }) => ({ role, content })), mode }),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'The assistant could not answer right now')
-  return { suggestions: [], ...data }
+  return { suggestions: [], lead: null, ...data }
 }
 
 /** Text the employee copies for the customer: only the cards they ticked. */

@@ -39,7 +39,7 @@ export const BOARD_STAGES: LifecycleStatus[] = HAPPY_PATH.filter((stage) => stag
 
 export const CLOSED_STAGES: LifecycleStatus[] = ['lost', 'archived']
 
-export type QuoteStep = 'source' | 'dealers' | 'market' | 'build' | 'send'
+export type QuoteStep = 'source' | 'dealers' | 'market' | 'build' | 'trip' | 'send'
 
 const TAB_TO_STEP: Record<string, QuoteStep> = {
   overview: 'source',
@@ -51,6 +51,7 @@ const TAB_TO_STEP: Record<string, QuoteStep> = {
   send: 'send',
   source: 'source',
   build: 'build',
+  trip: 'trip',
 }
 
 export function lifecycleLabel(status: string | null | undefined) {
@@ -145,5 +146,6 @@ export const QUOTE_STEPS: Array<{ id: QuoteStep; label: string }> = [
   { id: 'dealers', label: 'Dealers' },
   { id: 'market', label: 'Market' },
   { id: 'build', label: 'Build' },
+  { id: 'trip', label: 'Trip program' },
   { id: 'send', label: 'Send' },
 ]

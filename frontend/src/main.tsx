@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage.tsx'
 import SignupPage from './pages/SignupPage.tsx'
 import QuoteSharePage from './pages/QuoteSharePage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
+import AssistantPage from './pages/AssistantPage.tsx'
 import LeadsSegmentRoute from './pages/LeadsSegmentRoute.tsx'
 import QuotesPage from './pages/QuotesPage.tsx'
 import DealersPage from './pages/DealersPage.tsx'
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
                 </ProtectedRoute>
               }
             >
+              <Route path="/assistant" element={<AssistantPage />} />
               <Route path="/inbox" element={<InboxPage />} />
               <Route path="/inbox/:threadId" element={<InboxPage />} />
               <Route path="/leads" element={<Navigate to="/leads/hotel" replace />} />

@@ -17,7 +17,7 @@ const router = Router();
 /** POST /api/assistant/chat { messages: [{role, content}] } — staff assistant, read-only. */
 router.post('/assistant/chat', assistantLimiter, async (req, res) => {
   try {
-    const result = await askAssistant({ messages: req.body?.messages, user: req.admin });
+    const result = await askAssistant({ messages: req.body?.messages, mode: req.body?.mode, user: req.admin });
     res.json(result);
   } catch (error) {
     if (!error.status || error.status >= 500) console.error('[assistant]', error.message);

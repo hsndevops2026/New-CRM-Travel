@@ -66,6 +66,20 @@ export const assistantToolDefinitions = [
     },
   },
   {
+    name: 'search_packages',
+    description: "Search the agency's own ready-made packages (title, destination, nights, total price). The only allowed source of prices.",
+    parameters: {
+      type: 'object',
+      properties: {
+        destination: { type: 'string', description: 'City or country to look for' },
+        max_price: { type: 'number', description: 'Highest total price' },
+        nights: { type: 'integer', minimum: 1, maximum: 60 },
+        limit: { type: 'integer', minimum: 1, maximum: 25 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'list_quotes_waiting_for_customer',
     description: 'Leads whose quote was sent to the customer but the customer has not written back for at least N days.',
     parameters: {
@@ -185,7 +199,99 @@ async function listQuotesWaiting(user, { days, limit } = {}) {
   return { days_without_reply: d, count: rows.length, leads: rows };
 }
 
+async function searchPackages(_user, { destination, max_price, nights, limit } = {}) {
+  const params = [];
+  let where = 'WHERE 1=1';
+  if (destination && String(destination).trim()) {
+    params.push(`%${String(destination).trim()}%`);
+    where += ` AND (p.destination ILIKE $${params.length} OR p.title ILIKE $${params.length})`;
+  }
+  if (Number.isFinite(Number(max_price)) && Number(max_price) > 0) {
+    params.push(Number(max_price));
+    where += ` AND p.total_price <= $${params.length}`;
+  }
+  if (Number.isFinite(Number(nights)) && Number(nights) > 0) {
+    params.push(Math.floor(Number(nights)));
+    where += ` AND p.nights = $${params.length}`;
+  }
+  params.push(clampLimit(limit));
+  const { rows } = await query(
+    `SELECT p.id, p.title, p.quote_type, p.origin, p.destination, p.nights, p.total_price, p.currency,
+            LEFT(p.description, 300) AS description, p.updated_at
+     FROM predefined_quotes p ${where}
+     ORDER BY p.updated_at DESC LIMIT $${params.length}`,
+    params,
+  );
+  return { count: rows.length, packages: rows };
+}
+
+/** Trip-planner tool: the model hands over its suggestions as separate cards. */
+export const proposeSuggestionsDefinition = {
+  name: 'propose_suggestions',
+  description: 'Hand the employee your trip-planner suggestions as separate cards they can pick from. Call this once with all suggestions, then write a one-line summary.',
+  parameters: {
+    type: 'object',
+    properties: {
+      suggestions: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 12,
+        items: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            details: { type: 'string', description: 'What it is and why it fits (weather, budget, interests). No prices unless from a package.' },
+            kind: { type: 'string', enum: ['activity', 'trip_idea', 'package'] },
+            source: { type: 'string', enum: ['system', 'general'], description: 'system = taken from a package or lead in the CRM; general = your general knowledge' },
+            package_id: { type: 'string', description: 'Required when source is system and the suggestion is a package' },
+          },
+          required: ['title', 'details', 'kind', 'source'],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['suggestions'],
+    additionalProperties: false,
+  },
+};
+
+/**
+ * Cleans the model's suggestions: prices are never taken from the model. A card
+ * gets a price only when it points at a real package, and then the price comes
+ * from the database.
+ */
+export async function validateSuggestions(input) {
+  const list = Array.isArray(input?.suggestions) ? input.suggestions.slice(0, 12) : [];
+  const ids = list
+    .map((x) => String(x?.package_id || ''))
+    .filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+  const packages = new Map();
+  if (ids.length) {
+    const { rows } = await query(
+      `SELECT id, title, total_price, currency, nights, destination FROM predefined_quotes WHERE id = ANY($1::uuid[])`,
+      [ids],
+    );
+    for (const row of rows) packages.set(row.id, row);
+  }
+  return list
+    .filter((x) => x && String(x.title || '').trim())
+    .map((x) => {
+      const pkg = packages.get(String(x.package_id || ''));
+      const fromSystem = x.source === 'system' && Boolean(pkg);
+      return {
+        title: String(x.title).trim().slice(0, 160),
+        details: String(x.details || '').trim().slice(0, 800),
+        kind: ['activity', 'trip_idea', 'package'].includes(x.kind) ? x.kind : 'trip_idea',
+        source: fromSystem ? 'system' : 'general',
+        package_id: fromSystem ? pkg.id : null,
+        price: fromSystem && pkg.total_price != null ? Number(pkg.total_price) : null,
+        currency: fromSystem ? pkg.currency : null,
+      };
+    });
+}
+
 const HANDLERS = {
+  search_packages: searchPackages,
   search_leads: searchLeads,
   get_lead: getLead,
   pipeline_summary: pipelineSummary,

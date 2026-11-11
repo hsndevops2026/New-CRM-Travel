@@ -1,6 +1,11 @@
 import OpenAI from 'openai';
 import { openaiConfig } from '../config/openai.js';
-import { assistantToolDefinitions, runAssistantTool } from './assistantTools.js';
+import {
+  assistantToolDefinitions,
+  proposeSuggestionsDefinition,
+  runAssistantTool,
+  validateSuggestions,
+} from './assistantTools.js';
 
 /**
  * Staff assistant: answers questions about the CRM using read-only tools.
@@ -23,14 +28,37 @@ export function assistantConfig(env = process.env) {
   };
 }
 
-export function systemPrompt(user, now = new Date()) {
-  return [
+export const ASSISTANT_MODES = ['data', 'planner'];
+
+export function normalizeMode(mode) {
+  return mode === 'planner' ? 'planner' : 'data';
+}
+
+export function systemPrompt(user, now = new Date(), mode = 'data') {
+  const common = [
     'You are the internal assistant of a travel agency CRM. You help staff, not customers.',
     `Today is ${now.toISOString().slice(0, 10)}. The user is ${user?.email || 'a staff member'} with role ${user?.role || 'agent'}.`,
     'Answer in the language the user writes in. Staff usually write Arabic; reply in clear, natural Arabic when they do.',
-    'Use the tools to look up leads, quotes, reminders and messages. Never invent customers, prices, availability, bookings or dates: if the tools do not return it, say you could not find it.',
-    'You cannot send messages, change records, make bookings or take payments. When asked, draft the text for the employee to review and send themselves.',
+    'You cannot send messages, change records, make bookings or take payments. When asked for a message to a customer, draft it for the employee to review and send.',
+    'Prices may ONLY come from the tools (packages, leads, quotes). Never state, estimate or guess a price, availability, booking or flight time that a tool did not return.',
     'When you mention a lead, include the customer name and destination. Keep answers short and practical.',
+  ];
+  if (mode === 'planner') {
+    return [
+      ...common,
+      'TRIP PLANNER MODE is on: the employee asked for ideas to offer a customer.',
+      'You may use general travel knowledge to suggest activities, places to visit and trip ideas that fit the weather, season, budget, interests, ages and number of travellers.',
+      'First look up the lead (if one is mentioned) and the agency packages with search_packages. Prefer the agency packages when they fit.',
+      'Return every suggestion through the propose_suggestions tool, one card per idea. Mark source "system" only for things taken from a package or the lead, and give the package_id. Everything else is source "general".',
+      'Do not put prices in general suggestions. Do not promise exact dates, opening hours or availability; say the employee should confirm them.',
+      'After calling propose_suggestions, reply with one short sentence only.',
+    ].join('\n');
+  }
+  return [
+    ...common,
+    'DATA MODE: answer ONLY from what the tools return from this CRM database.',
+    'Do NOT suggest destinations, trips, activities, hotels, dates or prices from your own knowledge, and do not answer general travel questions.',
+    'If the answer is not in the CRM, say it is not in the system. If the employee wants ideas or a trip plan, tell them to turn on Trip planner mode.',
   ].join('\n');
 }
 
@@ -42,14 +70,24 @@ export function cleanHistory(messages) {
     .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS) }));
 }
 
-async function openaiTurn({ cfg, system, history, user, client }) {
+async function callTool(name, args, user, collect) {
+  if (name === proposeSuggestionsDefinition.name) {
+    if (!collect) return { error: 'Suggestions are only available in Trip planner mode' };
+    const cards = await validateSuggestions(args);
+    collect.push(...cards);
+    return { ok: true, cards: cards.length };
+  }
+  return runAssistantTool(name, args, user);
+}
+
+async function openaiTurn({ cfg, system, history, user, client, toolDefs, collect }) {
   const openai = client || (cfg.openaiKey ? new OpenAI({ apiKey: cfg.openaiKey }) : null);
   if (!openai) {
     const error = new Error('The assistant is not configured (OPENAI_API_KEY is missing)');
     error.status = 503;
     throw error;
   }
-  const tools = assistantToolDefinitions.map((t) => ({
+  const tools = toolDefs.map((t) => ({
     type: 'function',
     function: { name: t.name, description: t.description, parameters: t.parameters },
   }));
@@ -64,7 +102,7 @@ async function openaiTurn({ cfg, system, history, user, client }) {
     for (const call of msg.tool_calls) {
       let args = {};
       try { args = JSON.parse(call.function.arguments || '{}'); } catch { args = {}; }
-      const result = await runAssistantTool(call.function.name, args, user);
+      const result = await callTool(call.function.name, args, user, collect);
       used.push(call.function.name);
       messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result).slice(0, 20_000) });
     }
@@ -72,13 +110,13 @@ async function openaiTurn({ cfg, system, history, user, client }) {
   return { reply: 'I could not finish looking that up. Please ask a more specific question.', tools_used: used };
 }
 
-async function anthropicTurn({ cfg, system, history, user, fetchImpl = fetch }) {
+async function anthropicTurn({ cfg, system, history, user, fetchImpl = fetch, toolDefs, collect }) {
   if (!cfg.anthropicKey) {
     const error = new Error('The assistant is not configured (ANTHROPIC_API_KEY is missing)');
     error.status = 503;
     throw error;
   }
-  const tools = assistantToolDefinitions.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters }));
+  const tools = toolDefs.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters }));
   const messages = history.map((m) => ({ role: m.role, content: m.content }));
   const used = [];
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
@@ -105,7 +143,7 @@ async function anthropicTurn({ cfg, system, history, user, fetchImpl = fetch }) 
     messages.push({ role: 'assistant', content: blocks });
     const results = [];
     for (const call of calls) {
-      const result = await runAssistantTool(call.name, call.input, user);
+      const result = await callTool(call.name, call.input, user, collect);
       used.push(call.name);
       results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(result).slice(0, 20_000) });
     }
@@ -114,17 +152,23 @@ async function anthropicTurn({ cfg, system, history, user, fetchImpl = fetch }) 
   return { reply: 'I could not finish looking that up. Please ask a more specific question.', tools_used: used };
 }
 
-export async function askAssistant({ messages, user, env = process.env, openaiClient, fetchImpl, now } = {}) {
+export async function askAssistant({ messages, mode, user, env = process.env, openaiClient, fetchImpl, now } = {}) {
   const history = cleanHistory(messages);
   if (!history.length || history[history.length - 1].role !== 'user') {
     const error = new Error('Send a question as the last message');
     error.status = 400;
     throw error;
   }
+  const activeMode = normalizeMode(mode);
   const cfg = assistantConfig(env);
-  const system = systemPrompt(user, now);
+  const system = systemPrompt(user, now, activeMode);
+  const toolDefs = activeMode === 'planner'
+    ? [...assistantToolDefinitions, proposeSuggestionsDefinition]
+    : assistantToolDefinitions;
+  const collect = activeMode === 'planner' ? [] : null;
+  const args = { cfg, system, history, user, toolDefs, collect };
   const result = cfg.provider === 'anthropic'
-    ? await anthropicTurn({ cfg, system, history, user, fetchImpl })
-    : await openaiTurn({ cfg, system, history, user, client: openaiClient });
-  return { ...result, provider: cfg.provider };
+    ? await anthropicTurn({ ...args, fetchImpl })
+    : await openaiTurn({ ...args, client: openaiClient });
+  return { ...result, mode: activeMode, suggestions: collect || [], provider: cfg.provider };
 }

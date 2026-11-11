@@ -33,6 +33,11 @@ export function t(key: string | null | undefined, values: Record<string, string 
   })
 }
 
+/** The active interface language, for code outside React (formatters). */
+export function currentLanguage(): Language {
+  return language
+}
+
 export function locale() {
   return language === 'ar' ? 'ar-u-nu-latn' : undefined
 }

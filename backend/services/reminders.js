@@ -1,3 +1,4 @@
+import { customerLanguage, formatCustomerDate } from './customerLanguage.js';
 import { query } from '../config/database.js';
 import { getContactById } from './contacts.js';
 import { saveMessage } from './messages.js';
@@ -38,24 +39,13 @@ function requireRemindAt(remindAt) {
 }
 
 /** Customer-facing WhatsApp body, sent at remind_at for reminders with notify_customer. */
-export function buildReminderWhatsAppMessage(reminder) {
-  const when = new Date(reminder.remind_at);
-  const whenLabel = Number.isNaN(when.getTime())
-    ? ''
-    : when.toLocaleString(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      });
+export function buildReminderWhatsAppMessage(reminder, lang = 'ar') {
+  const ar = lang === 'ar';
+  const whenLabel = formatCustomerDate(reminder.remind_at, lang);
   const name = String(reminder.contact_name || '').trim();
-  const greeting = name ? `Hi ${name},` : 'Hi,';
-  const lines = [greeting, '', 'Reminder:', String(reminder.text || '').trim()];
-  if (whenLabel) {
-    lines.push('', `When: ${whenLabel}`);
-  }
+  const greeting = ar ? (name ? `مرحباً ${name}،` : 'مرحباً،') : (name ? `Hi ${name},` : 'Hi,');
+  const lines = [greeting, '', ar ? 'تذكير:' : 'Reminder:', String(reminder.text || '').trim()];
+  if (whenLabel) lines.push('', ar ? `الموعد: ${whenLabel}` : `When: ${whenLabel}`);
   return lines.join('\n');
 }
 
@@ -67,7 +57,7 @@ export async function sendReminderWhatsApp(reminder, { send = sendTextMessage } 
   const phone = String(reminder?.contact_phone || '').trim();
   if (!phone) return { sent: false, reason: 'no_phone' };
 
-  const text = buildReminderWhatsAppMessage(reminder);
+  const text = buildReminderWhatsAppMessage(reminder, await customerLanguage(phone));
   await send(phone, text);
   await saveMessage({
     direction: 'outbound',

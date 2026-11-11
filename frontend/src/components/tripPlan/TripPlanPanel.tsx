@@ -120,6 +120,7 @@ export default function TripPlanPanel({ leadId }: Props) {
         if (cancelled) return
         setItems(data.items)
         setCustomerName(data.lead.customer_name)
+        if (data.lead.language === 'en' || data.lead.language === 'ar') setLang(data.lead.language)
         setError(null)
       })
       .catch((err: unknown) => {

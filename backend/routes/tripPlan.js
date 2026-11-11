@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../config/database.js';
 import { sendCustomerMessage } from '../services/chatSend.js';
+import { customerLanguage } from '../services/customerLanguage.js';
 import {
   addTripPlanItems,
   deleteTripPlanItem,
@@ -23,11 +24,14 @@ function fail(res, error, fallback) {
 
 async function leadSummary(leadId) {
   const { rows } = await query(
-    `SELECT l.id, l.destination, COALESCE(c.name, '') AS customer_name
+    `SELECT l.id, l.destination, l.phone, COALESCE(c.name, '') AS customer_name
      FROM leads l LEFT JOIN contacts c ON c.phone = l.phone WHERE l.id = $1`,
     [leadId],
   );
-  return rows[0] || null;
+  const lead = rows[0];
+  if (!lead) return null;
+  const { phone, ...rest } = lead;
+  return { ...rest, language: await customerLanguage(phone) };
 }
 
 function lang(value) {

@@ -1,3 +1,4 @@
+import { t } from './i18n'
 type Meta = Record<string, unknown> | null | undefined
 
 export type ItemKind = 'flight' | 'hotel' | 'other'
@@ -30,9 +31,9 @@ export function travellersText(adults?: number | null, children?: number | null)
   const c = Number(children) || 0
   if (!a && !c) return null
   const parts: string[] = []
-  if (a) parts.push(`${a} adult${a === 1 ? '' : 's'}`)
-  if (c) parts.push(`${c} ${c === 1 ? 'child' : 'children'}`)
-  return parts.join(', ')
+  if (a) parts.push(a === 1 ? t('1 adult') : t('{value0} adults', { value0: a }))
+  if (c) parts.push(c === 1 ? t('1 child') : t('{value0} children', { value0: c }))
+  return parts.join(t(', '))
 }
 
 /** A wa.me link for the agency's number, or null if there is no usable number. */

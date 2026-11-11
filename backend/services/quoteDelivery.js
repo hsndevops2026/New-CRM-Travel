@@ -1,3 +1,4 @@
+import { customerLanguage } from './customerLanguage.js';
 /**
  * Quote delivery service.
  * Handles WhatsApp and email sends with idempotency, status tracking, and retry support.
@@ -83,28 +84,31 @@ function publicPdfLink(token) {
 
 // ── WhatsApp delivery ─────────────────────────────────────────────────────────
 
-function buildWhatsAppMessage(snapshot, token, agency) {
+export function buildWhatsAppMessage(snapshot, token, agency, lang = 'ar') {
+  const ar = lang === 'ar';
   const pricing = snapshot.pricing || {};
   const lead = snapshot.lead || {};
   const lines = [];
 
-  lines.push(`*${agency.agency_name} Travel Quote* ✈️`);
+  lines.push(ar ? `*عرض سعر رحلتك من ${agency.agency_name}* ✈️` : `*${agency.agency_name} Travel Quote* ✈️`);
   lines.push('');
   if (lead.destination) lines.push(`📍 ${lead.destination}`);
   if (lead.travel_date) lines.push(`📅 ${lead.travel_date}${lead.return_date ? ' → ' + lead.return_date : ''}`);
-  if (pricing.selling_price) lines.push(`💰 Total: *${money(pricing.selling_price, snapshot.currency)}*`);
-  if (snapshot.valid_until) lines.push(`⏳ Valid until: ${snapshot.valid_until}`);
+  if (pricing.selling_price) {
+    lines.push(ar ? `💰 المجموع: *${money(pricing.selling_price, snapshot.currency)}*` : `💰 Total: *${money(pricing.selling_price, snapshot.currency)}*`);
+  }
+  if (snapshot.valid_until) lines.push(ar ? `⏳ ساري حتى: ${snapshot.valid_until}` : `⏳ Valid until: ${snapshot.valid_until}`);
   lines.push('');
-  lines.push(`👉 View & accept your quote:`);
-  lines.push(shareLink(token));
+  lines.push(ar ? '👉 لمشاهدة العرض والموافقة عليه:' : '👉 View & accept your quote:');
+  lines.push(`${shareLink(token)}${ar ? '?lang=ar' : ''}`);
   lines.push('');
-  lines.push('_Reply to this message if you have any questions._');
+  lines.push(ar ? '_للاستفسار، رد على هذه الرسالة._' : '_Reply to this message if you have any questions._');
 
   return lines.join('\n');
 }
 
 async function sendWhatsApp(delivery, snapshot, token, agency) {
-  const message = buildWhatsAppMessage(snapshot, token, agency);
+  const message = buildWhatsAppMessage(snapshot, token, agency, await customerLanguage(delivery.recipient));
   const leadId = snapshot.lead?.id || null;
 
   try {

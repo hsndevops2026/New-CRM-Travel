@@ -1,0 +1,81 @@
+# Render Blueprint for the Travel CRM backend.
+# Render → New → Blueprint → pick this repo. It creates the API server,
+# a PostgreSQL database and a Redis-compatible Key Value store, all in Frankfurt.
+# The frontend stays on Vercel (see docs/DEPLOY-RENDER.md).
+
+databases:
+  - name: travel-crm-db
+    databaseName: travel
+    user: travel
+    region: frankfurt
+    # basic-256mb is the smallest paid plan. The free plan works for a quick try
+    # but Render deletes free databases after a limited time.
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+
+services:
+  - type: keyvalue
+    name: travel-crm-redis
+    region: frankfurt
+    plan: free
+    # Queues only; nothing permanent is stored in Redis.
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # private network only
+
+  - type: web
+    name: travel-crm-api
+    runtime: node
+    region: frankfurt
+    # Must be a paid instance: the WhatsApp bot and background workers run
+    # inside this service and a free instance goes to sleep.
+    plan: starter
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: travel-crm-db
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          type: keyvalue
+          name: travel-crm-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: keyvalue
+          name: travel-crm-redis
+          property: port
+      # Generated once by Render; never shared.
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: WASENDER_WEBHOOK_SECRET
+        generateValue: true
+      - key: ALLOW_PUBLIC_SIGNUP
+        value: "false"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAME_SITE
+        value: lax
+      # Asked for in the Render dashboard when the Blueprint is created.
+      - key: INITIAL_ADMIN_EMAIL
+        sync: false
+      - key: INITIAL_ADMIN_PASSWORD_MIN_12_CHARS
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: WASENDER_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: WEBCHAT_ALLOWED_ORIGINS
+        sync: false

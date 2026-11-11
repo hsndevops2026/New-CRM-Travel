@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://travel-crm-api.onrender.com/api/:path*"
+      "destination": "https://travel-crm-api-kik3.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",

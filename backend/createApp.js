@@ -31,6 +31,7 @@ import inboxRoutes from './routes/inbox.js';
 import assistantRoutes from './routes/assistant.js';
 import tripPlanRoutes from './routes/tripPlan.js';
 import reportRoutes from './routes/reports.js';
+import emailRoutes, { emailCallbackRouter } from './routes/email.js';
 import { createWebchatRouter } from './routes/webchat.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -191,6 +192,8 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   // Public share routes must be registered before any app.use('/api', requireAuth, …)
   // mounts, otherwise requireAuth intercepts /api/q/:token with 401.
+  // Google's OAuth redirect lands here without a Bearer token.
+  app.use('/api', emailCallbackRouter);
   app.use('/api/q', quoteLimiter);
   app.use('/api', quoteVersionsPublicRoutes);
   // Customer portal — before staff agentLeadAccess (which rejects role=customer).
@@ -200,6 +203,7 @@ export function createApp() {
   app.use('/api', requireAuth, assistantRoutes);
   app.use('/api', requireAuth, tripPlanRoutes);
   app.use('/api', requireAuth, reportRoutes);
+  app.use('/api', requireAuth, emailRoutes);
   app.use('/api', requireAuth, leadsRoutes);
   app.use('/api', requireAuth, flightsRoutes);
   app.use('/api', requireAuth, hotelsRoutes);

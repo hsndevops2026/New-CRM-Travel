@@ -53,6 +53,18 @@ On the landing page and booking site:
 <script src="https://travel-crm-api-kik3.onrender.com/webchat.js" data-lang="ar" defer></script>
 ```
 
+## 5. Gmail (Email page)
+
+Staff connect their own Gmail from the **Email** page. The server needs a Google OAuth client once:
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → create a project → **APIs & Services** → **Library** → enable **Gmail API**.
+2. **OAuth consent screen**: type External, app name, support email. Scopes: `gmail.readonly`, `gmail.send`, `userinfo.email`. While the app is in **Testing**, add each employee's Gmail under **Test users** (up to 100).
+3. **Credentials** → **Create credentials** → **OAuth client ID** → Web application. Authorized redirect URI:
+   `https://new-crm-travel.vercel.app/api/email/oauth/callback`
+4. On Render (`travel-crm-api` → Environment) set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. `GOOGLE_REDIRECT_URI` and `EMAIL_TOKEN_ENCRYPTION_KEY` come from the Blueprint (the key is generated; if your service was created before this change, add `EMAIL_TOKEN_ENCRYPTION_KEY` with any long random value).
+
+To use it with people outside the test-user list, Google must verify the app. `gmail.readonly` is a restricted scope, so verification includes a security assessment and can take several weeks.
+
 ## Notes
 
 - The backend refuses to start in production without the generated secrets; this is intentional.

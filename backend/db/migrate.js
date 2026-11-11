@@ -759,6 +759,27 @@ export async function runMigrations() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS contact_reminders_contact_id_idx ON contact_reminders (contact_id);
   `);
+  // Gmail accounts connected by staff (ported from the Insurance CRM). Tokens are AES-256-GCM encrypted.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_accounts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      access_token_enc TEXT NOT NULL,
+      refresh_token_enc TEXT NOT NULL,
+      token_expiry TIMESTAMPTZ NOT NULL,
+      is_default BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (admin_id, email)
+    );
+    CREATE TABLE IF NOT EXISTS email_oauth_states (
+      state TEXT PRIMARY KEY,
+      admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   // Customer language override set by staff (null = follow the WhatsApp conversation).
   await pool.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(2)`);
 

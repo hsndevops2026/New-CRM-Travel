@@ -53,7 +53,7 @@ describe('AppLayout — navigation', () => {
     renderAt()
     const nav = mainNav()
     const labels = within(nav).getAllByRole('link').map((a) => a.textContent?.replace(/\d+$/, '').trim())
-    expect(labels).toEqual(['Inbox', 'Leads', 'Quotes', 'Dealers', 'Contacts', 'Reminders', 'Assistant', 'Reports', 'Settings', 'Permissions'])
+    expect(labels).toEqual(['Inbox', 'Leads', 'Quotes', 'Dealers', 'Contacts', 'Reminders', 'Email', 'Assistant', 'Reports', 'Settings', 'Permissions'])
     expect(within(nav).getByRole('separator')).toBeTruthy()
   })
 

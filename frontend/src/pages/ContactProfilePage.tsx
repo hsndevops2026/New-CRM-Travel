@@ -21,6 +21,7 @@ import Button from '../components/ui/Button'
 import EmptyState from '../components/ui/EmptyState'
 import LifecycleBadge from '../components/ui/LifecycleBadge'
 import PageHeader from '../components/ui/PageHeader'
+import ContactEmailsPanel from '../components/email/ContactEmailsPanel'
 import { useAuth } from '../context/AuthContext'
 import { useConfirm } from '../hooks/useConfirm'
 import {
@@ -50,11 +51,12 @@ import {
   type ContactReminder,
 } from '../lib/reminders'
 
-type TabId = 'bookings' | 'chats' | 'documents' | 'reminders'
+type TabId = 'bookings' | 'chats' | 'emails' | 'documents' | 'reminders'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'bookings', label: 'Bookings' },
   { id: 'chats', label: 'Chats' },
+  { id: 'emails', label: 'Emails' },
   { id: 'documents', label: 'Documents' },
   { id: 'reminders', label: 'Reminders' },
 ]
@@ -344,7 +346,9 @@ export default function ContactProfilePage() {
               ? bookings.length
               : item.id === 'chats'
                 ? threads.length
-                : item.id === 'documents'
+                : item.id === 'emails'
+                  ? null
+                  : item.id === 'documents'
                   ? allDocuments.length
                   : reminders.length
           return (
@@ -526,6 +530,8 @@ export default function ContactProfilePage() {
           )}
         </section>
       )}
+
+      {tab === 'emails' && <ContactEmailsPanel contactId={contact.id} contactEmail={contact.email} />}
 
       {tab === 'reminders' && (
         <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">

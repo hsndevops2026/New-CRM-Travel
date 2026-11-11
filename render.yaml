@@ -58,6 +58,8 @@ services:
         generateValue: true
       - key: WASENDER_WEBHOOK_SECRET
         generateValue: true
+      - key: EMAIL_TOKEN_ENCRYPTION_KEY
+        generateValue: true
       - key: ALLOW_PUBLIC_SIGNUP
         value: "false"
       - key: COOKIE_SECURE
@@ -79,3 +81,10 @@ services:
         sync: false
       - key: WEBCHAT_ALLOWED_ORIGINS
         sync: false
+      # Gmail (see docs/DEPLOY-RENDER.md, section 5)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://new-crm-travel.vercel.app/api/email/oauth/callback

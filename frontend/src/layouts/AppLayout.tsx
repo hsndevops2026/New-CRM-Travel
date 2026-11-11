@@ -2,6 +2,7 @@ import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
+  BarChart3,
   Bell,
   Briefcase,
   ChevronDown,
@@ -46,6 +47,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/assistant', label: 'Assistant', icon: Sparkles, match: (path) => path.startsWith('/assistant') },
 ]
 const ADMIN_NAV: NavEntry[] = [
+  { to: '/reports', label: 'Reports', icon: BarChart3, match: (path) => path.startsWith('/reports'), adminOnly: true },
   { to: '/settings', label: 'Settings', icon: SlidersHorizontal, match: (path) => path.startsWith('/settings'), adminOnly: true },
   { to: '/permissions', label: 'Permissions', icon: ShieldCheck, match: (path) => path.startsWith('/permissions'), adminOnly: true },
 ]

@@ -30,6 +30,9 @@ import opsRoutes from './routes/ops.js';
 import inboxRoutes from './routes/inbox.js';
 import assistantRoutes from './routes/assistant.js';
 import tripPlanRoutes from './routes/tripPlan.js';
+import { createWebchatRouter } from './routes/webchat.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { classifyError, logError } from './services/logger.js';
 import agencySettingsRoutes from './routes/agencySettings.js';
 import portalRoutes from './routes/portal.js';
@@ -65,6 +68,15 @@ export function createApp() {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  // Website chat widget: its own CORS (any allowed site, no cookies), so it is
+  // mounted before the dashboard's credentialed CORS and before auth.
+  app.use('/api/public/webchat', createWebchatRouter());
+  app.get('/webchat.js', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.type('application/javascript').sendFile(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public', 'webchat.js'));
+  });
 
   app.use(
     cors({

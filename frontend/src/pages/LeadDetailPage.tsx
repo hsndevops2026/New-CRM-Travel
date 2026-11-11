@@ -22,6 +22,7 @@ import Timeline from '../components/ui/Timeline'
 import LeadWorkspaceTabs from '../components/leads/LeadWorkspaceTabs'
 import BookLeadsModal from '../components/BookLeadsModal'
 import LeadDocumentsPanel from '../components/LeadDocumentsPanel'
+import TripPlanPanel from '../components/tripPlan/TripPlanPanel'
 import {
   deleteLead,
   fetchLeadById,
@@ -541,6 +542,8 @@ export default function LeadDetailPage() {
               </aside>
             </div>
           )}
+
+          {step === 'trip' && <TripPlanPanel leadId={lead.id} />}
 
           {step === 'send' && (
             <div className="space-y-4">

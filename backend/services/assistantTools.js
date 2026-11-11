@@ -232,6 +232,7 @@ export const proposeSuggestionsDefinition = {
   parameters: {
     type: 'object',
     properties: {
+      lead_id: { type: 'string', description: 'The lead these ideas are for, if the employee named a customer or lead' },
       suggestions: {
         type: 'array',
         minItems: 1,

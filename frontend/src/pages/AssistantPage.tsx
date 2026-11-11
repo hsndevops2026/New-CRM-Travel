@@ -63,8 +63,8 @@ export default function AssistantPage() {
     setBusy(true)
     setError(null)
     try {
-      const { reply, suggestions } = await askAssistant(next, mode)
-      setMessages([...next, { role: 'assistant', content: reply || translate('No answer.'), suggestions }])
+      const { reply, suggestions, lead } = await askAssistant(next, mode)
+      setMessages([...next, { role: 'assistant', content: reply || translate('No answer.'), suggestions, lead }])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The assistant could not answer right now')
     } finally {
@@ -151,7 +151,7 @@ export default function AssistantPage() {
               >
                 {m.content}
               </div>
-              {m.suggestions?.length ? <SuggestionCards cards={m.suggestions} /> : null}
+              {m.suggestions?.length ? <SuggestionCards cards={m.suggestions} lead={m.lead} /> : null}
             </div>
           ))}
           {busy && (

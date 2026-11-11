@@ -49,7 +49,7 @@ export function systemPrompt(user, now = new Date(), mode = 'data') {
       'TRIP PLANNER MODE is on: the employee asked for ideas to offer a customer.',
       'You may use general travel knowledge to suggest activities, places to visit and trip ideas that fit the weather, season, budget, interests, ages and number of travellers.',
       'First look up the lead (if one is mentioned) and the agency packages with search_packages. Prefer the agency packages when they fit.',
-      'Return every suggestion through the propose_suggestions tool, one card per idea. Mark source "system" only for things taken from a package or the lead, and give the package_id. Everything else is source "general".',
+      'Return every suggestion through the propose_suggestions tool, one card per idea, and pass lead_id when the ideas are for a specific lead. Mark source "system" only for things taken from a package or the lead, and give the package_id. Everything else is source "general".',
       'Do not put prices in general suggestions. Do not promise exact dates, opening hours or availability; say the employee should confirm them.',
       'After calling propose_suggestions, reply with one short sentence only.',
     ].join('\n');
@@ -74,8 +74,15 @@ async function callTool(name, args, user, collect) {
   if (name === proposeSuggestionsDefinition.name) {
     if (!collect) return { error: 'Suggestions are only available in Trip planner mode' };
     const cards = await validateSuggestions(args);
-    collect.push(...cards);
-    return { ok: true, cards: cards.length };
+    collect.cards.push(...cards);
+    if (args?.lead_id) {
+      // Same permission check as get_lead: an agent can only target their own leads.
+      const found = await runAssistantTool('get_lead', { lead_id: args.lead_id }, user);
+      if (found?.lead) {
+        collect.lead = { id: found.lead.id, customer_name: found.lead.customer_name, destination: found.lead.destination };
+      }
+    }
+    return { ok: true, cards: cards.length, lead: collect.lead ? 'linked' : 'none' };
   }
   return runAssistantTool(name, args, user);
 }
@@ -165,10 +172,16 @@ export async function askAssistant({ messages, mode, user, env = process.env, op
   const toolDefs = activeMode === 'planner'
     ? [...assistantToolDefinitions, proposeSuggestionsDefinition]
     : assistantToolDefinitions;
-  const collect = activeMode === 'planner' ? [] : null;
+  const collect = activeMode === 'planner' ? { cards: [], lead: null } : null;
   const args = { cfg, system, history, user, toolDefs, collect };
   const result = cfg.provider === 'anthropic'
     ? await anthropicTurn({ ...args, fetchImpl })
     : await openaiTurn({ ...args, client: openaiClient });
-  return { ...result, mode: activeMode, suggestions: collect || [], provider: cfg.provider };
+  return {
+    ...result,
+    mode: activeMode,
+    suggestions: collect?.cards || [],
+    lead: collect?.lead || null,
+    provider: cfg.provider,
+  };
 }

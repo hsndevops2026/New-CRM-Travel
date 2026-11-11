@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import LeadWorkspaceTabs from './LeadWorkspaceTabs'
 
 describe('LeadWorkspaceTabs', () => {
-  it('lists the five steps in order and marks the current one', () => {
+  it('lists the six steps in order and marks the current one', () => {
     render(<LeadWorkspaceTabs step="build" onSelect={() => {}} />)
     const nav = screen.getByRole('navigation', { name: 'Lead workspace steps' })
     const buttons = within(nav).getAllByRole('button')
-    expect(buttons.map((b) => b.textContent?.replace(/^\d+/, '').trim())).toEqual(['Source', 'Dealers', 'Market', 'Build', 'Send'])
+    expect(buttons.map((b) => b.textContent?.replace(/^\d+/, '').trim())).toEqual(['Source', 'Dealers', 'Market', 'Build', 'Trip program', 'Send'])
     expect(within(nav).getByRole('button', { name: /Build/ }).getAttribute('aria-current')).toBe('page')
     expect(within(nav).getByRole('button', { name: /Source/ }).getAttribute('aria-current')).toBeNull()
   })
@@ -15,7 +15,7 @@ describe('LeadWorkspaceTabs', () => {
   it('numbers the steps', () => {
     render(<LeadWorkspaceTabs step="source" onSelect={() => {}} />)
     const send = screen.getByRole('button', { name: /Send/ })
-    expect(send.textContent).toContain('5')
+    expect(send.textContent).toContain('6')
   })
 
   it('reports the chosen step', () => {

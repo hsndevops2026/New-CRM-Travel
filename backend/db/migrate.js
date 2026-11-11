@@ -759,6 +759,27 @@ export async function runMigrations() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS contact_reminders_contact_id_idx ON contact_reminders (contact_id);
   `);
+  // Trip program per lead: activities, day trips and packages the employee picked.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS trip_plan_items (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      day_number INTEGER CHECK (day_number IS NULL OR (day_number BETWEEN 1 AND 60)),
+      position INTEGER NOT NULL DEFAULT 0,
+      title TEXT NOT NULL,
+      details TEXT NOT NULL DEFAULT '',
+      kind VARCHAR(16) NOT NULL DEFAULT 'activity',
+      source VARCHAR(16) NOT NULL DEFAULT 'general',
+      package_id UUID REFERENCES predefined_quotes(id) ON DELETE SET NULL,
+      price NUMERIC,
+      currency VARCHAR(8),
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_trip_plan_items_lead ON trip_plan_items (lead_id, day_number, position);
+  `);
+
   // Human takeover: while paused, the WhatsApp bot stores messages but never replies.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ai_handover (

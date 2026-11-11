@@ -44,6 +44,7 @@ describe('lifecycle helpers', () => {
     expect(parseQuoteStep(new URLSearchParams('tab=compare'))).toBe('build')
     expect(parseQuoteStep(new URLSearchParams('tab=dealers'))).toBe('dealers')
     expect(parseQuoteStep(new URLSearchParams('step=send'))).toBe('send')
+    expect(parseQuoteStep(new URLSearchParams('step=trip'))).toBe('trip')
     expect(parseQuoteStep(new URLSearchParams(), 'sourcing')).toBe('source')
   })
 

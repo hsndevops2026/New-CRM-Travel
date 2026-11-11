@@ -28,6 +28,7 @@ import { pingDb } from './config/database.js';
 import { redisConfig } from './config/redis.js';
 import opsRoutes from './routes/ops.js';
 import inboxRoutes from './routes/inbox.js';
+import assistantRoutes from './routes/assistant.js';
 import { classifyError, logError } from './services/logger.js';
 import agencySettingsRoutes from './routes/agencySettings.js';
 import portalRoutes from './routes/portal.js';
@@ -182,6 +183,7 @@ export function createApp() {
   app.use('/api/portal', requireAuth, requireRole('customer'), userLimiter, portalRoutes);
   app.use('/api', requireAuth, userLimiter, agentLeadAccess);
   app.use('/api/permissions', permissionsRoutes);
+  app.use('/api', requireAuth, assistantRoutes);
   app.use('/api', requireAuth, leadsRoutes);
   app.use('/api', requireAuth, flightsRoutes);
   app.use('/api', requireAuth, hotelsRoutes);

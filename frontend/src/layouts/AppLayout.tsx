@@ -12,6 +12,7 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Store,
   User,
   X,
@@ -42,6 +43,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/dealers', label: 'Dealers', icon: Store, match: (path) => path.startsWith('/dealers') },
   { to: '/contacts', label: 'Contacts', icon: User, match: (path) => path.startsWith('/contacts') },
   { to: '/reminders', label: 'Reminders', icon: Bell, match: (path) => path.startsWith('/reminders') },
+  { to: '/assistant', label: 'Assistant', icon: Sparkles, match: (path) => path.startsWith('/assistant') },
 ]
 const ADMIN_NAV: NavEntry[] = [
   { to: '/settings', label: 'Settings', icon: SlidersHorizontal, match: (path) => path.startsWith('/settings'), adminOnly: true },

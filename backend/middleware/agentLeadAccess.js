@@ -23,8 +23,8 @@ export async function agentLeadAccess(req, res, next) {
         return res.status(403).json({ error: 'This lead is not assigned to your account' });
       }
     }
-    if (apiPath.startsWith('/inbox/threads/') && (apiPath.endsWith('/messages') || apiPath.endsWith('/send'))) {
-      const encoded = apiPath.slice('/inbox/threads/'.length).replace(/\/(messages|send)$/, '');
+    if (apiPath.startsWith('/inbox/threads/') && (apiPath.endsWith('/messages') || apiPath.endsWith('/send') || apiPath.endsWith('/ai'))) {
+      const encoded = apiPath.slice('/inbox/threads/'.length).replace(/\/(messages|send|ai)$/, '');
       const parsed = parseThreadId(decodeURIComponent(encoded));
       if (parsed?.kind === 'customer') {
         if (parsed.byPhone) return res.status(403).json({ error: 'This conversation is not assigned to your account' });

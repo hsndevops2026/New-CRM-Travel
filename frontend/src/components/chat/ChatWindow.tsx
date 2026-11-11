@@ -3,6 +3,7 @@ import { t as translate, useI18n } from '../../lib/i18n'
 import { useEffect, useRef } from 'react'
 import MessageBubble from './MessageBubble'
 import ChatComposer from './ChatComposer'
+import AiHandoverToggle from './AiHandoverToggle'
 import type { ChatMessage, ThreadDetail } from '../../lib/inbox'
 import { reviewResponse } from '../../lib/dealers'
 import EmptyState from '../ui/EmptyState'
@@ -103,6 +104,7 @@ export default function ChatWindow({
               {[thread.phone || thread.subtitle, kindLabel].filter(Boolean).join(' · ')}
             </p>
           </div>
+          {customer && <AiHandoverToggle threadId={thread.id} refreshKey={messages.length} />}
           {thread.lead_id && onOpenLead && (
             <Button icon={<Briefcase />} onClick={() => onOpenLead(thread.lead_id!)}>
               {translate("Lead")}{thread.lifecycle_status ? ` · ${lifecycleLabel(thread.lifecycle_status)}` : ''}

@@ -32,6 +32,7 @@ import assistantRoutes from './routes/assistant.js';
 import tripPlanRoutes from './routes/tripPlan.js';
 import reportRoutes from './routes/reports.js';
 import emailRoutes, { emailCallbackRouter } from './routes/email.js';
+import notificationRoutes from './routes/notifications.js';
 import { createWebchatRouter } from './routes/webchat.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -204,6 +205,7 @@ export function createApp() {
   app.use('/api', requireAuth, tripPlanRoutes);
   app.use('/api', requireAuth, reportRoutes);
   app.use('/api', requireAuth, emailRoutes);
+  app.use('/api', requireAuth, notificationRoutes);
   app.use('/api', requireAuth, leadsRoutes);
   app.use('/api', requireAuth, flightsRoutes);
   app.use('/api', requireAuth, hotelsRoutes);

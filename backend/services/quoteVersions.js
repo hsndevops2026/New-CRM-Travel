@@ -1,3 +1,4 @@
+import { notifyQuoteAccepted, safeNotify } from './notifications.js';
 /**
  * Quote version service.
  * Locks a draft into an immutable snapshot, issues signed share tokens,
@@ -220,5 +221,8 @@ export async function acceptQuoteVersion(token, { customerName, customerEmail } 
     );
   }
 
+  if (versionRow?.lead_id) {
+    void safeNotify(() => notifyQuoteAccepted(versionRow.lead_id, { acceptedBy: customerName }));
+  }
   return { accepted: true, version_id: versionId };
 }

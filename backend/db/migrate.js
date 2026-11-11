@@ -759,6 +759,32 @@ export async function runMigrations() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS contact_reminders_contact_id_idx ON contact_reminders (contact_id);
   `);
+  // In-app notifications for staff, and the staff side of reminders.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      kind VARCHAR(32) NOT NULL,
+      lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+      contact_id UUID REFERENCES contacts(id) ON DELETE CASCADE,
+      data JSONB NOT NULL DEFAULT '{}'::jsonb,
+      count INTEGER NOT NULL DEFAULT 1,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_notifications_admin ON notifications (admin_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications (admin_id, kind, lead_id) WHERE read_at IS NULL;
+    ALTER TABLE contact_reminders ADD COLUMN IF NOT EXISTS staff_notified_at TIMESTAMPTZ;
+  `);
+  // Reminders already past their time when this ships should not all notify at once.
+  const staffReminders = await pool.query(`
+    INSERT INTO app_migrations (key) VALUES ('contact_reminders_staff_notify_v1')
+    ON CONFLICT (key) DO NOTHING RETURNING key
+  `);
+  if (staffReminders.rowCount) {
+    await pool.query(`UPDATE contact_reminders SET staff_notified_at = NOW() WHERE staff_notified_at IS NULL AND remind_at <= NOW()`);
+  }
+
   // Gmail accounts connected by staff (ported from the Insurance CRM). Tokens are AES-256-GCM encrypted.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS email_accounts (

@@ -66,6 +66,10 @@ export type ShareTokenView = {
   selling_price: number | null
   currency: string
   accepted_at: string | null
+  /** A newer version replaced this one: it can be read but not accepted. */
+  superseded?: boolean
+  /** The quote's valid-until date has passed. */
+  expired?: boolean
   snapshot: {
     title: string
     version_number: number

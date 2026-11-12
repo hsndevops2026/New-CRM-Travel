@@ -9,7 +9,7 @@ import { createRequire } from 'module';
 import { query } from '../config/database.js';
 import { sendTextMessage, sendDocumentMessage, formatRecipient } from './wasender.js';
 import { buildVersionPdfBuffer } from './quotationPdf.js';
-import { getVersionById, createShareToken } from './quoteVersions.js';
+import { getVersionById, createShareToken, versionBlock } from './quoteVersions.js';
 import { saveMessage } from './messages.js';
 import { tryAutoTransitionLifecycle } from './leads.js';
 import { getAgencySettings } from './agencySettings.js';
@@ -276,6 +276,12 @@ export async function sendQuoteVersion({ versionId, channel, recipient, expiryHo
 
   const version = await getVersionById(versionId);
   if (!version) throw httpErr(404, 'Quote version not found');
+  const block = await versionBlock(version);
+  if (block) {
+    const err = httpErr(block.status, block.message);
+    err.code = block.code;
+    throw err;
+  }
 
   const snapshot = typeof version.snapshot === 'string'
     ? JSON.parse(version.snapshot)

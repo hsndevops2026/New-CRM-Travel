@@ -227,6 +227,21 @@ export default function PricingPanel({ leadId, draft, onDraftChange }: Props) {
             {translate("{count} item{suffix}", { count: items.length, suffix: items.length === 1 ? '' : 's' })}
           </span>
         </div>
+        {hasItems && draft?.issues && (draft.issues.missing_cost.length > 0 || draft.issues.other_currency.length > 0) && (
+          <div role="alert" className="mb-3 rounded-lg bg-danger-bg px-3 py-2 text-[13px] text-danger-fg">
+            <p className="font-semibold">{translate('Fix these before locking the quote:')}</p>
+            <ul className="mt-1 list-disc ps-5">
+              {draft.issues.missing_cost.map((i) => (
+                <li key={`m-${i.id}`}><bdi>{i.label}</bdi>: {translate('no price')}</li>
+              ))}
+              {draft.issues.other_currency.map((i) => (
+                <li key={`c-${i.id}`}>
+                  <bdi>{i.label}</bdi>: {translate('priced in {value0}, the quote is in {value1}. Totals are not converted.', { value0: i.currency, value1: currency })}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {!hasItems || !pricing ? (
           <p className="py-3 text-center text-sm text-shop-muted">{translate("Select options to see pricing.")}</p>
         ) : (

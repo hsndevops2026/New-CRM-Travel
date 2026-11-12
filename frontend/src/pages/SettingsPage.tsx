@@ -233,6 +233,44 @@ export default function SettingsPage() {
                       )}
                       <span className="text-xs text-shop-muted">{translate("A manager's own quotes never wait for approval.")}</span>
                     </fieldset>
+                    <fieldset className="grid gap-3 rounded-lg border border-shop-border p-3">
+                      <legend className={`${LABEL} px-1`}>{translate('Automatic messages and alerts')}</legend>
+                      <label className="flex items-start gap-2 text-sm">
+                        <input type="checkbox" className="mt-1" checked={Boolean(agency.auto_quote_followup)} onChange={(e) => setAgency({ ...agency, auto_quote_followup: e.target.checked })} />
+                        <span>
+                          {translate('Follow up on a quote the customer has not answered after')}{' '}
+                          <input
+                            type="number" min={6} max={336} aria-label={translate('Hours before following up')}
+                            className="h-8 w-16 rounded-md border border-line-strong px-1.5 text-sm tabular-nums"
+                            value={agency.quote_followup_hours ?? 48}
+                            onChange={(e) => setAgency({ ...agency, quote_followup_hours: Number(e.target.value) })}
+                          />{' '}{translate('hours (one WhatsApp message)')}
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-2 text-sm">
+                        <input type="checkbox" className="mt-1" checked={Boolean(agency.auto_trip_messages)} onChange={(e) => setAgency({ ...agency, auto_trip_messages: e.target.checked })} />
+                        <span>{translate('Trip messages: a week before, two days before, on the day, and after the return with a 1–5 rating')}</span>
+                      </label>
+                      <label className="grid gap-1">
+                        <span className={LABEL}>{translate('Emergency number while travelling')}</span>
+                        <input className={`${FIELD} tabular-nums`} dir="ltr" placeholder={agency.phone || ''} value={agency.emergency_phone || ''} onChange={(e) => setAgency({ ...agency, emergency_phone: e.target.value || null })} />
+                      </label>
+                      <label className="grid gap-1">
+                        <span className={LABEL}>{translate('Google review link (sent after a rating of 4 or 5)')}</span>
+                        <input className={FIELD} dir="ltr" placeholder="https://g.page/r/…" value={agency.google_review_url || ''} onChange={(e) => setAgency({ ...agency, google_review_url: e.target.value || null })} />
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        {translate('Alert managers when a new request has no reply after')}
+                        <input
+                          type="number" min={0} max={1440} aria-label={translate('Minutes before alerting')}
+                          className="h-8 w-16 rounded-md border border-line-strong px-1.5 text-sm tabular-nums"
+                          value={agency.lead_wait_alert_minutes ?? 15}
+                          onChange={(e) => setAgency({ ...agency, lead_wait_alert_minutes: Number(e.target.value) })}
+                        />
+                        {translate('minutes (0 = off)')}
+                      </label>
+                      <span className="text-xs text-shop-muted">{translate('Customer messages go out between 9:00 and 21:00 only.')}</span>
+                    </fieldset>
                   </div>
 
                   <figure className="m-0 flex flex-[0_1_280px] flex-col gap-2 max-lg:w-full max-lg:flex-none">

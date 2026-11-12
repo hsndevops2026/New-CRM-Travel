@@ -1,3 +1,4 @@
+import { handleRatingReply } from '../services/automations.js';
 import { notifyCustomerMessage, notifyNewLead, safeNotify } from '../services/notifications.js';
 import { getAiHandover, hasArabic, isHumanRequest, pauseAi } from '../services/aiHandover.js';
 import { getCustomerText } from '../services/customerTexts.js';
@@ -490,6 +491,11 @@ export async function handleIncomingLeadMessage({
       status: 'received',
       raw: { kind: 'customer', ...messageMeta },
     });
+  }
+
+  // "5" after our welcome-back message is a trip rating, not a new request.
+  if (!skipWhatsApp && await handleRatingReply(phone, messageText).catch(() => false)) {
+    return { phone, complete: false, missing: [], collected: {}, reply: '', rating: true };
   }
 
   // Human takeover: an agent is handling this customer, so the bot stays quiet.

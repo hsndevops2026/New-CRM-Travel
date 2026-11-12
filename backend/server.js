@@ -15,6 +15,7 @@ import { ensureBootstrapAdmin } from './services/admins.js';
 import { sendDueCustomerReminders } from './services/reminders.js';
 import { notifyDueReminders, pruneNotifications } from './services/notifications.js';
 import { notifyDueTasks } from './services/staffTasks.js';
+import { runAutomations } from './services/automations.js';
 import { productionConfigProblems } from './config/productionGuard.js';
 
 const app = createApp();
@@ -115,6 +116,7 @@ async function start() {
     reminderSweep = setInterval(() => {
       void notifyDueReminders().catch((error) => console.error('[notifications] reminder sweep failed:', error.message));
       void notifyDueTasks().catch((error) => console.error('[notifications] task sweep failed:', error.message));
+      void runAutomations().catch((error) => console.error('[automations] sweep failed:', error.message));
       if (new Date().getMinutes() === 0) void pruneNotifications().catch(() => {});
       void sendDueCustomerReminders()
         .then((rows) => {

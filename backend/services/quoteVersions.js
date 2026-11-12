@@ -211,6 +211,16 @@ export async function resolveShareToken(token) {
 
   // Increment view count
   await query(`UPDATE share_tokens SET views = views + 1 WHERE id = $1`, [row.id]);
+  if (row.views === 0) {
+    const snap = typeof row.snapshot === 'string' ? JSON.parse(row.snapshot) : row.snapshot;
+    void import('./automations.js')
+      .then(({ notifyQuoteViewed }) => notifyQuoteViewed({
+        leadId: snap?.lead?.id,
+        versionNumber: row.version_number,
+        customer: snap?.lead?.customer_name || snap?.lead?.contact_name,
+      }))
+      .catch(() => {});
+  }
 
   return {
     token: row.token,

@@ -14,6 +14,12 @@ export type AgencySettings = {
   quote_approval_mode?: 'off' | 'agents' | 'below_margin'
   quote_approval_min_margin?: number
   quote_approval_min_margin_type?: 'percent' | 'fixed'
+  auto_quote_followup?: boolean
+  quote_followup_hours?: number
+  lead_wait_alert_minutes?: number
+  auto_trip_messages?: boolean
+  google_review_url?: string | null
+  emergency_phone?: string | null
 }
 
 export async function fetchAgencySettings(): Promise<AgencySettings> {

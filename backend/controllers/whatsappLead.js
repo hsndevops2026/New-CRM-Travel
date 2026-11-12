@@ -1,3 +1,4 @@
+import { flagTravellerMessage } from '../services/travellers.js';
 import { notifyCustomerMessage, notifyNewLead, safeNotify } from '../services/notifications.js';
 import { getAiHandover, hasArabic, isHumanRequest, pauseAi } from '../services/aiHandover.js';
 import { getCustomerText } from '../services/customerTexts.js';
@@ -491,6 +492,9 @@ export async function handleIncomingLeadMessage({
       raw: { kind: 'customer', ...messageMeta },
     });
   }
+
+  // A customer who is abroad right now gets a person, fast.
+  if (!skipWhatsApp) void flagTravellerMessage(phone, messageText).catch(() => {});
 
   // Human takeover: an agent is handling this customer, so the bot stays quiet.
   const handover = await getAiHandover(phone);

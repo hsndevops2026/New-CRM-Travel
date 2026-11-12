@@ -3,6 +3,7 @@ import { getContactById, normalizeContactPhone } from './contacts.js';
 import { listDocumentsForPhone } from './bookingDocuments.js';
 import { listMessagesForLead } from './messages.js';
 import { getAgencySettings, publicAgencySettings } from './agencySettings.js';
+import { listTripPlan } from './tripPlan.js';
 
 export async function listBookingsForPhone(phone) {
   const digits = normalizeContactPhone(phone);
@@ -36,6 +37,13 @@ export async function getCustomerPortal(customer) {
   }
 
   const bookings = await listBookingsForPhone(contact.phone);
+  // The day-by-day program, for trips that are booked.
+  for (const booking of bookings) {
+    const booked = booking.lifecycle_status === 'booked' || booking.status === 'booked';
+    booking.program = booked
+      ? (await listTripPlan(booking.id)).map(({ day_number, title, details, kind }) => ({ day_number, title, details, kind }))
+      : [];
+  }
   const documents = await listDocumentsForPhone(contact.phone);
 
   const chats = [];

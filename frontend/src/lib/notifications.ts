@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 import { t } from './i18n'
 
-export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed'
+export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed' | 'travellers_submitted' | 'traveller_message'
 
 export type StaffNotification = {
   id: string
@@ -71,6 +71,13 @@ export function notificationText(n: StaffNotification): { title: string; detail:
       return d.decision === 'approved'
         ? { title: t('Quote v{value0} approved, you can send it', { value0: String(d.version_number ?? '') }), detail: String(d.by || '') }
         : { title: t('Changes requested on quote v{value0}', { value0: String(d.version_number ?? '') }), detail: String(d.note || '') }
+    case 'travellers_submitted':
+      return {
+        title: t('The customer sent the travellers\' details ({value0})', { value0: String(d.count ?? '') }),
+        detail: Number(d.problems) ? t('{value0} passport problem(s)', { value0: String(d.problems) }) : '',
+      }
+    case 'traveller_message':
+      return { title: t('Message from a customer travelling now ({value0})', { value0: String(d.destination || '') }), detail: String(d.preview || '') }
     case 'reminder_due':
       return { title: t('Reminder: {value0}', { value0: who }), detail: String(d.text || '') }
     default:

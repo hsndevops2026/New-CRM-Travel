@@ -956,6 +956,35 @@ export async function runMigrations() {
       ON whatsapp_polls (phone, created_at DESC) WHERE status = 'open';
   `);
 
+  // Travellers on a booking, as written in their passports. The customer can fill them in
+  // through a private link (lead_traveller_links) instead of sending passport photos.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lead_travellers (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL DEFAULT 0,
+      full_name TEXT NOT NULL,
+      is_child BOOLEAN NOT NULL DEFAULT FALSE,
+      date_of_birth DATE,
+      nationality TEXT,
+      passport_number TEXT,
+      passport_expiry DATE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_lead_travellers_lead ON lead_travellers (lead_id, position);
+
+    CREATE TABLE IF NOT EXISTS lead_traveller_links (
+      token TEXT PRIMARY KEY,
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      submitted_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_lead_traveller_links_lead ON lead_traveller_links (lead_id);
+  `);
+
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');
   await seedDemoPredefinedQuotes();
 

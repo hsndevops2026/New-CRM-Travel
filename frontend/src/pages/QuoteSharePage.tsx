@@ -241,7 +241,7 @@ export default function QuoteSharePage() {
           )}
           {token && (
             <a
-              href={publicPdfUrl(token)}
+              href={`${publicPdfUrl(token)}?lang=${currentLanguage() === 'ar' ? 'ar' : 'en'}`}
               target="_blank"
               rel="noreferrer"
               className="flex h-12 items-center justify-center gap-2 rounded-xl border border-line-strong bg-white font-bold"
@@ -346,7 +346,7 @@ export default function QuoteSharePage() {
 
         {token && (
           <a
-            href={publicPdfUrl(token)}
+            href={`${publicPdfUrl(token)}?lang=${currentLanguage() === 'ar' ? 'ar' : 'en'}`}
             target="_blank"
             rel="noreferrer"
             className="flex h-[52px] items-center justify-center gap-2 rounded-xl border border-line-strong bg-white font-bold"

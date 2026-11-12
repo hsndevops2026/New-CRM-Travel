@@ -12,7 +12,7 @@ import {
   retryDelivery,
   listDeliveries,
 } from '../services/quoteDelivery.js';
-import { pipeVersionPdf } from '../services/quotationPdf.js';
+import { pipeVersionPdf, quotePdfLanguage } from '../services/quotationPdf.js';
 import { logAuditEvent } from '../services/audit.js';
 import { getAgencySettings, publicAgencySettings } from '../services/agencySettings.js';
 
@@ -70,7 +70,7 @@ router.get('/quote-versions/:id/pdf', async (req, res) => {
     const snapshot = typeof version.snapshot === 'string'
       ? JSON.parse(version.snapshot)
       : version.snapshot;
-    await pipeVersionPdf(snapshot, res, await getAgencySettings());
+    await pipeVersionPdf(snapshot, res, await getAgencySettings(), await quotePdfLanguage(snapshot, req.query.lang));
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }
@@ -158,7 +158,7 @@ publicRouter.get('/q/:token/pdf', async (req, res) => {
     const data = await resolveShareToken(req.params.token);
     if (!data) return res.status(404).json({ error: 'Quote link is invalid, expired, or revoked' });
     const snapshot = typeof data.snapshot === 'string' ? JSON.parse(data.snapshot) : data.snapshot;
-    await pipeVersionPdf(snapshot, res, await getAgencySettings());
+    await pipeVersionPdf(snapshot, res, await getAgencySettings(), await quotePdfLanguage(snapshot, req.query.lang));
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }

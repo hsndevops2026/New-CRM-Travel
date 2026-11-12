@@ -68,7 +68,7 @@ describe('QuoteSharePage — the quote', () => {
     await screen.findByRole('heading', { level: 1 })
     expect(screen.getByRole('link', { name: /Call us/ }).getAttribute('href')).toBe('tel:+97145550188')
     expect(screen.getByRole('link', { name: 'Reply on WhatsApp' }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/97145550188\?text=/)
-    expect(screen.getByRole('link', { name: /Download PDF/ }).getAttribute('href')).toBe('/api/q/tok/pdf')
+    expect(screen.getByRole('link', { name: /Download PDF/ }).getAttribute('href')).toMatch(/^\/api\/q\/tok\/pdf\?lang=(ar|en)$/)
   })
 
   it('shows the agency note and omits sections that have nothing to say', async () => {

@@ -8,7 +8,7 @@ import { customerLanguage } from './customerLanguage.js';
 import { createRequire } from 'module';
 import { query } from '../config/database.js';
 import { sendTextMessage, sendDocumentMessage, formatRecipient } from './wasender.js';
-import { buildVersionPdfBuffer } from './quotationPdf.js';
+import { buildVersionPdfBuffer, quotePdfLanguage } from './quotationPdf.js';
 import { getVersionById, createShareToken, versionBlock } from './quoteVersions.js';
 import { saveMessage } from './messages.js';
 import { tryAutoTransitionLifecycle } from './leads.js';
@@ -196,7 +196,7 @@ async function sendEmail(delivery, snapshot, token, agency) {
   // Attach PDF
   let attachments = [];
   try {
-    const pdfBuffer = await buildVersionPdfBuffer(snapshot, agency);
+    const pdfBuffer = await buildVersionPdfBuffer(snapshot, agency, await quotePdfLanguage(snapshot));
     attachments = [{
       filename: `quote-v${snapshot.version_number || 1}.pdf`,
       content: pdfBuffer,

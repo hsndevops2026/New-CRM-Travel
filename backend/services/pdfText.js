@@ -56,21 +56,45 @@ export function paragraphDirection(text) {
   return 'ltr';
 }
 
+const LATIN_LETTER = /[A-Za-zÀ-ɏ]/;
+
 /**
  * Words in logical order, grouped into runs of the same direction. A word with any Arabic
- * letter is Arabic; everything else (Latin, digits, "—", "·") is left-to-right.
+ * letter is Arabic; a word with a Latin letter is left-to-right.
+ *
+ * Words with neither (numbers, "-", "·") are neutral. In a left-to-right paragraph they
+ * simply join the run around them. In a right-to-left one they join a Latin run only when
+ * Latin text continues after them ("USD 2,298", "check-in from 14:00"); otherwise each is
+ * its own run, so "12 ديسمبر 2026 - 18 ديسمبر 2026" keeps its order instead of the numbers
+ * being glued into "2026 - 18".
  * @returns {{ rtl: boolean, words: string[] }[]}
  */
-export function splitRuns(text) {
+export function splitRuns(text, direction = 'ltr') {
   const words = String(text ?? '').split(/\s+/).filter(Boolean);
+  const kind = (word) => (ARABIC.test(word) ? 'ar' : LATIN_LETTER.test(word) ? 'latin' : 'neutral');
+  const kinds = words.map(kind);
+  const nextStrong = (from) => {
+    for (let i = from; i < kinds.length; i += 1) if (kinds[i] !== 'neutral') return kinds[i];
+    return null;
+  };
   const runs = [];
-  for (const word of words) {
-    const rtl = ARABIC.test(word);
+  let lastStrong = null;
+  words.forEach((word, i) => {
+    const k = kinds[i];
     const last = runs[runs.length - 1];
-    if (last && last.rtl === rtl) last.words.push(word);
+    if (k === 'neutral' && direction === 'rtl') {
+      const after = nextStrong(i + 1);
+      const joinsLatin = lastStrong === 'latin' && (after === 'latin' || after === null) && last && !last.rtl;
+      if (joinsLatin) last.words.push(word);
+      else runs.push({ rtl: false, words: [word], neutral: true });
+      return;
+    }
+    const rtl = k === 'ar';
+    if (k !== 'neutral') lastStrong = k;
+    if (last && last.rtl === rtl && !last.neutral) last.words.push(word);
     else runs.push({ rtl, words: [word] });
-  }
-  return runs;
+  });
+  return runs.map(({ rtl, words: w }) => ({ rtl, words: w }));
 }
 
 /**
@@ -96,13 +120,13 @@ export function layoutLines(text, width, measure, direction = paragraphDirection
     currentWidth = 0;
   };
 
-  for (const { rtl, words } of splitRuns(text)) {
-    for (const word of words) {
+  for (const { rtl, words } of splitRuns(text, direction)) {
+    for (const [wi, word] of words.entries()) {
       const w = measure(word, rtl);
       const gap = current.length ? space : 0;
       if (current.length && currentWidth + gap + w > width) flush();
       currentWidth += (current.length ? space : 0) + w;
-      current.push({ word, rtl });
+      current.push({ word, rtl, start: wi === 0 });
     }
   }
   flush();
@@ -114,7 +138,9 @@ function toVisualLine(entries, measure, direction, space) {
   const runs = [];
   for (const entry of entries) {
     const last = runs[runs.length - 1];
-    if (last && last.rtl === entry.rtl) last.words.push(entry.word);
+    // A word that began its own run (see splitRuns) stays separate in a right-to-left line.
+    const separate = direction === 'rtl' && entry.start && !entry.rtl;
+    if (last && last.rtl === entry.rtl && !separate) last.words.push(entry.word);
     else runs.push({ rtl: entry.rtl, words: [entry.word] });
   }
   const placed = runs.map((run) => {
@@ -156,7 +182,9 @@ export function drawText(doc, text, x, y, opts) {
     return height;
   }
 
-  const direction = paragraphDirection(value);
+  // An Arabic document reads every mixed line right to left, even one that starts with a
+  // hotel name in English.
+  const direction = opts.direction || paragraphDirection(value);
   const align = opts.align || (direction === 'rtl' ? 'right' : 'left');
   const measure = (str, rtl) => runWidth(doc, font, str, rtl);
   const lines = layoutLines(value, width, measure, direction);
@@ -184,7 +212,7 @@ export function measureTextHeight(doc, text, opts) {
   doc.font(font).fontSize(size);
   if (!hasArabic(value)) return doc.heightOfString(drawable(doc, value), { width, lineGap });
   const measure = (str, rtl) => runWidth(doc, font, str, rtl);
-  const count = layoutLines(value, width, measure).length;
+  const count = layoutLines(value, width, measure, opts.direction || paragraphDirection(value)).length;
   doc.font(font);
   return count * (doc.currentLineHeight(true) + lineGap);
 }

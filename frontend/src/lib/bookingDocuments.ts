@@ -10,6 +10,7 @@ export type BookingDocument = {
   mime_type?: string | null
   uploaded_by?: string | null
   uploaded_by_email?: string | null
+  document_type?: string | null
   created_at: string
 }
 
@@ -20,7 +21,7 @@ export async function fetchLeadDocuments(leadId: string): Promise<BookingDocumen
 
 export async function createLeadDocument(
   leadId: string,
-  input: { title: string; file_url: string; file_name?: string; mime_type?: string },
+  input: { title: string; file_url: string; file_name?: string; mime_type?: string; classify?: boolean },
 ): Promise<BookingDocument> {
   const data = await apiJson<{ document: BookingDocument }>(`/api/leads/${leadId}/documents`, {
     method: 'POST',
@@ -75,4 +76,53 @@ export async function uploadBookingFile(file: File): Promise<{ url: string; file
     fileName: file.name,
     mimeType: file.type || 'application/octet-stream',
   }
+}
+
+export type BulkUploadResult = { documents: BookingDocument[]; failed: string[] }
+
+/**
+ * Uploads several files one after another. Each one is read on the server and renamed
+ * after what it is (ticket, hotel voucher, trip program…). Unless a title is given,
+ * which then names a single file as typed.
+ */
+export async function uploadAndClassifyFiles(
+  leadId: string,
+  files: File[],
+  onProgress?: (done: number, total: number) => void,
+  title?: string,
+): Promise<BulkUploadResult> {
+  const documents: BookingDocument[] = []
+  const failed: string[] = []
+  const fixedTitle = files.length === 1 ? title?.trim() : ''
+  for (let i = 0; i < files.length; i += 1) {
+    const file = files[i]
+    onProgress?.(i, files.length)
+    try {
+      const uploaded = await uploadBookingFile(file)
+      documents.push(await createLeadDocument(leadId, {
+        title: fixedTitle || file.name.replace(/\.[^.]+$/, '') || file.name,
+        file_url: uploaded.url,
+        file_name: uploaded.fileName,
+        mime_type: uploaded.mimeType,
+        classify: !fixedTitle,
+      }))
+    } catch {
+      failed.push(file.name)
+    }
+  }
+  onProgress?.(files.length, files.length)
+  return { documents, failed }
+}
+
+export const DOCUMENT_TYPE_NAMES: Record<string, string> = {
+  flight_ticket: 'Flight ticket',
+  hotel_voucher: 'Hotel booking',
+  trip_program: 'Trip program',
+  visa: 'Visa',
+  passport: 'Passport',
+  travel_insurance: 'Travel insurance',
+  transfer: 'Transfer',
+  tour_activity: 'Tour',
+  invoice_receipt: 'Invoice',
+  id_card: 'ID card',
 }

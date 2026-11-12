@@ -1,4 +1,3 @@
-import { notifyQuoteAccepted, safeNotify } from './notifications.js';
 /**
  * Quote version service.
  * Locks a draft into an immutable snapshot, issues signed share tokens,
@@ -7,9 +6,11 @@ import { notifyQuoteAccepted, safeNotify } from './notifications.js';
 
 import crypto from 'crypto';
 import { query } from '../config/database.js';
-import { getDraftForLead } from './quoteDrafts.js';
-import { getLeadById } from './leads.js';
+import { getDraftForLead, hasDraftIssues } from './quoteDrafts.js';
+import { getLeadById, tryAutoTransitionLifecycle } from './leads.js';
 import { publicQuoteSnapshot } from './publicQuote.js';
+import { notifyQuoteAccepted, safeNotify } from './notifications.js';
+import { logAuditEvent } from './audit.js';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,12 @@ export async function lockQuoteVersion(leadId, { actorId, notes } = {}) {
   if (!lead) throw httpErr(404, 'Lead not found');
   if (!draft.items || draft.items.length === 0) {
     throw httpErr(400, 'Cannot lock a version with no items');
+  }
+  if (hasDraftIssues(draft.issues)) {
+    const err = httpErr(400, 'Some items have no price or are in another currency. Fix them before locking the quote.');
+    err.code = 'quote_items_invalid';
+    err.details = draft.issues;
+    throw err;
   }
 
   // Determine next version number
@@ -120,6 +127,33 @@ export async function getVersionById(versionId) {
   return result.rows[0] || null;
 }
 
+/** True once a newer version of the same quote exists: only the latest one can be sent or accepted. */
+export async function isSuperseded(version) {
+  const { rows } = await query(
+    `SELECT 1 FROM quote_versions WHERE quote_draft_id = $1 AND version_number > $2 LIMIT 1`,
+    [version.quote_draft_id, version.version_number],
+  );
+  return rows.length > 0;
+}
+
+/** The quote's own "valid until" date has passed (it is valid through that whole day). */
+export function isPastValidity(snapshot, now = new Date()) {
+  const raw = snapshot?.valid_until;
+  if (!raw) return false;
+  const day = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
+  return now.toISOString().slice(0, 10) > day;
+}
+
+/** Why a version can no longer be sent or accepted, or null when it still can. */
+export async function versionBlock(version) {
+  const snapshot = typeof version.snapshot === 'string' ? JSON.parse(version.snapshot) : version.snapshot;
+  if (version.status === 'accepted') return { status: 409, code: 'already_accepted', message: 'This quote has already been accepted' };
+  if (await isSuperseded(version)) return { status: 409, code: 'superseded', message: 'A newer version of this quote has replaced it' };
+  if (isPastValidity(snapshot)) return { status: 410, code: 'expired', message: 'This quote is past its valid-until date' };
+  return null;
+}
+
 // ── share tokens ──────────────────────────────────────────────────────────────
 
 /**
@@ -148,7 +182,10 @@ export async function createShareToken(versionId, { expiryHours = 72 } = {}) {
  */
 export async function resolveShareToken(token) {
   const result = await query(
-    `SELECT st.*, qv.snapshot, qv.status AS version_status, qv.selling_price, qv.currency, qv.accepted_at
+    `SELECT st.*, qv.snapshot, qv.status AS version_status, qv.selling_price, qv.currency, qv.accepted_at,
+            qv.quote_draft_id, qv.version_number,
+            EXISTS (SELECT 1 FROM quote_versions newer
+                    WHERE newer.quote_draft_id = qv.quote_draft_id AND newer.version_number > qv.version_number) AS superseded
      FROM share_tokens st
      JOIN quote_versions qv ON qv.id = st.quote_version_id
      WHERE st.token = $1 LIMIT 1`,
@@ -171,6 +208,8 @@ export async function resolveShareToken(token) {
     selling_price: row.selling_price,
     currency: row.currency,
     accepted_at: row.accepted_at,
+    superseded: Boolean(row.superseded),
+    expired: isPastValidity(typeof row.snapshot === 'string' ? JSON.parse(row.snapshot) : row.snapshot),
     snapshot: publicQuoteSnapshot(row.snapshot),
   };
 }
@@ -194,34 +233,41 @@ export async function revokeTokensForVersion(versionId) {
 export async function acceptQuoteVersion(token, { customerName, customerEmail } = {}) {
   const row = await resolveShareToken(token);
   if (!row) throw httpErr(404, 'Quote link is invalid, expired, or has been revoked');
-  if (row.version_status === 'accepted') {
-    throw httpErr(409, 'This quote has already been accepted');
-  }
+  if (row.version_status === 'accepted') throw httpErr(409, 'This quote has already been accepted');
+  if (row.superseded) throw httpErr(409, 'A newer version of this quote has replaced it. Please use the latest link.');
+  if (row.expired) throw httpErr(410, 'This quote is past its valid-until date. Please contact us for an updated price.');
 
-  // Resolve the version ID
   const tokenRow = await query(`SELECT quote_version_id FROM share_tokens WHERE token = $1`, [token]);
   const versionId = tokenRow.rows[0]?.quote_version_id;
   if (!versionId) throw httpErr(404, 'Token not found');
 
   const accepted_by = [customerName, customerEmail].filter(Boolean).join(' / ') || null;
 
-  await query(
+  // One statement decides the race: a double click or two tabs accept only once.
+  const updated = await query(
     `UPDATE quote_versions
      SET status = 'accepted', accepted_at = NOW(), accepted_by = $2
-     WHERE id = $1`,
+     WHERE id = $1 AND status <> 'accepted'
+       AND NOT EXISTS (SELECT 1 FROM quote_versions newer
+                       WHERE newer.quote_draft_id = quote_versions.quote_draft_id
+                         AND newer.version_number > quote_versions.version_number)
+     RETURNING id, lead_id, version_number`,
     [versionId, accepted_by],
   );
+  const versionRow = updated.rows[0];
+  if (!versionRow) throw httpErr(409, 'This quote has already been accepted');
 
-  // Move lead lifecycle to booked
-  const versionRow = await getVersionById(versionId);
-  if (versionRow?.lead_id) {
-    await query(
-      `UPDATE leads SET lifecycle_status = 'booked' WHERE id = $1`,
-      [versionRow.lead_id],
-    );
-  }
-
-  if (versionRow?.lead_id) {
+  if (versionRow.lead_id) {
+    // Through the normal stage rules (sent → accepted). Staff move it to booked, which
+    // also creates the customer's portal account.
+    await tryAutoTransitionLifecycle(versionRow.lead_id, 'quote_accepted');
+    void logAuditEvent({
+      entityType: 'quote_version',
+      entityId: versionRow.id,
+      action: 'quote_accepted',
+      actorRole: 'customer',
+      after: { version_number: versionRow.version_number, accepted_by },
+    });
     void safeNotify(() => notifyQuoteAccepted(versionRow.lead_id, { acceptedBy: customerName }));
   }
   return { accepted: true, version_id: versionId };

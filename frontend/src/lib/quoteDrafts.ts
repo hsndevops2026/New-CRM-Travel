@@ -54,6 +54,13 @@ export type QuoteDraft = {
   updated_at: string
   items: QuoteItem[]
   pricing: Pricing
+  /** Items that would make the total wrong. The server refuses to lock while any exist. */
+  issues?: DraftIssues
+}
+
+export type DraftIssues = {
+  missing_cost: { id: string; label: string }[]
+  other_currency: { id: string; label: string; currency: string }[]
 }
 
 export type DraftConfig = {

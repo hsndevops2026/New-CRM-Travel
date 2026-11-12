@@ -38,7 +38,29 @@ export async function getDraftForLead(leadId) {
     rounding_mode: draft.rounding_mode,
   });
 
-  return { ...draft, items, pricing };
+  return { ...draft, items, pricing, issues: draftIssues(draft, items) };
+}
+
+/**
+ * Items that would make the total wrong: a price missing, or a price in another currency
+ * (the engine adds numbers, it does not convert). A draft with issues can't be locked.
+ */
+export function draftIssues(draft, items = []) {
+  const quoteCurrency = draft?.currency || 'USD';
+  const missingCost = [];
+  const otherCurrency = [];
+  for (const item of items) {
+    if (item.net_cost == null || item.net_cost === '' || !Number.isFinite(Number(item.net_cost))) {
+      missingCost.push({ id: item.id, label: item.label });
+    } else if (item.currency && item.currency !== quoteCurrency) {
+      otherCurrency.push({ id: item.id, label: item.label, currency: item.currency });
+    }
+  }
+  return { missing_cost: missingCost, other_currency: otherCurrency };
+}
+
+export function hasDraftIssues(issues) {
+  return Boolean(issues && (issues.missing_cost.length || issues.other_currency.length));
 }
 
 // ── upsert draft (create or update config) ────────────────────────────────────

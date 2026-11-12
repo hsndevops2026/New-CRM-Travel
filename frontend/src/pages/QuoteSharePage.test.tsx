@@ -171,3 +171,19 @@ describe('QuoteSharePage — Arabic for customers', () => {
     }
   })
 })
+
+describe('QuoteSharePage — replaced or expired quotes', () => {
+  it('hides the accept form when a newer version replaced this one', async () => {
+    fetchPublicQuote.mockResolvedValue(view({ superseded: true }))
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'This quote has been updated' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Accept this quote' })).toBeNull()
+  })
+
+  it('hides the accept form when the quote is past its valid-until date', async () => {
+    fetchPublicQuote.mockResolvedValue(view({ expired: true }))
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'This quote has expired' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Accept this quote' })).toBeNull()
+  })
+})

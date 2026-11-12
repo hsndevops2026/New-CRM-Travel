@@ -99,8 +99,11 @@ export async function employeeReport(range) {
        WHERE l.lifecycle_status NOT IN ('booked', 'lost', 'archived') GROUP BY 1
      ),
      sent AS (
-       SELECT created_by AS user_id, COUNT(*)::int AS n FROM quote_versions
-       WHERE created_at >= $1 AND created_at < $2 AND created_by IS NOT NULL GROUP BY 1
+       -- Versions that actually reached the customer, not every locked draft.
+       SELECT qv.created_by AS user_id, COUNT(DISTINCT qv.id)::int AS n
+       FROM quote_deliveries d JOIN quote_versions qv ON qv.id = d.quote_version_id
+       WHERE d.sent_at >= $1 AND d.sent_at < $2 AND d.status IN ('sent', 'delivered')
+         AND qv.created_by IS NOT NULL GROUP BY 1
      ),
      accepted AS (
        SELECT created_by AS user_id, COUNT(*)::int AS n,

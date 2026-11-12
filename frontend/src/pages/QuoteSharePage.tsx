@@ -356,6 +356,23 @@ export default function QuoteSharePage() {
           </a>
         )}
 
+        {data.superseded || data.expired ? (
+          <section role="status" className="flex flex-col gap-2 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5">
+            <h2 className="text-base font-bold">
+              {data.superseded ? translate('This quote has been updated') : translate('This quote has expired')}
+            </h2>
+            <p className="text-slate-700">
+              {data.superseded
+                ? translate('We sent you a newer version of this quote. Please open the latest link we sent, or contact us.')
+                : translate('Prices may have changed since this quote was made. Contact us and we’ll send you an updated one.')}
+            </p>
+            {waLink && (
+              <a href={waLink} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: brand }}>
+                {translate('Reply on WhatsApp')}
+              </a>
+            )}
+          </section>
+        ) : (
         <form
           aria-labelledby="acc-h"
           noValidate
@@ -434,6 +451,7 @@ export default function QuoteSharePage() {
             </span>
           )}
         </form>
+        )}
       </main>
     </Shell>
   )

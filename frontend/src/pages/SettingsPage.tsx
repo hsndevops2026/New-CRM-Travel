@@ -208,19 +208,28 @@ export default function SettingsPage() {
                         <option value="off">{translate('Off: employees send quotes themselves')}</option>
                       </select>
                       {agency.quote_approval_mode === 'below_margin' && (
-                        <label className="flex items-center gap-2 text-sm">
-                          {translate('Minimum margin')}
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          {translate('Minimum profit')}
                           <input
                             type="number"
                             min={0}
-                            max={100}
-                            step={0.5}
-                            className="h-10 w-24 rounded-lg border border-line-strong px-2.5 text-sm"
+                            max={agency.quote_approval_min_margin_type === 'fixed' ? undefined : 100}
+                            step="any"
+                            aria-label={translate('Minimum profit')}
+                            className="h-10 w-28 rounded-lg border border-line-strong px-2.5 text-sm tabular-nums"
                             value={agency.quote_approval_min_margin ?? 10}
                             onChange={(e) => setAgency({ ...agency, quote_approval_min_margin: Number(e.target.value) })}
                           />
-                          %
-                        </label>
+                          <select
+                            aria-label={translate('Minimum profit as')}
+                            className="h-10 rounded-lg border border-line-strong bg-white px-2.5 text-sm"
+                            value={agency.quote_approval_min_margin_type || 'percent'}
+                            onChange={(e) => setAgency({ ...agency, quote_approval_min_margin_type: e.target.value as 'percent' | 'fixed' })}
+                          >
+                            <option value="percent">{translate('% of the price')}</option>
+                            <option value="fixed">{translate('amount in the quote currency')}</option>
+                          </select>
+                        </div>
                       )}
                       <span className="text-xs text-shop-muted">{translate("A manager's own quotes never wait for approval.")}</span>
                     </fieldset>

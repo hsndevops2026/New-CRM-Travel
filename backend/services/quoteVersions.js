@@ -6,7 +6,7 @@
 
 import crypto from 'crypto';
 import { query } from '../config/database.js';
-import { getDraftForLead, hasDraftIssues } from './quoteDrafts.js';
+import { getDraftForLead, hasDraftIssues, upsertDraft } from './quoteDrafts.js';
 import { getLeadById, tryAutoTransitionLifecycle } from './leads.js';
 import { publicQuoteSnapshot } from './publicQuote.js';
 import { notifyQuoteAccepted, safeNotify } from './notifications.js';
@@ -91,6 +91,7 @@ export async function lockQuoteVersion(leadId, { actorId, actorRole, notes } = {
   const needsApproval = quoteNeedsApproval(await getAgencySettings(), {
     role: actorRole,
     marginPct: draft.pricing?.gross_margin_pct,
+    marginAmount: draft.pricing?.gross_margin,
   });
 
   const result = await query(
@@ -374,4 +375,37 @@ export async function listPendingApprovals() {
      LIMIT 200`,
   );
   return rows;
+}
+
+// ── new price after the customer negotiates ──────────────────────────────────
+
+/**
+ * Locks a new version at the price agreed with the customer. The draft's markup becomes the
+ * fixed amount that gives exactly that price (rounding off), so the items stay the same and
+ * only the profit changes. The older version is replaced, and the approval rules apply as
+ * for any locked quote.
+ */
+export async function reviseQuotePrice(leadId, { sellingPrice, notes, actorId, actorRole } = {}) {
+  const target = Number(sellingPrice);
+  if (!Number.isFinite(target) || target <= 0) throw httpErr(400, 'Enter the new total price');
+  const draft = await getDraftForLead(leadId);
+  if (!draft) throw httpErr(404, 'No quote draft found for this lead');
+  const cost = Number(draft.pricing?.net_total || 0) + Number(draft.extras_amount || 0);
+  const markup = Math.round((target - cost) * 100) / 100;
+  if (markup < 0) {
+    const err = httpErr(400, 'That price is below cost');
+    err.code = 'below_cost';
+    throw err;
+  }
+  await upsertDraft(leadId, {
+    currency: draft.currency,
+    markup_type: 'fixed',
+    markup_value: markup,
+    extras_amount: draft.extras_amount,
+    extras_label: draft.extras_label,
+    rounding_mode: 'none',
+    notes: draft.notes,
+    valid_until: draft.valid_until,
+  });
+  return lockQuoteVersion(leadId, { actorId, actorRole, notes });
 }

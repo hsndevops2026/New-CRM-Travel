@@ -15,6 +15,7 @@ export const DEFAULT_AGENCY_SETTINGS = Object.freeze({
     'Prices are indicative and subject to availability.',
   quote_approval_mode: 'agents',
   quote_approval_min_margin: 10,
+  quote_approval_min_margin_type: 'percent',
 });
 
 export const QUOTE_APPROVAL_MODES = ['off', 'agents', 'below_margin'];
@@ -85,9 +86,18 @@ export function normalizeAgencySettings(input = {}, { partial = false } = {}) {
     if (!QUOTE_APPROVAL_MODES.includes(mode)) throw httpError(400, 'quote_approval_mode must be off, agents or below_margin');
     output.quote_approval_mode = mode;
   }
+  if (has('quote_approval_min_margin_type')) {
+    const type = String(input.quote_approval_min_margin_type || '').trim();
+    if (!['percent', 'fixed'].includes(type)) throw httpError(400, 'quote_approval_min_margin_type must be percent or fixed');
+    output.quote_approval_min_margin_type = type;
+  }
   if (has('quote_approval_min_margin')) {
     const margin = Number(input.quote_approval_min_margin);
-    if (!Number.isFinite(margin) || margin < 0 || margin > 100) throw httpError(400, 'quote_approval_min_margin must be between 0 and 100');
+    const type = output.quote_approval_min_margin_type || input.quote_approval_min_margin_type || 'percent';
+    const max = type === 'fixed' ? 10_000_000 : 100;
+    if (!Number.isFinite(margin) || margin < 0 || margin > max) {
+      throw httpError(400, type === 'fixed' ? 'The minimum profit must be a positive amount' : 'quote_approval_min_margin must be between 0 and 100');
+    }
     output.quote_approval_min_margin = Math.round(margin * 100) / 100;
   }
 
@@ -138,13 +148,16 @@ export function publicAgencySettings(settings) {
  * Does a quote locked by this person need a manager's OK before it goes to the customer?
  * Admins never need it. `marginPct` is the quote's gross margin in percent.
  */
-export function quoteNeedsApproval(settings, { role, marginPct }) {
+export function quoteNeedsApproval(settings, { role, marginPct, marginAmount }) {
   if (role === 'admin') return false;
   const mode = settings?.quote_approval_mode || DEFAULT_AGENCY_SETTINGS.quote_approval_mode;
   if (mode === 'off') return false;
   if (mode === 'agents') return true;
   const min = Number(settings?.quote_approval_min_margin ?? DEFAULT_AGENCY_SETTINGS.quote_approval_min_margin);
-  return !Number.isFinite(Number(marginPct)) || Number(marginPct) < min;
+  // The manager sets the floor as a percentage of the price, or as a profit amount in the
+  // quote's currency.
+  const actual = settings?.quote_approval_min_margin_type === 'fixed' ? Number(marginAmount) : Number(marginPct);
+  return !Number.isFinite(actual) || actual < min;
 }
 
 /** What staff see in Settings: the public fields plus internal rules like quote approval. */
@@ -154,5 +167,6 @@ export function staffAgencySettings(settings) {
     ...publicAgencySettings(value),
     quote_approval_mode: value.quote_approval_mode || DEFAULT_AGENCY_SETTINGS.quote_approval_mode,
     quote_approval_min_margin: Number(value.quote_approval_min_margin ?? DEFAULT_AGENCY_SETTINGS.quote_approval_min_margin),
+    quote_approval_min_margin_type: value.quote_approval_min_margin_type || 'percent',
   };
 }

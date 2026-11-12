@@ -17,6 +17,7 @@ import {
 import type { QuoteDraft } from '../lib/quoteDrafts'
 import { currentVersion, deliveryTimeline, eventTime, versionStatusLabel, versionSummary } from '../lib/versionView'
 import Button from './ui/Button'
+import RevisePriceForm from './RevisePriceForm'
 import { useAuth } from '../context/AuthContext'
 import { useConfirm } from '../hooks/useConfirm'
 import OverflowMenu from './ui/OverflowMenu'
@@ -71,6 +72,8 @@ function VersionCard({
   onSelect,
   onRevoked,
   onReviewed,
+  leadId,
+  onRevised,
 }: {
   version: QuoteVersion
   current: boolean
@@ -78,7 +81,10 @@ function VersionCard({
   onSelect: () => void
   onRevoked: (id: string) => void
   onReviewed: (version: QuoteVersion) => void
+  leadId: string
+  onRevised: (version: QuoteVersion) => void
 }) {
+  const [revising, setRevising] = useState(false)
   useI18n()
   const { admin } = useAuth()
   const isAdmin = admin?.role === 'admin'
@@ -226,6 +232,14 @@ function VersionCard({
           )}
         </div>
       )}
+      {revising && (
+        <RevisePriceForm
+          leadId={leadId}
+          version={version}
+          onCancel={() => setRevising(false)}
+          onDone={(next) => { setRevising(false); onRevised(next) }}
+        />
+      )}
       {error && (
         <p role="alert" className="mx-4 mb-3 rounded-lg bg-danger-bg px-3 py-2 text-[13px] text-danger-fg">
           {translate(error)}
@@ -237,6 +251,9 @@ function VersionCard({
           <Button variant={selected ? 'secondary' : 'primary'} size="sm" aria-pressed={selected} onClick={onSelect}>
             {selected ? translate("Sending v{value0}", { value0: translate(String(version.version_number)) }) : translate("Send v{value0}", { value0: translate(String(version.version_number)) })}
           </Button>
+        )}
+        {current && !revoked && version.status !== 'accepted' && !revising && (
+          <Button size="sm" onClick={() => setRevising(true)}>{translate('New price')}</Button>
         )}
         <Button size="sm" icon={<Download />} loading={openingPdf} onClick={() => void openPdf()}>
           PDF
@@ -580,6 +597,8 @@ export default function QuoteSendPanel({ leadId, leadPhone, leadEmail, draft }: 
               onSelect={() => setPickedId(v.id)}
               onRevoked={handleRevoked}
               onReviewed={(next) => setVersions((prev) => prev.map((x) => (x.id === next.id ? { ...x, ...next, snapshot: x.snapshot } : x)))}
+              leadId={leadId}
+              onRevised={(next) => { setPickedId(next.id); void load() }}
             />
           ))
         )}

@@ -9,6 +9,7 @@ import {
   listPendingApprovals,
   requestQuoteApproval,
   reviewQuoteVersion,
+  reviseQuotePrice,
 } from '../services/quoteVersions.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { safeNotify } from '../services/notifications.js';
@@ -66,6 +67,30 @@ router.post('/leads/:leadId/quote-versions', async (req, res) => {
       actorRole: req.admin?.role,
       after: { version_number: version.version_number, selling_price: version.selling_price },
     });
+    res.status(201).json({ version, snapshot });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message, code: error.code, details: error.details });
+  }
+});
+
+// A new version at a negotiated price: same items, different profit.
+router.post('/leads/:leadId/quote-versions/revise', async (req, res) => {
+  try {
+    const { version, snapshot } = await reviseQuotePrice(req.params.leadId, {
+      sellingPrice: req.body?.selling_price,
+      notes: req.body?.notes,
+      actorId: req.admin?.id,
+      actorRole: req.admin?.role,
+    });
+    void logAuditEvent({
+      entityType: 'quote_version',
+      entityId: version.id,
+      action: 'price_revised',
+      actorId: req.admin?.id,
+      actorRole: req.admin?.role,
+      after: { version_number: version.version_number, selling_price: version.selling_price },
+    });
+    void safeNotify(() => requestQuoteApproval(version, { requestedByEmail: req.admin?.email }));
     res.status(201).json({ version, snapshot });
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message, code: error.code, details: error.details });

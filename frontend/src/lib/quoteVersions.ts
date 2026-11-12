@@ -195,3 +195,14 @@ export async function reviewVersion(versionId: string, decision: 'approved' | 'r
 export function awaitingApproval(version: Pick<QuoteVersion, 'approval_status'>): boolean {
   return version.approval_status === 'pending' || version.approval_status === 'rejected'
 }
+
+/** Lock a new version at the price agreed with the customer (same items, different profit). */
+export async function revisePrice(leadId: string, sellingPrice: number, notes?: string): Promise<QuoteVersion> {
+  const res = await apiFetch(`/api/leads/${leadId}/quote-versions/revise`, {
+    method: 'POST',
+    body: JSON.stringify({ selling_price: sellingPrice, notes }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Could not save the new price')
+  return data.version as QuoteVersion
+}

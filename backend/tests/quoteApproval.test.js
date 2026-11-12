@@ -6,6 +6,7 @@ import { runMigrations } from '../db/migrate.js';
 import { quoteNeedsApproval, updateAgencySettings, getAgencySettings } from '../services/agencySettings.js';
 import { setDraftItems, upsertDraft } from '../services/quoteDrafts.js';
 import {
+  reviseQuotePrice,
   acceptQuoteVersion,
   createShareToken,
   listPendingApprovals,
@@ -49,6 +50,7 @@ describe('manager approval of quotes', () => {
   after(async () => {
     await updateAgencySettings({
       quote_approval_mode: saved.quote_approval_mode || 'agents',
+      quote_approval_min_margin_type: saved.quote_approval_min_margin_type || 'percent',
       quote_approval_min_margin: saved.quote_approval_min_margin ?? 10,
     });
     await query(`DELETE FROM leads WHERE id = $1`, [leadId]);
@@ -107,5 +109,27 @@ describe('manager approval of quotes', () => {
     const mine = await lockQuoteVersion(leadId, { actorId: who.boss.id, actorRole: 'admin' });
     assert.equal(mine.version.approval_status, 'not_required');
     await assert.rejects(updateAgencySettings({ quote_approval_mode: 'sometimes' }), { status: 400 });
+  });
+
+  it('the minimum can be a profit amount instead of a percentage', async () => {
+    const fixed = { quote_approval_mode: 'below_margin', quote_approval_min_margin_type: 'fixed', quote_approval_min_margin: 100 };
+    assert.equal(quoteNeedsApproval(fixed, { role: 'agent', marginPct: 50, marginAmount: 80 }), true);
+    assert.equal(quoteNeedsApproval(fixed, { role: 'agent', marginPct: 5, marginAmount: 150 }), false);
+    await updateAgencySettings({ quote_approval_min_margin_type: 'fixed', quote_approval_min_margin: 2500 });
+    assert.equal(Number((await getAgencySettings()).quote_approval_min_margin), 2500);
+    await assert.rejects(updateAgencySettings({ quote_approval_min_margin_type: 'percent', quote_approval_min_margin: 150 }), { status: 400 });
+  });
+
+  it('a new price after negotiation makes a new version with the same items', async () => {
+    await updateAgencySettings({ quote_approval_mode: 'below_margin', quote_approval_min_margin_type: 'fixed', quote_approval_min_margin: 100 });
+    const { version, snapshot } = await reviseQuotePrice(leadId, { sellingPrice: 1150, notes: 'Customer asked for a discount', actorId: who.agent.id, actorRole: 'agent' });
+    assert.equal(Number(version.selling_price), 1150);
+    assert.equal(snapshot.items.length, 1);
+    assert.equal(version.approval_status, 'not_required', 'profit 150 is above the 100 floor');
+    const lower = await reviseQuotePrice(leadId, { sellingPrice: 1050, actorId: who.agent.id, actorRole: 'agent' });
+    assert.equal(lower.version.approval_status, 'pending', 'profit 50 is under the floor');
+    assert.equal((await versionBlock(await getVersionById(version.id))).code, 'superseded');
+    await assert.rejects(reviseQuotePrice(leadId, { sellingPrice: 900, actorRole: 'agent' }), { code: 'below_cost' });
+    await assert.rejects(reviseQuotePrice(leadId, { sellingPrice: 'cheap', actorRole: 'agent' }), { status: 400 });
   });
 });

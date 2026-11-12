@@ -16,6 +16,7 @@ vi.mock('../lib/quoteVersions', async () => {
     revokeVersion: vi.fn(),
     openVersionPdf: vi.fn(),
     reviewVersion: vi.fn(),
+    revisePrice: vi.fn(),
   }
 })
 
@@ -247,5 +248,24 @@ describe('QuoteSendPanel — manager approval', () => {
     expect(await screen.findByText('Waiting for manager approval')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Send v1/ })).toBeNull()
+  })
+})
+
+describe('QuoteSendPanel — new price after negotiation', () => {
+  it('shows the profit as you type, refuses below cost, and saves a new version', async () => {
+    const base = version(1)
+    const withCost = { ...base, snapshot: { ...base.snapshot, pricing: { net_total: 2000, extras_amount: 0, gross_margin_pct: 13 } as never } }
+    m.fetchVersions.mockResolvedValue([withCost])
+    vi.mocked(versionsLib.revisePrice).mockResolvedValue(version(2, { selling_price: 2150 as never }))
+    renderPanel()
+    fireEvent.click(await screen.findByRole('button', { name: 'New price' }))
+    const input = screen.getByRole('spinbutton', { name: 'Total price (USD)' })
+    fireEvent.change(input, { target: { value: '1900' } })
+    expect(screen.getByText(/Below cost by/)).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Save as v2' }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(input, { target: { value: '2150' } })
+    expect(screen.getByText(/Profit \$150\.00 \(7\.0%\)/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Save as v2' }))
+    await waitFor(() => expect(versionsLib.revisePrice).toHaveBeenCalledWith('l', 2150, undefined))
   })
 })

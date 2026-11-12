@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Paperclip, Send, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { PackagePlus, Paperclip, Send, X } from 'lucide-react'
+import { importPackagesFromEmail, isImportableAttachment } from '../../lib/predefinedQuotes'
 import Button from '../ui/Button'
 import { t as translate, useI18n } from '../../lib/i18n'
 import {
@@ -52,6 +54,23 @@ export function EmailList({
 export function EmailReader({ accountId, message, onReply }: { accountId: string; message: EmailDetail; onReply?: () => void }) {
   useI18n()
   const [error, setError] = useState<string | null>(null)
+  // Supplier price lists: read the email text or an attachment into packages for review.
+  const [reading, setReading] = useState<string | null>(null)
+  const [found, setFound] = useState<number | null>(null)
+  const importable = message.attachments.filter((a) => isImportableAttachment(a.filename, a.mimeType))
+  const toPackages = async (key: string, attachmentId?: string) => {
+    setReading(key)
+    setError(null)
+    setFound(null)
+    try {
+      const { importRecords } = await importPackagesFromEmail(accountId, message.id, attachmentId)
+      setFound(importRecords.filter((r) => r.status === 'needs_review').length)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setReading(null)
+    }
+  }
   return (
     <article className="flex flex-col gap-3">
       <header className="space-y-1">
@@ -88,6 +107,35 @@ export function EmailReader({ accountId, message, onReply }: { accountId: string
           ))}
         </div>
       )}
+      <section className="flex flex-col gap-2 rounded-lg border border-shop-border bg-shop-bg p-3">
+        <p className="text-xs font-semibold text-slate-600">{translate('Price list from a supplier? Turn it into packages')}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" icon={<PackagePlus />} loading={reading === 'body'} disabled={Boolean(reading)} onClick={() => void toPackages('body')}>
+            {translate('Read the email text')}
+          </Button>
+          {importable.map((a) => (
+            <Button
+              key={a.attachmentId}
+              size="sm"
+              icon={<PackagePlus />}
+              loading={reading === a.attachmentId}
+              disabled={Boolean(reading)}
+              onClick={() => void toPackages(a.attachmentId, a.attachmentId)}
+            >
+              <span dir="auto">{a.filename}</span>
+            </Button>
+          ))}
+        </div>
+        {reading ? <p className="text-xs text-shop-muted">{translate('Reading… this takes up to a minute.')}</p> : null}
+        {found != null ? (
+          <p role="status" className="text-sm text-shop-ink">
+            {found
+              ? translate('{value0} package(s) waiting for your review.', { value0: String(found) })
+              : translate("Nothing new to review — this was read before.")}{' '}
+            <Link to="/quotes?review=1" className="font-semibold text-shop-accent hover:underline">{translate('Review them')}</Link>
+          </p>
+        ) : null}
+      </section>
       {error ? <p className="text-sm text-red-600">{translate(error)}</p> : null}
       {onReply ? (
         <div>

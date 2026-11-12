@@ -14,6 +14,7 @@ import {
   rejectPredefinedQuoteImport,
 } from '../services/predefinedQuoteImports.js';
 import { getAgencySettings } from '../services/agencySettings.js';
+import { getAttachment, getMessage, getOwnedAccount } from '../services/gmail.js';
 import { sendQuoteToCustomer } from '../services/quoteToCustomer.js';
 
 const router = Router();
@@ -64,6 +65,76 @@ router.get('/predefined-quotes/imports', async (req, res, next) => {
 router.post('/predefined-quotes/imports/upload', brochureUpload, handleBrochureUpload);
 // Backward-compatible alias
 router.post('/predefined-quotes/imports/pdf', brochureUpload, handleBrochureUpload);
+
+/** Plain text of an email body; HTML is reduced to its visible text (tables keep their cells). */
+export function emailBodyText(body = {}) {
+  if (body.text && String(body.text).trim()) return String(body.text);
+  return String(body.html || '')
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<\/(td|th)>/gi, ' | ')
+    .replace(/<(br|\/p|\/div|\/tr|\/li|\/h\d)[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim();
+}
+
+/**
+ * Reads a supplier email from the employee's own Gmail: one attachment (a brochure, an
+ * Excel sheet) or, without `attachment_id`, the email text itself.
+ */
+router.post('/predefined-quotes/imports/email', async (req, res, next) => {
+  try {
+    const { account_id: accountId, message_id: messageId, attachment_id: attachmentId } = req.body || {};
+    if (!messageId) return res.status(400).json({ error: 'message_id is required' });
+    const account = await getOwnedAccount(req.admin?.id, accountId);
+    if (!account) return res.status(404).json({ error: 'Email account not found' });
+
+    const message = await getMessage(account, String(messageId));
+    let buffer;
+    let fileName;
+    let contentType = '';
+    if (attachmentId) {
+      const attachment = (message.attachments || []).find((item) => item.attachmentId === attachmentId);
+      if (!attachment) return res.status(404).json({ error: 'Attachment not found in this email' });
+      buffer = await getAttachment(account, String(messageId), String(attachmentId));
+      fileName = attachment.filename || 'attachment';
+      contentType = attachment.mimeType || '';
+    } else {
+      const text = emailBodyText(message.body);
+      if (!text) return res.status(400).json({ error: 'This email has no text to read' });
+      const header = [message.subject && `Subject: ${message.subject}`, message.from && `From: ${message.from}`, message.date && `Date: ${message.date}`]
+        .filter(Boolean)
+        .join('\n');
+      buffer = Buffer.from(`${header}\n\n${text}`, 'utf8');
+      fileName = `${String(message.subject || 'email').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || 'email'}.txt`;
+      contentType = 'text/plain';
+    }
+
+    const result = await importPredefinedQuoteBrochure({
+      buffer,
+      fileName,
+      contentType,
+      uploadedBy: req.admin?.id,
+      reextract: req.body?.reextract === true,
+    });
+    return res.status(result.duplicate ? 200 : 201).json({
+      import: result.importRecord,
+      imports: result.importRecords,
+      duplicate: result.duplicate,
+      replaced: result.replaced || 0,
+    });
+  } catch (error) {
+    if (error.code === 'reauth_required') return res.status(409).json({ error: 'reauth_required' });
+    return next(error);
+  }
+});
 
 router.post('/predefined-quotes/imports/:id/approve', async (req, res, next) => {
   try {

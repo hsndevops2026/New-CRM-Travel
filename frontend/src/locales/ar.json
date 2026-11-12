@@ -1799,5 +1799,16 @@
   "🎤 Voice note{value0}": "🎤 رسالة صوتية{value0}",
   "🎤 Voice note{value0} — failed": "🎤 رسالة صوتية{value0} · فشلت",
   "🎤 Voice note{value0} — queued…": "🎤 رسالة صوتية{value0} · في قائمة الانتظار…",
-  "🎤 Voice note{value0} — transcribing…": "🎤 رسالة صوتية{value0} · جارٍ التفريغ…"
+  "🎤 Voice note{value0} — transcribing…": "🎤 رسالة صوتية{value0} · جارٍ التفريغ…",
+  "Choose a brochure, rate sheet or email file": "اختر كتيّباً أو جدول أسعار أو ملف إيميل",
+  "Choose a PDF, image, Excel (.xlsx), CSV or text file": "اختر ملف PDF أو صورة أو Excel ‏(.xlsx) أو CSV أو ملف نصي",
+  "Upload a brochure, a photo, an Excel or CSV rate sheet. Each hotel becomes a package for you to check and approve. A new price list for a package you already have updates that package.": "ارفع كتيّباً أو صورة أو جدول أسعار Excel أو CSV. كل فندق يصبح باكج تراجعه وتعتمده. وقائمة الأسعار الجديدة لباكج موجود عندك تحدّث نفس الباكج.",
+  "Brochure or rate sheet (PDF, image, Excel, CSV — up to 50 MB)": "كتيّب أو جدول أسعار (PDF، صورة، Excel، CSV — حتى 50 ميغابايت)",
+  "Updates the package you already have:": "يحدّث الباكج الموجود عندك:",
+  "Price list from a supplier? Turn it into packages": "قائمة أسعار من مورد؟ حوّلها إلى باكجات",
+  "Read the email text": "اقرأ نص الإيميل",
+  "Reading… this takes up to a minute.": "جاري القراءة… قد يستغرق ذلك دقيقة.",
+  "{value0} package(s) waiting for your review.": "{value0} باكج بانتظار مراجعتك.",
+  "Nothing new to review — this was read before.": "لا يوجد جديد للمراجعة — تمت قراءة هذا من قبل.",
+  "Review them": "راجعها"
 }

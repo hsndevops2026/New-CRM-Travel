@@ -5,6 +5,8 @@ import {
   approvePredefinedQuoteImport,
   fetchPredefinedQuoteImports,
   formatQuoteMoney,
+  BROCHURE_ACCEPT,
+  displayTotal,
   isBrochureFile,
   rejectPredefinedQuoteImport,
   uploadPredefinedQuoteBrochure,
@@ -122,8 +124,8 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
 
   const upload = async (event: FormEvent) => {
     event.preventDefault()
-    if (!file) return setError('Choose a PDF or image brochure')
-    if (!isBrochureFile(file)) return setError('Choose a PDF, PNG, JPEG, WebP, or GIF file')
+    if (!file) return setError(translate('Choose a brochure, rate sheet or email file'))
+    if (!isBrochureFile(file)) return setError(translate('Choose a PDF, image, Excel (.xlsx), CSV or text file'))
     if (file.size > 50 * 1024 * 1024) return setError('File must be smaller than 50 MB')
     setUploading(true)
     setError(null)
@@ -305,6 +307,18 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
   }
 
   const payload = current?.extracted_payload ?? null
+  // Approving into an existing package (a new month's prices): show which one, and how the price moves.
+  const updates = targetQuoteId ? quotes.find((quote) => quote.id === targetQuoteId) || null : null
+  const updatedPrice = (() => {
+    if (!updates || !payload) return null
+    const before = displayTotal(updates)
+    const after = displayTotal(payload)
+    if (before == null || after == null || before === after) return null
+    return {
+      before: formatQuoteMoney(before, updates.currency || 'USD'),
+      after: formatQuoteMoney(after, payload.currency || 'USD'),
+    }
+  })()
   const problems = approvalProblems(payload)
   const rows = offerRows(payload)
   const counts = summaryCounts(payload)
@@ -316,7 +330,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
       <ModalDrawer
         open={open}
         title={translate("Import brochure")}
-        subtitle="Upload a PDF or photo of a rate sheet. Each hotel becomes a package for you to check and approve."
+        subtitle="Upload a brochure, a photo, an Excel or CSV rate sheet. Each hotel becomes a package for you to check and approve. A new price list for a package you already have updates that package."
         onClose={onClose}
         maxWidthClassName="max-w-4xl"
         footer={
@@ -357,9 +371,9 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
       >
         <form onSubmit={upload} className="flex flex-wrap items-end gap-3 rounded-[10px] border border-shop-border bg-shop-bg p-3.5">
           <label className="grid min-w-[220px] flex-1 gap-1.5 text-xs font-semibold text-slate-600">
-            {translate("Brochure (PDF or image, up to 50 MB)")}<input
+            {translate("Brochure or rate sheet (PDF, image, Excel, CSV — up to 50 MB)")}<input
               type="file"
-              accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+              accept={BROCHURE_ACCEPT}
               className="block w-full rounded-lg border border-line-strong bg-white p-1.5 text-sm font-normal"
               onChange={(event) => setFile(event.target.files?.[0] || null)}
             />
@@ -505,6 +519,19 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                   </div>
                 )}
               </header>
+
+              {updates && (
+                <div role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-info-bg px-3 py-2.5 text-[13px] text-info-fg">
+                  <span>
+                    {translate('Updates the package you already have:')}{' '}<strong dir="auto">{updates.title}</strong>
+                  </span>
+                  {updatedPrice && (
+                    <span className="tabular-nums">
+                      {translate('Price')}{' '}{updatedPrice.before}{' → '}<strong>{updatedPrice.after}</strong>
+                    </span>
+                  )}
+                </div>
+              )}
 
               {rows.length > 0 ? (
                 <div className="overflow-x-auto rounded-lg border border-shop-border">

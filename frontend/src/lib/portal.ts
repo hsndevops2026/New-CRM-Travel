@@ -41,10 +41,12 @@ export type PortalChat = {
   messages: PortalChatMessage[]
 }
 
+export type PortalProgramItem = { day_number: number | null; title: string; details: string; kind: string }
+
 export type PortalHome = {
   customer: PortalCustomer
   agency?: { agency_name?: string; logo_url?: string | null; primary_color?: string }
-  bookings: Lead[]
+  bookings: (Lead & { program?: PortalProgramItem[] })[]
   documents: PortalDocument[]
   chats: PortalChat[]
 }

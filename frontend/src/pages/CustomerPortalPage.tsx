@@ -5,8 +5,10 @@ import EmptyState from '../components/ui/EmptyState'
 import StatusBadge from '../components/ui/StatusBadge'
 import { formatPhone, leadTitle, type Lead } from '../lib/leads'
 import { formatDateRange, leadTypeLabel, travelersLabel } from '../lib/leadSummary'
+import { t as translate, useI18n } from '../lib/i18n'
 import {
   fetchPortalHome,
+  type PortalProgramItem,
   type PortalChat,
   type PortalDocument,
   type PortalHome,
@@ -18,7 +20,36 @@ function sectionFromPath(pathname: string): 'bookings' | 'documents' | 'chats' {
   return 'bookings'
 }
 
-function BookingCard({ booking }: { booking: Lead }) {
+/** The trip program, grouped by day, as the agency wrote it. */
+function Program({ items }: { items: PortalProgramItem[] }) {
+  const days = new Map<number | null, PortalProgramItem[]>()
+  for (const item of items) days.set(item.day_number, [...(days.get(item.day_number) || []), item])
+  return (
+    <section className="mt-4 border-t border-shop-border pt-3">
+      <h3 className="mb-2 text-sm font-bold">{translate('Your trip program')}</h3>
+      <ol className="grid gap-3">
+        {[...days.entries()].map(([day, list]) => (
+          <li key={String(day)}>
+            <p className="text-xs font-bold text-shop-accent">
+              {day ? translate('Day {value0}', { value0: day }) : translate('Any day')}
+            </p>
+            <ul className="mt-1 grid gap-1.5">
+              {list.map((item, i) => (
+                <li key={i} className="text-sm">
+                  <span dir="auto" className="font-semibold">{item.title}</span>
+                  {item.details ? <span dir="auto" className="block whitespace-pre-line text-shop-muted">{item.details}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+function BookingCard({ booking }: { booking: Lead & { program?: PortalProgramItem[] } }) {
+  useI18n()
   return (
     <article className="rounded-xl border border-shop-border bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -31,15 +62,15 @@ function BookingCard({ booking }: { booking: Lead }) {
         <div className="flex flex-wrap gap-1.5">
           <StatusBadge label={leadTypeLabel(booking.booking_type)} tone="neutral" />
           {booking.lifecycle_status === 'booked' || booking.status === 'booked' ? (
-            <StatusBadge label="Booked" tone="success" />
+            <StatusBadge label={translate('Booked')} tone="success" />
           ) : (
-            <StatusBadge label={booking.lifecycle_status || booking.status || 'open'} tone="neutral" />
+            <StatusBadge label={translate('In progress')} tone="neutral" />
           )}
         </div>
       </div>
       <dl className="mt-3 grid gap-1 text-sm text-slate-700 sm:grid-cols-2">
         <div>
-          <dt className="text-xs text-shop-muted">Travelers</dt>
+          <dt className="text-xs text-shop-muted">{translate('Travellers')}</dt>
           <dd>{travelersLabel(booking.adults_count, booking.children_count, booking.children_ages)}</dd>
         </div>
         <div>
@@ -47,17 +78,19 @@ function BookingCard({ booking }: { booking: Lead }) {
           <dd>{formatPhone(booking.phone)}</dd>
         </div>
       </dl>
+      {booking.program && booking.program.length > 0 && <Program items={booking.program} />}
     </article>
   )
 }
 
 function DocumentsList({ documents }: { documents: PortalDocument[] }) {
+  useI18n()
   if (!documents.length) {
     return (
       <EmptyState
         icon={<FileText className="size-6" />}
-        title="No documents yet"
-        description="When your agency uploads tickets, vouchers, or invoices, they will show up here."
+        title={translate('No documents yet')}
+        description={translate('When your agency uploads tickets, vouchers, or invoices, they will show up here.')}
       />
     )
   }
@@ -68,7 +101,7 @@ function DocumentsList({ documents }: { documents: PortalDocument[] }) {
           <div className="min-w-0">
             <p className="truncate font-semibold">{doc.title}</p>
             <p className="truncate text-sm text-shop-muted">
-              {[doc.destination, doc.file_name].filter(Boolean).join(' · ') || 'Document'}
+              {[doc.destination, doc.file_name].filter(Boolean).join(' · ') || translate('Document')}
             </p>
           </div>
           <a
@@ -77,7 +110,7 @@ function DocumentsList({ documents }: { documents: PortalDocument[] }) {
             rel="noreferrer"
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-shop-border px-3 text-sm font-semibold text-shop-accent hover:bg-tint"
           >
-            Open
+            {translate('Open')}
             <ExternalLink className="size-3.5" />
           </a>
         </li>
@@ -87,13 +120,14 @@ function DocumentsList({ documents }: { documents: PortalDocument[] }) {
 }
 
 function ChatsList({ chats }: { chats: PortalChat[] }) {
+  useI18n()
   const [openId, setOpenId] = useState<string | null>(chats[0]?.lead_id || null)
   if (!chats.length) {
     return (
       <EmptyState
         icon={<MessageCircle className="size-6" />}
-        title="No chat history"
-        description="Messages with your travel advisor will appear here after you chat on WhatsApp."
+        title={translate('No chat history')}
+        description={translate('Messages with your travel advisor will appear here after you chat on WhatsApp.')}
       />
     )
   }
@@ -114,7 +148,7 @@ function ChatsList({ chats }: { chats: PortalChat[] }) {
               >
                 <span className="font-semibold">{chat.destination}</span>
                 <span className="text-xs text-shop-muted">
-                  {chat.message_count} message{chat.message_count === 1 ? '' : 's'}
+                  {translate('{value0} messages', { value0: chat.message_count })}
                 </span>
               </button>
             </li>
@@ -156,6 +190,7 @@ function ChatsList({ chats }: { chats: PortalChat[] }) {
 }
 
 export default function CustomerPortalPage() {
+  useI18n()
   const location = useLocation()
   const section = sectionFromPath(location.pathname)
   const [data, setData] = useState<PortalHome | null>(null)
@@ -183,27 +218,27 @@ export default function CustomerPortalPage() {
   }, [])
 
   if (loading) {
-    return <p className="text-sm text-shop-muted">Loading your portal…</p>
+    return <p className="text-sm text-shop-muted">{translate('Loading your portal…')}</p>
   }
   if (error || !data) {
-    return <p role="alert" className="text-sm text-danger-fg">{error || 'Failed to load portal'}</p>
+    return <p role="alert" className="text-sm text-danger-fg">{translate(error || 'Failed to load portal')}</p>
   }
 
   return (
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="text-2xl font-extrabold tracking-[-0.01em]">
-          {section === 'bookings' && 'Your bookings'}
-          {section === 'documents' && 'Documents'}
-          {section === 'chats' && 'Chat history'}
+          {section === 'bookings' && translate('Your bookings')}
+          {section === 'documents' && translate('Documents')}
+          {section === 'chats' && translate('Chat history')}
         </h1>
         <p className="mt-1 text-sm text-shop-muted">
-          Welcome back, {data.customer.name}.{' '}
+          {translate('Welcome back, {value0}.', { value0: data.customer.name })}{' '}
           {section === 'bookings' && (
             <>
-              Need a file?{' '}
+              {translate('Need a file?')}{' '}
               <Link to="/portal/documents" className="font-semibold text-shop-accent hover:underline">
-                Open documents
+                {translate('Open documents')}
               </Link>
             </>
           )}
@@ -220,8 +255,8 @@ export default function CustomerPortalPage() {
         ) : (
           <EmptyState
             icon={<Plane className="size-6" />}
-            title="No bookings yet"
-            description="Once your trip is confirmed, it will appear here."
+            title={translate('No bookings yet')}
+            description={translate('Once your trip is confirmed, it will appear here.')}
           />
         )
       )}

@@ -1,3 +1,4 @@
+import { flagTravellerMessage } from '../services/travellers.js';
 import { handleRatingReply } from '../services/automations.js';
 import { notifyCustomerMessage, notifyNewLead, safeNotify } from '../services/notifications.js';
 import { getAiHandover, hasArabic, isHumanRequest, pauseAi } from '../services/aiHandover.js';
@@ -493,6 +494,8 @@ export async function handleIncomingLeadMessage({
     });
   }
 
+  // A customer who is abroad right now gets a person, fast.
+  if (!skipWhatsApp) void flagTravellerMessage(phone, messageText).catch(() => {});
   // "5" after our welcome-back message is a trip rating, not a new request.
   if (!skipWhatsApp && await handleRatingReply(phone, messageText).catch(() => false)) {
     return { phone, complete: false, missing: [], collected: {}, reply: '', rating: true };

@@ -1,3 +1,4 @@
+import TravellersPanel from '../components/travellers/TravellersPanel'
 import LeadTasksButton from '../components/tasks/LeadTasksButton'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -545,7 +546,12 @@ export default function LeadDetailPage() {
             </div>
           )}
 
-          {step === 'trip' && <TripPlanPanel leadId={lead.id} />}
+          {step === 'trip' && (
+            <div className="space-y-4">
+              <TripPlanPanel leadId={lead.id} />
+              <TravellersPanel leadId={lead.id} />
+            </div>
+          )}
 
           {step === 'send' && (
             <div className="space-y-4">

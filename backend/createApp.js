@@ -33,6 +33,7 @@ import tripPlanRoutes from './routes/tripPlan.js';
 import reportRoutes from './routes/reports.js';
 import emailRoutes, { emailCallbackRouter } from './routes/email.js';
 import notificationRoutes from './routes/notifications.js';
+import travellerRoutes, { publicTravellerRoutes } from './routes/travellers.js';
 import staffTaskRoutes from './routes/staffTasks.js';
 import { createWebchatRouter } from './routes/webchat.js';
 import path from 'node:path';
@@ -198,6 +199,8 @@ export function createApp() {
   app.use('/api', emailCallbackRouter);
   app.use('/api/q', quoteLimiter);
   app.use('/api', quoteVersionsPublicRoutes);
+  // The customer's traveller form: no sign-in, the link token is the key.
+  app.use('/api/public', quoteLimiter, publicTravellerRoutes);
   // Customer portal — before staff agentLeadAccess (which rejects role=customer).
   app.use('/api/portal', requireAuth, requireRole('customer'), userLimiter, portalRoutes);
   app.use('/api', requireAuth, userLimiter, agentLeadAccess);
@@ -207,6 +210,7 @@ export function createApp() {
   app.use('/api', requireAuth, reportRoutes);
   app.use('/api', requireAuth, emailRoutes);
   app.use('/api', requireAuth, notificationRoutes);
+  app.use('/api', requireAuth, travellerRoutes);
   app.use('/api', requireAuth, staffTaskRoutes);
   app.use('/api', requireAuth, leadsRoutes);
   app.use('/api', requireAuth, flightsRoutes);

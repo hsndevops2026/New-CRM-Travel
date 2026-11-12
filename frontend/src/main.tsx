@@ -9,6 +9,7 @@ import AppLayout from './layouts/AppLayout.tsx'
 import CustomerLayout from './layouts/CustomerLayout.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import SignupPage from './pages/SignupPage.tsx'
+import TravellerFormPage from './pages/TravellerFormPage.tsx'
 import QuoteSharePage from './pages/QuoteSharePage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
 import AssistantPage from './pages/AssistantPage.tsx'
@@ -69,6 +70,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/portal/chats" element={<CustomerPortalPage />} />
             </Route>
             <Route path="/quote/:token" element={<QuoteSharePage />} />
+            <Route path="/travellers/:token" element={<TravellerFormPage />} />
             <Route path="/" element={<HomeRedirect />} />
             <Route path="*" element={<HomeRedirect />} />
           </Routes>

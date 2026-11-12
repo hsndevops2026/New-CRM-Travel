@@ -292,6 +292,14 @@ export async function acceptQuoteVersion(token, { customerName, customerEmail } 
       after: { version_number: versionRow.version_number, accepted_by },
     });
     void safeNotify(() => notifyQuoteAccepted(versionRow.lead_id, { acceptedBy: customerName }));
+    // Hotel terms like "Cancel from 2026-12-05" become a deadline the team is warned about.
+    void import('./deadlines.js')
+      .then(async ({ deadlinesFromSnapshot }) => {
+        const full = await getVersionById(versionId);
+        const snap = typeof full?.snapshot === 'string' ? JSON.parse(full.snapshot) : full?.snapshot;
+        return deadlinesFromSnapshot(versionRow.lead_id, snap);
+      })
+      .catch((error) => console.error('[deadlines] from quote failed:', error.message));
   }
   return { accepted: true, version_id: versionId };
 }

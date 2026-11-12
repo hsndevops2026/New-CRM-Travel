@@ -7,6 +7,7 @@ import {
   Bell,
   Mail,
   Briefcase,
+  CalendarDays,
   ChevronDown,
   FileText,
   Inbox,
@@ -48,6 +49,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/contacts', label: 'Contacts', icon: User, match: (path) => path.startsWith('/contacts') },
   { to: '/reminders', label: 'Reminders', icon: Bell, match: (path) => path.startsWith('/reminders') },
   { to: '/tasks', label: 'Tasks', icon: ListChecks, match: (path) => path.startsWith('/tasks') },
+  { to: '/board', label: 'This week', icon: CalendarDays, match: (path) => path.startsWith('/board') },
   { to: '/email', label: 'Email', icon: Mail, match: (path) => path.startsWith('/email') },
   { to: '/assistant', label: 'Assistant', icon: Sparkles, match: (path) => path.startsWith('/assistant') },
 ]

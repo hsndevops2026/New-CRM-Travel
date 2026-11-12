@@ -1030,6 +1030,29 @@ export async function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_lead_traveller_links_lead ON lead_traveller_links (lead_id);
   `);
 
+  // Dates that cost money if missed: free cancellation, flight options, paying a supplier.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS booking_deadlines (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      kind VARCHAR(24) NOT NULL DEFAULT 'other',
+      label TEXT NOT NULL,
+      supplier TEXT,
+      due_at TIMESTAMPTZ NOT NULL,
+      status VARCHAR(12) NOT NULL DEFAULT 'open',
+      source VARCHAR(16) NOT NULL DEFAULT 'manual',
+      source_ref TEXT,
+      warned_at TIMESTAMPTZ,
+      overdue_notified_at TIMESTAMPTZ,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      done_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_booking_deadlines_open ON booking_deadlines (due_at) WHERE status = 'open';
+    CREATE INDEX IF NOT EXISTS idx_booking_deadlines_lead ON booking_deadlines (lead_id, due_at);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_booking_deadlines_source ON booking_deadlines (lead_id, source, source_ref) WHERE source_ref IS NOT NULL;
+  `);
+
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');
   await seedDemoPredefinedQuotes();
 

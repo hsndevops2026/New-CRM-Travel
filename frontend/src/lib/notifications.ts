@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 import { t } from './i18n'
 
-export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed' | 'travellers_submitted' | 'traveller_message' | 'quote_viewed' | 'lead_waiting' | 'low_rating'
+export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed' | 'travellers_submitted' | 'traveller_message' | 'quote_viewed' | 'lead_waiting' | 'low_rating' | 'deadline_soon' | 'deadline_passed'
 
 export type StaffNotification = {
   id: string
@@ -90,6 +90,10 @@ export function notificationText(n: StaffNotification): { title: string; detail:
         title: t('{value0} rated the trip {value1}/5', { value0: who || t('A customer'), value1: String(d.rating ?? '') }),
         detail: String(d.destination || ''),
       }
+    case 'deadline_soon':
+      return { title: t('Deadline in less than 48 hours'), detail: String(d.text || '') }
+    case 'deadline_passed':
+      return { title: t('A deadline has passed'), detail: String(d.text || '') }
     case 'reminder_due':
       return { title: t('Reminder: {value0}', { value0: who }), detail: String(d.text || '') }
     default:

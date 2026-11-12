@@ -1,3 +1,4 @@
+import DeadlinesPanel from '../components/DeadlinesPanel'
 import TravellersPanel from '../components/travellers/TravellersPanel'
 import LeadTasksButton from '../components/tasks/LeadTasksButton'
 import { t as translate, useI18n } from '../lib/i18n'
@@ -550,6 +551,7 @@ export default function LeadDetailPage() {
             <div className="space-y-4">
               <TripPlanPanel leadId={lead.id} />
               <TravellersPanel leadId={lead.id} />
+              <DeadlinesPanel leadId={lead.id} />
             </div>
           )}
 

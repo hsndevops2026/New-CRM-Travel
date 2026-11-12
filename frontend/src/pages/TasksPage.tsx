@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ListChecks, Plus, Trash2 } from 'lucide-react'
 import Button from '../components/ui/Button'
+import NewTaskForm from '../components/tasks/NewTaskForm'
 import EmptyState from '../components/ui/EmptyState'
 import PageHeader from '../components/ui/PageHeader'
 import { useAuth } from '../context/AuthContext'
@@ -9,11 +10,10 @@ import { useConfirm } from '../hooks/useConfirm'
 import { locale, t as translate, useI18n } from '../lib/i18n'
 import {
   TASK_GROUP_ORDER,
-  createTask,
   deleteTask,
   fetchAssignees,
   fetchTasks,
-  localInputToIso,
+  taskField,
   taskGroup,
   updateTask,
   type Assignee,
@@ -29,70 +29,10 @@ const GROUP_TITLES: Record<TaskGroup, string> = {
   done: 'Done',
 }
 
-const field = 'h-10 rounded-lg border border-shop-border bg-white px-3 text-sm outline-none focus:border-primary-500'
+const field = taskField
 
 function formatDue(value: string) {
   return new Date(value).toLocaleString(locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-}
-
-function NewTaskForm({ assignees, isAdmin, onCreated, onCancel }: {
-  assignees: Assignee[]
-  isAdmin: boolean
-  onCreated: (task: StaffTask) => void
-  onCancel: () => void
-}) {
-  const [title, setTitle] = useState('')
-  const [notes, setNotes] = useState('')
-  const [assignee, setAssignee] = useState('')
-  const [due, setDue] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) return
-    setSaving(true)
-    setError(null)
-    try {
-      onCreated(await createTask({
-        title,
-        notes: notes || null,
-        assigned_to: assignee || undefined,
-        due_at: localInputToIso(due),
-      }))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save the task')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <form onSubmit={submit} className="mb-4 grid gap-3 rounded-[10px] border border-shop-border bg-white p-4">
-      <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder={translate('What needs doing?')} className={field} dir="auto" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        {isAdmin && (
-          <label className="grid gap-1 text-xs font-semibold text-shop-muted">
-            {translate('Assign to')}
-            <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className={field}>
-              <option value="">{translate('Me')}</option>
-              {assignees.map((a) => <option key={a.id} value={a.id}>{a.email}</option>)}
-            </select>
-          </label>
-        )}
-        <label className="grid gap-1 text-xs font-semibold text-shop-muted">
-          {translate('Deadline')}
-          <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={field} />
-        </label>
-      </div>
-      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={translate('Notes (optional)')} className="rounded-lg border border-shop-border px-3 py-2 text-sm outline-none focus:border-primary-500" dir="auto" />
-      {error && <p className="text-sm text-danger-fg">{translate(error)}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" variant="primary" loading={saving} disabled={!title.trim()}>{translate('Save task')}</Button>
-        <Button type="button" size="sm" onClick={onCancel}>{translate('Cancel')}</Button>
-      </div>
-    </form>
-  )
 }
 
 export default function TasksPage() {
@@ -165,12 +105,12 @@ export default function TasksPage() {
         actions={!adding && <Button size="sm" variant="primary" icon={<Plus />} onClick={() => setAdding(true)}>{translate('New task')}</Button>}
       />
       {adding && (
-        <NewTaskForm
+        <div className="mb-4"><NewTaskForm
           assignees={assignees}
           isAdmin={isAdmin}
           onCancel={() => setAdding(false)}
           onCreated={(task) => { setAdding(false); setTasks((list) => [task, ...list]) }}
-        />
+        /></div>
       )}
       <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
         {isAdmin && (

@@ -85,3 +85,5 @@ export function isoToLocalInput(value: string | null): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
+
+export const taskField = 'h-10 rounded-lg border border-shop-border bg-white px-3 text-sm outline-none focus:border-primary-500'

@@ -956,6 +956,21 @@ export async function runMigrations() {
       ON whatsapp_polls (phone, created_at DESC) WHERE status = 'open';
   `);
 
+  // Growth: packages shown on the public offers page, and offers sent to past customers.
+  await pool.query(`
+    ALTER TABLE predefined_quotes ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT FALSE;
+    CREATE TABLE IF NOT EXISTS customer_outreach (
+      id BIGSERIAL PRIMARY KEY,
+      phone VARCHAR(32) NOT NULL,
+      kind VARCHAR(32) NOT NULL DEFAULT 'seasonal_offer',
+      offer_id UUID REFERENCES predefined_quotes(id) ON DELETE SET NULL,
+      body TEXT,
+      sent_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_customer_outreach_phone ON customer_outreach (phone, created_at DESC);
+  `);
+
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');
   await seedDemoPredefinedQuotes();
 

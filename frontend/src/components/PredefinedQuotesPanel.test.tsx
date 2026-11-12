@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import PredefinedQuotesPanel from './PredefinedQuotesPanel'
 import * as api from '../lib/predefinedQuotes'
 
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ admin: { id: 'me', role: 'admin' } }) }))
 vi.mock('../lib/predefinedQuotes', async () => {
   const actual = await vi.importActual<typeof api>('../lib/predefinedQuotes')
   return {

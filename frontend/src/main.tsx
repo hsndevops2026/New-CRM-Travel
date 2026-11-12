@@ -9,6 +9,8 @@ import AppLayout from './layouts/AppLayout.tsx'
 import CustomerLayout from './layouts/CustomerLayout.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import SignupPage from './pages/SignupPage.tsx'
+import OffersPage from './pages/OffersPage.tsx'
+import PastCustomersPage from './pages/PastCustomersPage.tsx'
 import QuoteSharePage from './pages/QuoteSharePage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
 import AssistantPage from './pages/AssistantPage.tsx'
@@ -52,6 +54,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/contacts/:id" element={<ContactProfilePage />} />
               <Route path="/reminders" element={<RemindersPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/past-customers" element={<PastCustomersPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
               <Route path="/reports" element={<ReportsPage />} />
@@ -69,6 +72,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/portal/chats" element={<CustomerPortalPage />} />
             </Route>
             <Route path="/quote/:token" element={<QuoteSharePage />} />
+            <Route path="/offers" element={<OffersPage />} />
             <Route path="/" element={<HomeRedirect />} />
             <Route path="*" element={<HomeRedirect />} />
           </Routes>

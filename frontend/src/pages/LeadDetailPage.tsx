@@ -1,3 +1,4 @@
+import CostsPanel from '../components/CostsPanel'
 import GroupSelect from '../components/GroupSelect'
 import VisasPanel from '../components/VisasPanel'
 import DeadlinesPanel from '../components/DeadlinesPanel'
@@ -556,6 +557,7 @@ export default function LeadDetailPage() {
               <TravellersPanel leadId={lead.id} />
               <VisasPanel leadId={lead.id} />
               <DeadlinesPanel leadId={lead.id} />
+              <CostsPanel leadId={lead.id} />
             </div>
           )}
 

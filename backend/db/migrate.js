@@ -1091,6 +1091,32 @@ export async function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_leads_group_trip ON leads (group_trip_id) WHERE group_trip_id IS NOT NULL;
   `);
 
+  // What a booking really cost, and monthly targets with commission per employee.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS booking_costs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      supplier TEXT,
+      description TEXT NOT NULL,
+      amount NUMERIC(12,2) NOT NULL CHECK (amount >= 0),
+      currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+      paid BOOLEAN NOT NULL DEFAULT FALSE,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_booking_costs_lead ON booking_costs (lead_id);
+
+    CREATE TABLE IF NOT EXISTS staff_targets (
+      admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      month DATE NOT NULL,
+      target_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+      currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+      commission_pct NUMERIC(5,2) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (admin_id, month)
+    );
+  `);
+
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');
   await seedDemoPredefinedQuotes();
 

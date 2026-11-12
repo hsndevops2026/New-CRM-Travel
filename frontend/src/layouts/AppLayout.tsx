@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Store,
+  Target,
   User,
   UsersRound,
   X,
@@ -52,6 +53,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/tasks', label: 'Tasks', icon: ListChecks, match: (path) => path.startsWith('/tasks') },
   { to: '/board', label: 'This week', icon: CalendarDays, match: (path) => path.startsWith('/board') },
   { to: '/groups', label: 'Group trips', icon: UsersRound, match: (path) => path.startsWith('/groups') },
+  { to: '/targets', label: 'Targets', icon: Target, match: (path) => path.startsWith('/targets') },
   { to: '/email', label: 'Email', icon: Mail, match: (path) => path.startsWith('/email') },
   { to: '/assistant', label: 'Assistant', icon: Sparkles, match: (path) => path.startsWith('/assistant') },
 ]

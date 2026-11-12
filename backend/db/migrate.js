@@ -932,6 +932,36 @@ export async function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_quote_versions_pending_approval ON quote_versions (created_at) WHERE approval_status = 'pending';
   `);
 
+  // Automatic customer messages and staff alerts (Settings → Automations). Customer
+  // messages are off until the agency turns them on.
+  await pool.query(`
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS auto_quote_followup BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS quote_followup_hours INTEGER NOT NULL DEFAULT 48;
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS lead_wait_alert_minutes INTEGER NOT NULL DEFAULT 15;
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS auto_trip_messages BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS google_review_url TEXT;
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS emergency_phone TEXT;
+
+    CREATE TABLE IF NOT EXISTS automation_events (
+      id BIGSERIAL PRIMARY KEY,
+      kind VARCHAR(32) NOT NULL,
+      lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+      ref TEXT NOT NULL DEFAULT '',
+      data JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (kind, lead_id, ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS trip_ratings (
+      lead_id UUID PRIMARY KEY REFERENCES leads(id) ON DELETE CASCADE,
+      phone VARCHAR(32) NOT NULL,
+      rating SMALLINT CHECK (rating BETWEEN 1 AND 5),
+      requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      rated_at TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS idx_trip_ratings_open ON trip_ratings (phone, requested_at) WHERE rating IS NULL;
+  `);
+
   // WhatsApp polls the bot sent, with what each option stands for. A vote arrives as the
   // option's text, so it is mapped back to a package item / decision through this row.
   await pool.query(`
@@ -969,6 +999,33 @@ export async function runMigrations() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_customer_outreach_phone ON customer_outreach (phone, created_at DESC);
+  // Travellers on a booking, as written in their passports. The customer can fill them in
+  // through a private link (lead_traveller_links) instead of sending passport photos.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lead_travellers (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL DEFAULT 0,
+      full_name TEXT NOT NULL,
+      is_child BOOLEAN NOT NULL DEFAULT FALSE,
+      date_of_birth DATE,
+      nationality TEXT,
+      passport_number TEXT,
+      passport_expiry DATE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_lead_travellers_lead ON lead_travellers (lead_id, position);
+
+    CREATE TABLE IF NOT EXISTS lead_traveller_links (
+      token TEXT PRIMARY KEY,
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      submitted_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_lead_traveller_links_lead ON lead_traveller_links (lead_id);
   `);
 
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');

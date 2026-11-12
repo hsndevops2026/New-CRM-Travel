@@ -70,7 +70,7 @@ export function resolveFrontendBaseUrl({
   return origins[0] || fallback;
 }
 
-function shareLink(token) {
+export function shareLink(token) {
   return `${resolveFrontendBaseUrl()}/quote/${token}`;
 }
 

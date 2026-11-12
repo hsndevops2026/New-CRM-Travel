@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage.tsx'
 import SignupPage from './pages/SignupPage.tsx'
 import OffersPage from './pages/OffersPage.tsx'
 import PastCustomersPage from './pages/PastCustomersPage.tsx'
+import TravellerFormPage from './pages/TravellerFormPage.tsx'
 import QuoteSharePage from './pages/QuoteSharePage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
 import AssistantPage from './pages/AssistantPage.tsx'
@@ -73,6 +74,7 @@ createRoot(document.getElementById('root')!).render(
             </Route>
             <Route path="/quote/:token" element={<QuoteSharePage />} />
             <Route path="/offers" element={<OffersPage />} />
+            <Route path="/travellers/:token" element={<TravellerFormPage />} />
             <Route path="/" element={<HomeRedirect />} />
             <Route path="*" element={<HomeRedirect />} />
           </Routes>

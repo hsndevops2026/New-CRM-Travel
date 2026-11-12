@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 import { t } from './i18n'
 
-export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed'
+export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed' | 'travellers_submitted' | 'traveller_message' | 'quote_viewed' | 'lead_waiting' | 'low_rating'
 
 export type StaffNotification = {
   id: string
@@ -71,6 +71,25 @@ export function notificationText(n: StaffNotification): { title: string; detail:
       return d.decision === 'approved'
         ? { title: t('Quote v{value0} approved, you can send it', { value0: String(d.version_number ?? '') }), detail: String(d.by || '') }
         : { title: t('Changes requested on quote v{value0}', { value0: String(d.version_number ?? '') }), detail: String(d.note || '') }
+    case 'travellers_submitted':
+      return {
+        title: t('The customer sent the travellers\' details ({value0})', { value0: String(d.count ?? '') }),
+        detail: Number(d.problems) ? t('{value0} passport problem(s)', { value0: String(d.problems) }) : '',
+      }
+    case 'traveller_message':
+      return { title: t('Message from a customer travelling now ({value0})', { value0: String(d.destination || '') }), detail: String(d.preview || '') }
+    case 'quote_viewed':
+      return { title: t('{value0} opened the quote', { value0: who || t('The customer') }), detail: d.version_number ? t('Version {value0}', { value0: String(d.version_number) }) : '' }
+    case 'lead_waiting':
+      return {
+        title: t('{value0} has been waiting {value1} min with no reply', { value0: who || t('A new customer'), value1: String(d.minutes ?? '') }),
+        detail: String(d.destination || ''),
+      }
+    case 'low_rating':
+      return {
+        title: t('{value0} rated the trip {value1}/5', { value0: who || t('A customer'), value1: String(d.rating ?? '') }),
+        detail: String(d.destination || ''),
+      }
     case 'reminder_due':
       return { title: t('Reminder: {value0}', { value0: who }), detail: String(d.text || '') }
     default:

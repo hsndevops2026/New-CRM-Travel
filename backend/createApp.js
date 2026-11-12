@@ -34,6 +34,7 @@ import reportRoutes from './routes/reports.js';
 import emailRoutes, { emailCallbackRouter } from './routes/email.js';
 import notificationRoutes from './routes/notifications.js';
 import growthRoutes, { publicGrowthRoutes } from './routes/growth.js';
+import travellerRoutes, { publicTravellerRoutes } from './routes/travellers.js';
 import staffTaskRoutes from './routes/staffTasks.js';
 import { createWebchatRouter } from './routes/webchat.js';
 import path from 'node:path';
@@ -200,7 +201,7 @@ export function createApp() {
   app.use('/api/q', quoteLimiter);
   app.use('/api', quoteVersionsPublicRoutes);
   // The public offers page and its "I want this" form.
-  app.use('/api/public', quoteLimiter, publicGrowthRoutes);
+  app.use('/api/public', quoteLimiter, publicGrowthRoutes, publicTravellerRoutes);
   // Customer portal — before staff agentLeadAccess (which rejects role=customer).
   app.use('/api/portal', requireAuth, requireRole('customer'), userLimiter, portalRoutes);
   app.use('/api', requireAuth, userLimiter, agentLeadAccess);
@@ -211,6 +212,7 @@ export function createApp() {
   app.use('/api', requireAuth, emailRoutes);
   app.use('/api', requireAuth, notificationRoutes);
   app.use('/api', requireAuth, growthRoutes);
+  app.use('/api', requireAuth, travellerRoutes);
   app.use('/api', requireAuth, staffTaskRoutes);
   app.use('/api', requireAuth, leadsRoutes);
   app.use('/api', requireAuth, flightsRoutes);

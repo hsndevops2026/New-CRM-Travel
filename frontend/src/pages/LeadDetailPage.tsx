@@ -1,3 +1,7 @@
+import CostsPanel from '../components/CostsPanel'
+import GroupSelect from '../components/GroupSelect'
+import VisasPanel from '../components/VisasPanel'
+import DeadlinesPanel from '../components/DeadlinesPanel'
 import TravellersPanel from '../components/travellers/TravellersPanel'
 import LeadTasksButton from '../components/tasks/LeadTasksButton'
 import { t as translate, useI18n } from '../lib/i18n'
@@ -548,8 +552,12 @@ export default function LeadDetailPage() {
 
           {step === 'trip' && (
             <div className="space-y-4">
+              <GroupSelect leadId={lead.id} groupId={lead.group_trip_id ?? null} />
               <TripPlanPanel leadId={lead.id} />
               <TravellersPanel leadId={lead.id} />
+              <VisasPanel leadId={lead.id} />
+              <DeadlinesPanel leadId={lead.id} />
+              <CostsPanel leadId={lead.id} />
             </div>
           )}
 

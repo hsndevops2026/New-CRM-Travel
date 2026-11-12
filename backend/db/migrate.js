@@ -1030,6 +1030,93 @@ export async function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_lead_traveller_links_lead ON lead_traveller_links (lead_id);
   `);
 
+  // Dates that cost money if missed: free cancellation, flight options, paying a supplier.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS booking_deadlines (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      kind VARCHAR(24) NOT NULL DEFAULT 'other',
+      label TEXT NOT NULL,
+      supplier TEXT,
+      due_at TIMESTAMPTZ NOT NULL,
+      status VARCHAR(12) NOT NULL DEFAULT 'open',
+      source VARCHAR(16) NOT NULL DEFAULT 'manual',
+      source_ref TEXT,
+      warned_at TIMESTAMPTZ,
+      overdue_notified_at TIMESTAMPTZ,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      done_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_booking_deadlines_open ON booking_deadlines (due_at) WHERE status = 'open';
+    CREATE INDEX IF NOT EXISTS idx_booking_deadlines_lead ON booking_deadlines (lead_id, due_at);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_booking_deadlines_source ON booking_deadlines (lead_id, source, source_ref) WHERE source_ref IS NOT NULL;
+  `);
+
+  // Visas per traveller, the documents each destination asks for, and group trips.
+  await pool.query(`
+    ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_status VARCHAR(16) NOT NULL DEFAULT 'unknown';
+    ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_notes TEXT;
+    ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_applied_at DATE;
+    ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_expected_at DATE;
+    ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_alerted_at TIMESTAMPTZ;
+
+    CREATE TABLE IF NOT EXISTS visa_rules (
+      destination_key TEXT PRIMARY KEY,
+      destination TEXT NOT NULL,
+      requires_visa BOOLEAN NOT NULL DEFAULT TRUE,
+      documents TEXT,
+      processing_days INTEGER,
+      updated_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS group_trips (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      title TEXT NOT NULL,
+      destination TEXT,
+      travel_date DATE,
+      return_date DATE,
+      seats_total INTEGER NOT NULL DEFAULT 0,
+      price_per_person NUMERIC(12,2),
+      currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+      notes TEXT,
+      status VARCHAR(12) NOT NULL DEFAULT 'open',
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS group_trip_id UUID REFERENCES group_trips(id) ON DELETE SET NULL;
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS group_room TEXT;
+    CREATE INDEX IF NOT EXISTS idx_leads_group_trip ON leads (group_trip_id) WHERE group_trip_id IS NOT NULL;
+  `);
+
+  // What a booking really cost, and monthly targets with commission per employee.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS booking_costs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      supplier TEXT,
+      description TEXT NOT NULL,
+      amount NUMERIC(12,2) NOT NULL CHECK (amount >= 0),
+      currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+      paid BOOLEAN NOT NULL DEFAULT FALSE,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_booking_costs_lead ON booking_costs (lead_id);
+
+    CREATE TABLE IF NOT EXISTS staff_targets (
+      admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      month DATE NOT NULL,
+      target_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+      currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+      commission_pct NUMERIC(5,2) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (admin_id, month)
+    );
+  `);
+
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');
   await seedDemoPredefinedQuotes();
 

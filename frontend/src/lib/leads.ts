@@ -32,6 +32,7 @@ export type Lead = {
   contact_name?: string | null
   contact_email?: string | null
   contact_id?: string | null
+  group_trip_id?: string | null
   assigned_to?: string | null
   lifecycle_status?: string | null
   /** Stages the API will accept from the current one; server-computed. */

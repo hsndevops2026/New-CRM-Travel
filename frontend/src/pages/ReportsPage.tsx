@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import ProfitSupplierCards from '../components/reports/ProfitSupplierCards'
 import { Link, Navigate } from 'react-router-dom'
 import { Download } from 'lucide-react'
 import Button from '../components/ui/Button'
@@ -391,6 +392,7 @@ export default function ReportsPage() {
           </div>
         </Card>
       )}
+      {range && admin?.role === 'admin' && <ProfitSupplierCards range={range} />}
     </div>
   )
 }

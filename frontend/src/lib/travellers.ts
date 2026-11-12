@@ -53,6 +53,8 @@ export function padTravellers(list: Traveller[], expected: { adults: number; chi
 /** Rows with a name are saved; blank padding rows are dropped. */
 export const filledTravellers = (rows: Traveller[]) =>
   rows.filter((t) => t.full_name.trim()).map((t) => ({
+    // The id keeps the traveller's row (and visa progress) when the list is saved again.
+    ...(t.id ? { id: t.id } : {}),
     full_name: t.full_name,
     is_child: t.is_child,
     date_of_birth: t.date_of_birth,

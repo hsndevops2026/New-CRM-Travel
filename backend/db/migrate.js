@@ -999,6 +999,8 @@ export async function runMigrations() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_customer_outreach_phone ON customer_outreach (phone, created_at DESC);
+  `);
+
   // Travellers on a booking, as written in their passports. The customer can fill them in
   // through a private link (lead_traveller_links) instead of sending passport photos.
   await pool.query(`

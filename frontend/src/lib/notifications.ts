@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 import { t } from './i18n'
 
-export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due'
+export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due'
 
 export type StaffNotification = {
   id: string
@@ -54,6 +54,13 @@ export function notificationText(n: StaffNotification): { title: string; detail:
       return { title: t('{value0} asked to talk to a person', { value0: who }), detail: String(d.preview || '') }
     case 'quote_accepted':
       return { title: t('{value0} accepted the quote', { value0: who }), detail: String(d.destination || '') }
+    case 'task_assigned':
+      return {
+        title: d.by ? t('New task from {value0}', { value0: String(d.by) }) : t('New task'),
+        detail: String(d.text || ''),
+      }
+    case 'task_due':
+      return { title: t('Task deadline passed'), detail: String(d.text || '') }
     case 'reminder_due':
       return { title: t('Reminder: {value0}', { value0: who }), detail: String(d.text || '') }
     default:
@@ -62,6 +69,7 @@ export function notificationText(n: StaffNotification): { title: string; detail:
 }
 
 export function notificationLink(n: StaffNotification): string | null {
+  if (n.kind === 'task_assigned' || n.kind === 'task_due') return '/tasks'
   if (n.lead_id) return `/leads/${n.lead_id}`
   if (n.contact_id) return `/contacts/${n.contact_id}`
   return null

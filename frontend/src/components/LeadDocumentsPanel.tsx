@@ -3,10 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 import { ExternalLink, FileText, Trash2, Upload } from 'lucide-react'
 import Button from './ui/Button'
 import {
-  createLeadDocument,
+  DOCUMENT_TYPE_NAMES,
   deleteLeadDocument,
   fetchLeadDocuments,
-  uploadBookingFile,
+  uploadAndClassifyFiles,
   type BookingDocument,
 } from '../lib/bookingDocuments'
 
@@ -61,25 +61,22 @@ export default function LeadDocumentsPanel({ leadId }: Props) {
     }
   }, [leadId])
 
-  const onUpload = async (file: File | undefined) => {
-    if (!file) return
-    const cleanTitle = title.trim() || file.name.replace(/\.[^.]+$/, '')
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+
+  const onUpload = async (list: FileList | null) => {
+    const files = Array.from(list || [])
+    if (!files.length) return
     setSaving(true)
     setError(null)
+    setProgress({ done: 0, total: files.length })
     try {
-      const uploaded = await uploadBookingFile(file)
-      await createLeadDocument(leadId, {
-        title: cleanTitle,
-        file_url: uploaded.url,
-        file_name: uploaded.fileName,
-        mime_type: uploaded.mimeType,
-      })
+      const { failed } = await uploadAndClassifyFiles(leadId, files, (done, total) => setProgress({ done, total }), title)
       setTitle('')
+      if (failed.length) setError(translate('Could not upload: {value0}', { value0: failed.join('، ') }))
       await load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setSaving(false)
+      setProgress(null)
       if (inputRef.current) inputRef.current.value = ''
     }
   }
@@ -103,12 +100,13 @@ export default function LeadDocumentsPanel({ leadId }: Props) {
         <h2 className="text-sm font-bold">{translate("Booking documents")}</h2>
       </div>
       <p className="mb-3 text-sm text-shop-muted">
-        {translate("Upload tickets, vouchers, or invoices. Customers see these in their portal after booking.")}</p>
+        {translate("Upload tickets, vouchers, or invoices. Customers see these in their portal after booking.")}{' '}
+        {translate('Pick several files at once: each one is read and renamed after what it is.')}</p>
       <div className="mb-3 flex flex-wrap gap-2">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={translate("Document title (optional)")}
+          placeholder={translate("Document title (optional, single file)")}
           className="h-10 min-w-[200px] flex-1 rounded-lg border border-shop-border px-3 text-sm"
         />
         <Button
@@ -117,15 +115,18 @@ export default function LeadDocumentsPanel({ leadId }: Props) {
           loading={saving}
           onClick={() => inputRef.current?.click()}
         >
-          {translate("Upload file")}</Button>
+          {progress
+            ? translate('Uploading and naming {value0}/{value1}…', { value0: Math.min(progress.done + 1, progress.total), value1: progress.total })
+            : translate('Upload files')}</Button>
         <input
           ref={inputRef}
           type="file"
+          multiple
           className="hidden"
-          onChange={(e) => void onUpload(e.target.files?.[0])}
+          onChange={(e) => void onUpload(e.target.files)}
         />
       </div>
-      {error && <p className="mb-2 text-sm text-danger-fg">{translate(error)}</p>}
+      {error && <p className="mb-2 text-sm text-danger-fg">{error}</p>}
       {loading ? (
         <p className="text-sm text-shop-muted">{translate("Loading…")}</p>
       ) : docs.length === 0 ? (
@@ -135,7 +136,14 @@ export default function LeadDocumentsPanel({ leadId }: Props) {
           {docs.map((doc) => (
             <li key={doc.id} className="flex items-center gap-2 px-3 py-2.5 text-sm">
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{doc.title}</p>
+                <p className="flex items-center gap-2 font-semibold">
+                  {doc.document_type && DOCUMENT_TYPE_NAMES[doc.document_type] ? (
+                    <span className="shrink-0 rounded bg-tint px-1.5 py-0.5 text-[11px] font-semibold text-shop-accent">
+                      {translate(DOCUMENT_TYPE_NAMES[doc.document_type])}
+                    </span>
+                  ) : null}
+                  <span dir="auto" className="truncate">{doc.title}</span>
+                </p>
                 <p className="truncate text-xs text-shop-muted">{doc.file_name || doc.file_url}</p>
               </div>
               <a

@@ -7,6 +7,7 @@ import {
   listDocumentsForLead,
 } from '../services/bookingDocuments.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { buildDocumentTitle, classifyUploadedDocument } from '../services/documentClassifier.js';
 
 const router = Router();
 
@@ -25,13 +26,32 @@ router.post('/leads/:id/documents', async (req, res) => {
   try {
     const lead = await getLeadById(req.params.id);
     if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    const body = req.body || {};
+    let title = body.title;
+    let fileName = body.file_name;
+    let info = null;
+    // classify: read the file and rename it after what it is (ticket, hotel, program…).
+    if (body.classify) {
+      info = await classifyUploadedDocument({
+        fileUrl: body.file_url,
+        mimeType: body.mime_type,
+        fileName: body.file_name,
+      });
+      if (info) {
+        title = buildDocumentTitle(info, title);
+        const ext = String(body.file_name || '').match(/\.[A-Za-z0-9]{1,6}$/)?.[0] || '';
+        fileName = `${title}${ext}`;
+      }
+    }
     const document = await createBookingDocument({
       leadId: req.params.id,
-      title: req.body?.title,
-      fileUrl: req.body?.file_url,
-      fileName: req.body?.file_name,
-      mimeType: req.body?.mime_type,
+      title,
+      fileUrl: body.file_url,
+      fileName,
+      mimeType: body.mime_type,
       uploadedBy: req.admin?.id,
+      documentType: info?.document_type || null,
+      extracted: info,
     });
     res.status(201).json({ document });
   } catch (error) {

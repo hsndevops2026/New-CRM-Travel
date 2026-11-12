@@ -54,6 +54,8 @@ export async function createBookingDocument({
   fileName,
   mimeType,
   uploadedBy,
+  documentType = null,
+  extracted = null,
 } = {}) {
   const cleanTitle = String(title || '').trim();
   const cleanUrl = String(fileUrl || '').trim();
@@ -68,8 +70,8 @@ export async function createBookingDocument({
   }
 
   const result = await query(
-    `INSERT INTO booking_documents (lead_id, title, file_url, file_name, mime_type, uploaded_by)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO booking_documents (lead_id, title, file_url, file_name, mime_type, uploaded_by, document_type, extracted)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       leadId,
@@ -78,6 +80,8 @@ export async function createBookingDocument({
       fileName ? String(fileName).trim() : null,
       mimeType ? String(mimeType).trim() : null,
       uploadedBy || null,
+      documentType || null,
+      extracted ? JSON.stringify(extracted) : null,
     ],
   );
   return result.rows[0];

@@ -892,6 +892,9 @@ export async function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_booking_documents_lead_id
       ON booking_documents (lead_id, created_at DESC);
   `);
+  // Set when a file is read on upload: what kind of document it is and the details used to name it.
+  await pool.query(`ALTER TABLE booking_documents ADD COLUMN IF NOT EXISTS document_type VARCHAR(32)`);
+  await pool.query(`ALTER TABLE booking_documents ADD COLUMN IF NOT EXISTS extracted JSONB`);
 
   // WhatsApp polls the bot sent, with what each option stands for. A vote arrives as the
   // option's text, so it is mapped back to a package item / decision through this row.

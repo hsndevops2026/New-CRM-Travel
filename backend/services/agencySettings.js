@@ -16,6 +16,12 @@ export const DEFAULT_AGENCY_SETTINGS = Object.freeze({
   quote_approval_mode: 'agents',
   quote_approval_min_margin: 10,
   quote_approval_min_margin_type: 'percent',
+  auto_quote_followup: false,
+  quote_followup_hours: 48,
+  lead_wait_alert_minutes: 15,
+  auto_trip_messages: false,
+  google_review_url: null,
+  emergency_phone: null,
 });
 
 export const QUOTE_APPROVAL_MODES = ['off', 'agents', 'below_margin'];
@@ -86,6 +92,21 @@ export function normalizeAgencySettings(input = {}, { partial = false } = {}) {
     if (!QUOTE_APPROVAL_MODES.includes(mode)) throw httpError(400, 'quote_approval_mode must be off, agents or below_margin');
     output.quote_approval_mode = mode;
   }
+  for (const key of ['auto_quote_followup', 'auto_trip_messages']) {
+    if (has(key)) output[key] = input[key] === true || input[key] === 'true';
+  }
+  if (has('quote_followup_hours')) {
+    const hours = Number(input.quote_followup_hours);
+    if (!Number.isInteger(hours) || hours < 6 || hours > 24 * 14) throw httpError(400, 'quote_followup_hours must be between 6 and 336');
+    output.quote_followup_hours = hours;
+  }
+  if (has('lead_wait_alert_minutes')) {
+    const minutes = Number(input.lead_wait_alert_minutes);
+    if (!Number.isInteger(minutes) || minutes < 0 || minutes > 24 * 60) throw httpError(400, 'lead_wait_alert_minutes must be between 0 and 1440');
+    output.lead_wait_alert_minutes = minutes;
+  }
+  if (has('google_review_url')) output.google_review_url = validateUrl(input.google_review_url, 'google_review_url');
+  if (has('emergency_phone')) output.emergency_phone = optionalText(input.emergency_phone, 64, 'emergency_phone');
   if (has('quote_approval_min_margin_type')) {
     const type = String(input.quote_approval_min_margin_type || '').trim();
     if (!['percent', 'fixed'].includes(type)) throw httpError(400, 'quote_approval_min_margin_type must be percent or fixed');
@@ -168,5 +189,11 @@ export function staffAgencySettings(settings) {
     quote_approval_mode: value.quote_approval_mode || DEFAULT_AGENCY_SETTINGS.quote_approval_mode,
     quote_approval_min_margin: Number(value.quote_approval_min_margin ?? DEFAULT_AGENCY_SETTINGS.quote_approval_min_margin),
     quote_approval_min_margin_type: value.quote_approval_min_margin_type || 'percent',
+    auto_quote_followup: Boolean(value.auto_quote_followup),
+    quote_followup_hours: Number(value.quote_followup_hours ?? 48),
+    lead_wait_alert_minutes: Number(value.lead_wait_alert_minutes ?? 15),
+    auto_trip_messages: Boolean(value.auto_trip_messages),
+    google_review_url: value.google_review_url || null,
+    emergency_phone: value.emergency_phone || null,
   };
 }

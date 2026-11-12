@@ -33,3 +33,12 @@ describe('task notifications', () => {
     expect(notificationLink(n)).toBe('/tasks')
   })
 })
+
+describe('automation notifications', () => {
+  it('says who opened the quote, who is waiting, and a low rating', () => {
+    expect(notificationText({ ...base, kind: 'quote_viewed', data: { customer: 'Sara', version_number: 2 } }).title).toContain('Sara')
+    expect(notificationText({ ...base, kind: 'lead_waiting', data: { customer: 'Omar', minutes: 15 } }).title).toContain('15')
+    expect(notificationText({ ...base, kind: 'low_rating', data: { customer: 'Rana', rating: 2 } }).title).toContain('2/5')
+    expect(notificationLink({ ...base, kind: 'low_rating' })).toBe('/leads/L1')
+  })
+})

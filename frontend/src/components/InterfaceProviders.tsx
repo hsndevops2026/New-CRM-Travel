@@ -11,7 +11,7 @@ import { LanguageProvider } from '../lib/i18n'
 export default function InterfaceProviders({ children }: { children: ReactNode }) {
   const { admin } = useAuth()
   const { pathname, search } = useLocation()
-  const customerPage = pathname.startsWith('/portal') || pathname.startsWith('/quote/') || pathname.startsWith('/travellers/')
+  const customerPage = pathname.startsWith('/portal') || pathname.startsWith('/quote/') || pathname.startsWith('/travellers/') || pathname === '/offers'
   const customerLanguage = new URLSearchParams(search).get('lang') === 'en' ? 'en' : 'ar'
   return (
     <LanguageProvider userId={admin?.id} forcedLanguage={customerPage ? customerLanguage : undefined}>

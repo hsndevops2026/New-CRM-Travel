@@ -48,6 +48,8 @@ export type PredefinedQuoteItem = {
 
 export type PredefinedQuote = {
   id: string
+  /** Shown on the public offers page. */
+  is_public?: boolean
   title: string
   quote_type: QuoteType
   destination?: string | null

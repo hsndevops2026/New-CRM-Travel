@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import ContactModal from '../components/ContactModal'
+import TravelHistoryPanel from '../components/TravelHistoryPanel'
 import ReminderModal from '../components/ReminderModal'
 import UploadDocumentButton from '../components/UploadDocumentButton'
 import MessageBubble from '../components/chat/MessageBubble'
@@ -369,6 +370,7 @@ export default function ContactProfilePage() {
         })}
       </div>
 
+      {tab === 'bookings' && <TravelHistoryPanel contactId={contact.id} />}
       {tab === 'bookings' && (
         <section className="grid gap-3">
           {bookings.length === 0 && (

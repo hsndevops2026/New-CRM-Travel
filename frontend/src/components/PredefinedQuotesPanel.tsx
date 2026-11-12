@@ -1,3 +1,5 @@
+import { setPackagePublic } from '../lib/growth'
+import { useAuth } from '../context/AuthContext'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { Download, Send, Trash2, X } from 'lucide-react'
@@ -72,6 +74,8 @@ export default function PredefinedQuotesPanel({
   onImportOpenChange,
 }: Props) {
   useI18n()
+  const { admin } = useAuth()
+  const isAdmin = admin?.role === 'admin'
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
   const [quotes, setQuotes] = useState<PredefinedQuote[]>([])
@@ -260,6 +264,15 @@ export default function PredefinedQuotesPanel({
     return result.quote
   }
 
+  const togglePublic = async (quote: PredefinedQuote) => {
+    try {
+      const next = await setPackagePublic(quote.id, !quote.is_public)
+      setQuotes((prev) => prev.map((q) => (q.id === quote.id ? { ...q, is_public: next.is_public } : q)))
+    } catch {
+      /* the menu stays as it was */
+    }
+  }
+
   const quoteMenu = (quote: PredefinedQuote) => [
     { id: 'view', label: 'View', onClick: () => setPreview(quote) },
     { id: 'edit', label: 'Edit', onClick: () => setEditing(quote) },
@@ -269,6 +282,13 @@ export default function PredefinedQuotesPanel({
       onClick: () => void handleDownload(quote),
     },
     { id: 'send', label: 'Send to customer', onClick: () => setSendToCustomer(quote) },
+    ...(isAdmin
+      ? [{
+          id: 'public',
+          label: quote.is_public ? 'Hide from offers page' : 'Show on offers page',
+          onClick: () => void togglePublic(quote),
+        }]
+      : []),
     { id: 'delete', label: 'Delete', tone: 'danger' as const, onClick: () => void handleDelete(quote) },
   ]
 
@@ -363,6 +383,7 @@ export default function PredefinedQuotesPanel({
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-bold">{quote.title}</h3>
                         <TypeBadge type={quote.quote_type} />
+                        {quote.is_public && <span className="rounded-full bg-shop-green-bg px-2 py-0.5 text-[11px] font-semibold text-primary-800">{translate('On offers page')}</span>}
                       </div>
                       <p className="mt-1 text-sm text-shop-muted">{quoteSummary(quote)}</p>
                       <div className="mt-1.5 font-bold tabular-nums">

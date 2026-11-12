@@ -93,8 +93,13 @@ export default function ContactsPage() {
         title={translate("Contacts")}
         subtitle={translate("{value0} contact{value1} · Customer phone book for WhatsApp quoting.", { value0: translate(String(contacts.length)), value1: translate(String(contacts.length === 1 ? '' : 's')) })}
         actions={
+          <>
+          <Link to="/past-customers" className="inline-flex h-10 items-center rounded-lg border border-shop-border px-3 text-sm font-semibold hover:bg-neutral-bg">
+            {translate('Past customers')}
+          </Link>
           <Button variant="primary" icon={<Plus />} onClick={() => setContactEditor(null)}>
             {translate("Add contact")}</Button>
+          </>
         }
       />
 

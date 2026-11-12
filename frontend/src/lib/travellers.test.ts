@@ -8,13 +8,13 @@ describe('travellers', () => {
     expect(padTravellers([], { adults: 0, children: 0 })).toHaveLength(1)
   })
 
-  it('sends only rows with a name, without internal fields', () => {
+  it('sends only rows with a name, keeping the id but not internal fields', () => {
     const out = filledTravellers([
       { ...emptyTraveller(), full_name: 'Lina', issues: ['expired'], id: 'x' },
       emptyTraveller(true),
     ])
     expect(out).toHaveLength(1)
     expect(out[0]).not.toHaveProperty('issues')
-    expect(out[0]).not.toHaveProperty('id')
+    expect(out[0].id).toBe('x')
   })
 })

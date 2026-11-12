@@ -13,6 +13,7 @@ import OffersPage from './pages/OffersPage.tsx'
 import PastCustomersPage from './pages/PastCustomersPage.tsx'
 import TravellerFormPage from './pages/TravellerFormPage.tsx'
 import BoardPage from './pages/BoardPage.tsx'
+import GroupTripsPage from './pages/GroupTripsPage.tsx'
 import QuoteSharePage from './pages/QuoteSharePage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
 import AssistantPage from './pages/AssistantPage.tsx'
@@ -57,6 +58,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/reminders" element={<RemindersPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/board" element={<BoardPage />} />
+              <Route path="/groups" element={<GroupTripsPage />} />
+              <Route path="/groups/:id" element={<GroupTripsPage />} />
               <Route path="/past-customers" element={<PastCustomersPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />

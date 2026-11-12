@@ -17,6 +17,7 @@ import { notifyDueReminders, pruneNotifications } from './services/notifications
 import { notifyDueTasks } from './services/staffTasks.js';
 import { runAutomations } from './services/automations.js';
 import { notifyDeadlines } from './services/deadlines.js';
+import { notifyVisaRisks } from './services/visas.js';
 import { productionConfigProblems } from './config/productionGuard.js';
 
 const app = createApp();
@@ -119,6 +120,7 @@ async function start() {
       void notifyDueTasks().catch((error) => console.error('[notifications] task sweep failed:', error.message));
       void runAutomations().catch((error) => console.error('[automations] sweep failed:', error.message));
       void notifyDeadlines().catch((error) => console.error('[deadlines] sweep failed:', error.message));
+      void notifyVisaRisks().catch((error) => console.error('[visas] sweep failed:', error.message));
       if (new Date().getMinutes() === 0) void pruneNotifications().catch(() => {});
       void sendDueCustomerReminders()
         .then((rows) => {

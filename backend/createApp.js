@@ -34,6 +34,7 @@ import reportRoutes from './routes/reports.js';
 import emailRoutes, { emailCallbackRouter } from './routes/email.js';
 import notificationRoutes from './routes/notifications.js';
 import deadlineRoutes from './routes/deadlines.js';
+import groupVisaRoutes from './routes/groupsVisas.js';
 import growthRoutes, { publicGrowthRoutes } from './routes/growth.js';
 import travellerRoutes, { publicTravellerRoutes } from './routes/travellers.js';
 import staffTaskRoutes from './routes/staffTasks.js';
@@ -213,6 +214,7 @@ export function createApp() {
   app.use('/api', requireAuth, emailRoutes);
   app.use('/api', requireAuth, notificationRoutes);
   app.use('/api', requireAuth, deadlineRoutes);
+  app.use('/api', requireAuth, groupVisaRoutes);
   app.use('/api', requireAuth, growthRoutes);
   app.use('/api', requireAuth, travellerRoutes);
   app.use('/api', requireAuth, staffTaskRoutes);

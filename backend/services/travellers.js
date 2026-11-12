@@ -133,14 +133,31 @@ export async function saveTravellers(leadId, list) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query(`DELETE FROM lead_travellers WHERE lead_id = $1`, [leadId]);
+    // Keep each traveller's row (and its visa progress) when the list is saved again:
+    // rows sent with their id are updated, new ones inserted, missing ones removed.
+    const { rows: existing } = await client.query(`SELECT id FROM lead_travellers WHERE lead_id = $1`, [leadId]);
+    const known = new Set(existing.map((r) => r.id));
+    const kept = new Set();
     for (const [i, t] of clean.entries()) {
-      await client.query(
-        `INSERT INTO lead_travellers (lead_id, position, full_name, is_child, date_of_birth, nationality, passport_number, passport_expiry)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [leadId, i, t.full_name, t.is_child, t.date_of_birth, t.nationality, t.passport_number, t.passport_expiry],
-      );
+      const id = list[i]?.id && known.has(list[i].id) ? list[i].id : null;
+      if (id) {
+        kept.add(id);
+        await client.query(
+          `UPDATE lead_travellers SET position = $2, full_name = $3, is_child = $4, date_of_birth = $5, nationality = $6,
+                  passport_number = $7, passport_expiry = $8, updated_at = NOW()
+           WHERE id = $1`,
+          [id, i, t.full_name, t.is_child, t.date_of_birth, t.nationality, t.passport_number, t.passport_expiry],
+        );
+      } else {
+        await client.query(
+          `INSERT INTO lead_travellers (lead_id, position, full_name, is_child, date_of_birth, nationality, passport_number, passport_expiry)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [leadId, i, t.full_name, t.is_child, t.date_of_birth, t.nationality, t.passport_number, t.passport_expiry],
+        );
+      }
     }
+    const gone = [...known].filter((id) => !kept.has(id));
+    if (gone.length) await client.query(`DELETE FROM lead_travellers WHERE id = ANY($1::uuid[])`, [gone]);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

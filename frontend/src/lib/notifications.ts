@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 import { t } from './i18n'
 
-export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed' | 'travellers_submitted' | 'traveller_message' | 'quote_viewed' | 'lead_waiting' | 'low_rating' | 'deadline_soon' | 'deadline_passed'
+export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed' | 'travellers_submitted' | 'traveller_message' | 'quote_viewed' | 'lead_waiting' | 'low_rating' | 'deadline_soon' | 'deadline_passed' | 'visa_pending'
 
 export type StaffNotification = {
   id: string
@@ -94,6 +94,11 @@ export function notificationText(n: StaffNotification): { title: string; detail:
       return { title: t('Deadline in less than 48 hours'), detail: String(d.text || '') }
     case 'deadline_passed':
       return { title: t('A deadline has passed'), detail: String(d.text || '') }
+    case 'visa_pending':
+      return {
+        title: t('Visa not ready for {value0}', { value0: String(d.traveller || '') }),
+        detail: [d.destination, d.travel_date].filter(Boolean).join(' · '),
+      }
     case 'reminder_due':
       return { title: t('Reminder: {value0}', { value0: who }), detail: String(d.text || '') }
     default:

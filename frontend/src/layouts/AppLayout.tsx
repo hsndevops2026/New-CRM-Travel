@@ -19,6 +19,7 @@ import {
   Sparkles,
   Store,
   User,
+  UsersRound,
   X,
 } from 'lucide-react'
 import { SearchProvider } from '../context/SearchProvider'
@@ -50,6 +51,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/reminders', label: 'Reminders', icon: Bell, match: (path) => path.startsWith('/reminders') },
   { to: '/tasks', label: 'Tasks', icon: ListChecks, match: (path) => path.startsWith('/tasks') },
   { to: '/board', label: 'This week', icon: CalendarDays, match: (path) => path.startsWith('/board') },
+  { to: '/groups', label: 'Group trips', icon: UsersRound, match: (path) => path.startsWith('/groups') },
   { to: '/email', label: 'Email', icon: Mail, match: (path) => path.startsWith('/email') },
   { to: '/assistant', label: 'Assistant', icon: Sparkles, match: (path) => path.startsWith('/assistant') },
 ]

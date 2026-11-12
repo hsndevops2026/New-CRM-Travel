@@ -12,7 +12,7 @@ import { query } from '../config/database.js';
  * adding another row.
  */
 
-export const NOTIFICATION_KINDS = ['new_lead', 'customer_waiting', 'human_requested', 'quote_accepted', 'reminder_due', 'task_assigned', 'task_due', 'quote_approval_needed', 'quote_reviewed', 'travellers_submitted', 'traveller_message', 'quote_viewed', 'lead_waiting', 'low_rating', 'deadline_soon', 'deadline_passed'];
+export const NOTIFICATION_KINDS = ['new_lead', 'customer_waiting', 'human_requested', 'quote_accepted', 'reminder_due', 'task_assigned', 'task_due', 'quote_approval_needed', 'quote_reviewed', 'travellers_submitted', 'traveller_message', 'quote_viewed', 'lead_waiting', 'low_rating', 'deadline_soon', 'deadline_passed', 'visa_pending'];
 
 async function approvedAdmins() {
   const { rows } = await query(

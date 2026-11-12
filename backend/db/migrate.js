@@ -918,6 +918,20 @@ export async function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_staff_tasks_due ON staff_tasks (due_at) WHERE status = 'open' AND due_notified_at IS NULL;
   `);
 
+  // Manager approval of quotes. off: never; agents: every quote an agent locks;
+  // below_margin: an agent's quote whose margin is under quote_approval_min_margin (%).
+  await pool.query(`
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS quote_approval_mode VARCHAR(16) NOT NULL DEFAULT 'agents';
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS quote_approval_min_margin NUMERIC(12,2) NOT NULL DEFAULT 10;
+    ALTER TABLE agency_settings ALTER COLUMN quote_approval_min_margin TYPE NUMERIC(12,2);
+    ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS quote_approval_min_margin_type VARCHAR(8) NOT NULL DEFAULT 'percent';
+    ALTER TABLE quote_versions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(16) NOT NULL DEFAULT 'not_required';
+    ALTER TABLE quote_versions ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES admins(id) ON DELETE SET NULL;
+    ALTER TABLE quote_versions ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+    ALTER TABLE quote_versions ADD COLUMN IF NOT EXISTS review_note TEXT;
+    CREATE INDEX IF NOT EXISTS idx_quote_versions_pending_approval ON quote_versions (created_at) WHERE approval_status = 'pending';
+  `);
+
   // WhatsApp polls the bot sent, with what each option stands for. A vote arrives as the
   // option's text, so it is mapped back to a package item / decision through this row.
   await pool.query(`

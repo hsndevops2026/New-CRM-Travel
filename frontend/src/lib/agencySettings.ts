@@ -10,6 +10,10 @@ export type AgencySettings = {
   website: string | null
   address: string | null
   quotation_footer: string | null
+  /** Staff only. off · agents (every agent quote) · below_margin (agent quotes under the minimum margin). */
+  quote_approval_mode?: 'off' | 'agents' | 'below_margin'
+  quote_approval_min_margin?: number
+  quote_approval_min_margin_type?: 'percent' | 'fixed'
 }
 
 export async function fetchAgencySettings(): Promise<AgencySettings> {

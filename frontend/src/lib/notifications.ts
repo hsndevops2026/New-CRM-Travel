@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 import { t } from './i18n'
 
-export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due'
+export type NotificationKind = 'new_lead' | 'customer_waiting' | 'human_requested' | 'quote_accepted' | 'reminder_due' | 'task_assigned' | 'task_due' | 'quote_approval_needed' | 'quote_reviewed'
 
 export type StaffNotification = {
   id: string
@@ -61,6 +61,16 @@ export function notificationText(n: StaffNotification): { title: string; detail:
       }
     case 'task_due':
       return { title: t('Task deadline passed'), detail: String(d.text || '') }
+    case 'quote_approval_needed':
+      return {
+        title: t('Quote v{value0} needs your approval', { value0: String(d.version_number ?? '') }),
+        detail: [d.customer, d.by, d.margin_pct != null ? t('margin {value0}%', { value0: Number(d.margin_pct).toFixed(1) }) : '']
+          .filter(Boolean).join(' · '),
+      }
+    case 'quote_reviewed':
+      return d.decision === 'approved'
+        ? { title: t('Quote v{value0} approved, you can send it', { value0: String(d.version_number ?? '') }), detail: String(d.by || '') }
+        : { title: t('Changes requested on quote v{value0}', { value0: String(d.version_number ?? '') }), detail: String(d.note || '') }
     case 'reminder_due':
       return { title: t('Reminder: {value0}', { value0: who }), detail: String(d.text || '') }
     default:

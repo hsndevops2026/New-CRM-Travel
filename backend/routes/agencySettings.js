@@ -3,6 +3,7 @@ import { requireRole } from '../middleware/requireRole.js';
 import {
   getAgencySettings,
   publicAgencySettings,
+  staffAgencySettings,
   updateAgencySettings,
 } from '../services/agencySettings.js';
 import { logAuditEvent } from '../services/audit.js';
@@ -11,7 +12,7 @@ const router = Router();
 
 router.get('/agency-settings', async (_req, res, next) => {
   try {
-    res.json({ agency: publicAgencySettings(await getAgencySettings()) });
+    res.json({ agency: staffAgencySettings(await getAgencySettings()) });
   } catch (error) {
     next(error);
   }
@@ -26,10 +27,10 @@ router.patch('/agency-settings', requireRole('admin'), async (req, res, next) =>
       action: 'updated',
       actorId: req.admin?.id,
       actorRole: req.admin?.role,
-      before: publicAgencySettings(before),
-      after: publicAgencySettings(agency),
+      before: staffAgencySettings(before),
+      after: staffAgencySettings(agency),
     });
-    res.json({ agency: publicAgencySettings(agency) });
+    res.json({ agency: staffAgencySettings(agency) });
   } catch (error) {
     next(error);
   }

@@ -12,7 +12,7 @@ import { createRequire } from 'module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fetchBrandLogo, resolvedBranding } from './pdfBranding.js';
-import { arabicFont, drawText, measureTextHeight } from './pdfText.js';
+import { arabicFont, drawText, hasArabic, measureTextHeight } from './pdfText.js';
 
 const require = createRequire(import.meta.url);
 const PDFDocument = require('pdfkit');
@@ -134,23 +134,47 @@ export function createDocument({ title, author, subject } = {}) {
 /**
  * A document being written top to bottom. Create with `await Page.start(...)`, draw blocks,
  * then `page.finish()`.
+ *
+ * `lang: 'ar'` mirrors the layout: text is right-aligned and read right to left, the logo
+ * and check marks move to the right, and facts run right to left.
  */
 export class Page {
-  constructor(doc, agency, runningTitle) {
+  constructor(doc, agency, runningTitle, lang = 'en') {
     this.doc = doc;
     this.brand = resolvedBranding(agency);
     this.color = this.brand.primary_color;
     this.runningTitle = runningTitle || '';
+    this.lang = lang === 'ar' ? 'ar' : 'en';
+    this.rtl = this.lang === 'ar';
+    this.labels = {
+      contact: (agency) => `Questions? Contact ${agency}`,
+      preparedBy: (agency) => `Prepared by ${agency}`,
+      pageOf: (n, count) => `Page ${n} of ${count}`,
+      issued: (date) => `Issued ${date}`,
+    };
     this.y = 0;
     this.limit = PAGE.height - PAGE.footer - 8;
     this.logo = null;
   }
 
-  static async start(doc, agency, { runningTitle, label, issued, subtitle = 'Travel quotation' } = {}) {
-    const page = new Page(doc, agency, runningTitle);
+  static async start(doc, agency, { runningTitle, label, issued, subtitle = 'Travel quotation', lang, labels } = {}) {
+    const page = new Page(doc, agency, runningTitle, lang);
+    if (labels) Object.assign(page.labels, labels);
     page.logo = await fetchBrandLogo(page.brand.logo_url);
     page.drawBanner({ label, issued, subtitle });
     return page;
+  }
+
+  /** x of a box `w` wide that starts `x` from the left edge in an English page. */
+  mx(x, w) {
+    return this.rtl ? PAGE.width - x - w : x;
+  }
+
+  /** Text options for this page's reading direction. `align` is given as for English. */
+  text(opts = {}) {
+    if (!this.rtl) return opts;
+    const flip = { left: 'right', right: 'left', center: 'center' };
+    return { ...opts, align: flip[opts.align || 'left'], direction: 'rtl' };
   }
 
   /** The brand band at the top of the first page. */
@@ -164,44 +188,46 @@ export class Page {
     doc.save();
     doc.translate(0, modern ? 10 : 0);
 
+    const logoX = this.mx(PAGE.margin, 48);
     let textX = PAGE.margin;
     if (this.logo) {
       try {
         doc.save();
-        doc.roundedRect(PAGE.margin, 22, 48, 48, 10).fill('#FFFFFF');
-        doc.image(this.logo, PAGE.margin + 4, 26, { fit: [40, 40], align: 'center', valign: 'center' });
+        doc.roundedRect(logoX, 22, 48, 48, 10).fill('#FFFFFF');
+        doc.image(this.logo, logoX + 4, 26, { fit: [40, 40], align: 'center', valign: 'center' });
         doc.restore();
         textX = PAGE.margin + 62;
       } catch {
         textX = PAGE.margin;
       }
     } else {
-      doc.roundedRect(PAGE.margin, 22, 48, 48, 10).fillOpacity(0.18).fill(on).fillOpacity(1);
-      drawText(doc, (brand.agency_name || 'A').trim().charAt(0).toUpperCase(), PAGE.margin, 31, {
+      doc.roundedRect(logoX, 22, 48, 48, 10).fillOpacity(0.18).fill(on).fillOpacity(1);
+      drawText(doc, (brand.agency_name || 'A').trim().charAt(0).toUpperCase(), logoX, 31, {
         width: 48, size: 22, font: FONT.bold, color: on, align: 'center',
       });
       textX = PAGE.margin + 62;
     }
 
     const nameWidth = PAGE.width - textX - PAGE.margin - 150;
-    drawText(doc, brand.agency_name, textX, 29, { width: nameWidth, size: 17, font: FONT.bold, color: on });
+    const nameX = this.mx(textX, nameWidth);
+    drawText(doc, brand.agency_name, nameX, 29, this.text({ width: nameWidth, size: 17, font: FONT.bold, color: on }));
     doc.save().fillOpacity(0.8);
-    drawText(doc, subtitle, textX, 52, { width: nameWidth, size: 9.5, font: FONT.regular, color: on });
+    drawText(doc, subtitle, nameX, 52, this.text({ width: nameWidth, size: 9.5, font: FONT.regular, color: on }));
     doc.restore();
 
     if (label) {
       const chip = String(label).toUpperCase();
       doc.font(FONT.semi).fontSize(8);
-      const w = doc.widthOfString(chip) + 18;
-      const x = PAGE.width - PAGE.margin - w;
+      const w = measureWidth(doc, chip, FONT.semi, 8) + 18;
+      const x = this.mx(PAGE.width - PAGE.margin - w, w);
       doc.roundedRect(x, 27, w, 18, 9).fillOpacity(0.2).fill(on).fillOpacity(1);
-      drawText(doc, chip, x, 32, { width: w, size: 8, font: FONT.semi, color: on, align: 'center' });
+      drawText(doc, chip, x, 32, { width: w, size: 8, font: FONT.semi, color: on, align: 'center', direction: this.rtl ? 'rtl' : undefined });
     }
     if (issued) {
       doc.save().fillOpacity(0.85);
-      drawText(doc, `Issued ${issued}`, PAGE.margin, 54, {
+      drawText(doc, this.labels.issued(issued), PAGE.margin, 54, this.text({
         width: PAGE.width - PAGE.margin * 2, size: 9, font: FONT.regular, color: on, align: 'right',
-      });
+      }));
       doc.restore();
     }
     doc.restore();
@@ -212,9 +238,9 @@ export class Page {
   drawRunningHeader() {
     const { doc, color } = this;
     doc.rect(0, 0, PAGE.width, 4).fill(color);
-    drawText(doc, [this.brand.agency_name, this.runningTitle].filter(Boolean).join('  ·  '), PAGE.margin, 16, {
+    drawText(doc, [this.brand.agency_name, this.runningTitle].filter(Boolean).join('  ·  '), PAGE.margin, 16, this.text({
       width: CONTENT_W, size: 8.5, font: FONT.semi, color: MUTED,
-    });
+    }));
     doc.moveTo(PAGE.margin, PAGE.running + 8).lineTo(PAGE.width - PAGE.margin, PAGE.running + 8).lineWidth(0.6).strokeColor(LINE).stroke();
     this.y = PAGE.running + 24;
   }
@@ -233,13 +259,15 @@ export class Page {
   /** Title block: the quote's name and one line under it. */
   hero(title, subtitle) {
     const { doc } = this;
-    const titleHeight = measureTextHeight(doc, title, { width: CONTENT_W, size: 24, font: FONT.bold, lineGap: 1 });
-    const subHeight = subtitle ? measureTextHeight(doc, subtitle, { width: CONTENT_W, size: 11, font: FONT.regular }) : 0;
+    const titleOpts = this.text({ width: CONTENT_W, size: 24, font: FONT.bold, lineGap: 1 });
+    const subOpts = this.text({ width: CONTENT_W, size: 11, font: FONT.regular });
+    const titleHeight = measureTextHeight(doc, title, titleOpts);
+    const subHeight = subtitle ? measureTextHeight(doc, subtitle, subOpts) : 0;
     this.ensure(titleHeight + subHeight + 14);
-    drawText(doc, title, PAGE.margin, this.y, { width: CONTENT_W, size: 24, font: FONT.bold, color: INK, lineGap: 1 });
+    drawText(doc, title, PAGE.margin, this.y, { ...titleOpts, color: INK });
     this.y += titleHeight + 4;
     if (subtitle) {
-      drawText(doc, subtitle, PAGE.margin, this.y, { width: CONTENT_W, size: 11, font: FONT.regular, color: MUTED });
+      drawText(doc, subtitle, PAGE.margin, this.y, { ...subOpts, color: MUTED });
       this.y += subHeight + 2;
     }
     this.y += 14;
@@ -253,15 +281,17 @@ export class Page {
     const padding = 14;
     const cellW = (CONTENT_W - padding * 2) / list.length;
     const valueW = cellW - 10;
-    const heights = list.map((item) => measureTextHeight(doc, item.value, { width: valueW, size: 11, font: FONT.semi, lineGap: 1 }));
+    const valueOpts = this.text({ width: valueW, size: 11, font: FONT.semi, lineGap: 1 });
+    const heights = list.map((item) => measureTextHeight(doc, item.value, valueOpts));
     const height = 12 + 12 + Math.max(...heights) + 12 + 4;
     this.ensure(height + 14);
     const top = this.y;
     doc.roundedRect(PAGE.margin, top, CONTENT_W, height, 10).lineWidth(0.8).fillAndStroke(tint(this.color, 0.93), tint(this.color, 0.8));
     list.forEach((item, index) => {
-      const x = PAGE.margin + padding + index * cellW;
-      drawText(doc, item.label.toUpperCase(), x, top + 12, { width: valueW, size: 7.5, font: FONT.semi, color: MUTED });
-      drawText(doc, item.value, x, top + 26, { width: valueW, size: 11, font: FONT.semi, color: INK, lineGap: 1 });
+      // First fact on the reading side: left in English, right in Arabic.
+      const x = this.mx(PAGE.margin + padding + index * cellW, valueW);
+      drawText(doc, item.label.toUpperCase(), x, top + 12, this.text({ width: valueW, size: 7.5, font: FONT.semi, color: MUTED }));
+      drawText(doc, item.value, x, top + 26, { ...valueOpts, color: INK });
     });
     this.y = top + height + 16;
   }
@@ -270,9 +300,10 @@ export class Page {
   paragraph(text, { size = 10.5, color = BODY, gapAfter = 12 } = {}) {
     const { doc } = this;
     if (!text) return;
-    const height = measureTextHeight(doc, text, { width: CONTENT_W, size, font: FONT.regular, lineGap: 3 });
+    const opts = this.text({ width: CONTENT_W, size, font: FONT.regular, lineGap: 3 });
+    const height = measureTextHeight(doc, text, opts);
     this.ensure(height + gapAfter);
-    drawText(doc, text, PAGE.margin, this.y, { width: CONTENT_W, size, font: FONT.regular, color, lineGap: 3 });
+    drawText(doc, text, PAGE.margin, this.y, { ...opts, color });
     this.y += height + gapAfter;
   }
 
@@ -296,8 +327,8 @@ export class Page {
   section(title) {
     this.ensure(46);
     const { doc } = this;
-    doc.roundedRect(PAGE.margin, this.y + 2, 4, 15, 2).fill(this.color);
-    drawText(doc, title, PAGE.margin + 12, this.y, { width: CONTENT_W - 12, size: 13, font: FONT.bold, color: INK });
+    doc.roundedRect(this.mx(PAGE.margin, 4), this.y + 2, 4, 15, 2).fill(this.color);
+    drawText(doc, title, this.mx(PAGE.margin + 12, CONTENT_W - 12), this.y, this.text({ width: CONTENT_W - 12, size: 13, font: FONT.bold, color: INK }));
     this.y += 28;
   }
 
@@ -320,8 +351,7 @@ export class Page {
   chip(text, x, y, { fill, color, size = 7.5 } = {}) {
     const { doc } = this;
     const label = String(text).toUpperCase();
-    doc.font(FONT.semi).fontSize(size);
-    const w = doc.widthOfString(label) + 12;
+    const w = measureWidth(doc, label, FONT.semi, size) + 12;
     doc.roundedRect(x, y, w, size + 8, (size + 8) / 2).fill(fill || tint(this.color, 0.88));
     drawText(doc, label, x, y + 4, { width: w, size, font: FONT.semi, color: color || this.color, align: 'center' });
     return w;
@@ -335,14 +365,16 @@ export class Page {
     this.ensure(height + 16);
     const top = this.y;
     const on = readableOn(this.color);
+    const x = PAGE.margin + 22;
+    const w = CONTENT_W - 44;
     doc.roundedRect(PAGE.margin, top, CONTENT_W, height, 14).fill(this.color);
     doc.save().fillOpacity(0.85);
-    drawText(doc, label.toUpperCase(), PAGE.margin + 22, top + 18, { width: CONTENT_W - 44, size: 8.5, font: FONT.semi, color: on });
+    drawText(doc, label.toUpperCase(), x, top + 18, this.text({ width: w, size: 8.5, font: FONT.semi, color: on }));
     doc.restore();
-    drawText(doc, amount, PAGE.margin + 22, top + 32, { width: CONTENT_W - 44, size: 30, font: FONT.bold, color: on });
+    drawText(doc, amount, x, top + 32, this.text({ width: w, size: 30, font: FONT.bold, color: on }));
     if (caption) {
       doc.save().fillOpacity(0.85);
-      drawText(doc, caption, PAGE.margin + 22, top + 72, { width: CONTENT_W - 44, size: 9.5, font: FONT.regular, color: on });
+      drawText(doc, caption, x, top + 72, this.text({ width: w, size: 9.5, font: FONT.regular, color: on }));
       doc.restore();
     }
     this.y = top + height + 18;
@@ -354,13 +386,14 @@ export class Page {
     const { doc } = this;
     const padding = 14;
     const innerW = CONTENT_W - padding * 2;
-    const body = measureTextHeight(doc, text, { width: innerW, size: 9.5, font: FONT.regular, lineGap: 3 });
+    const bodyOpts = this.text({ width: innerW, size: 9.5, font: FONT.regular, lineGap: 3 });
+    const body = measureTextHeight(doc, text, bodyOpts);
     const height = padding * 2 + 16 + body;
     this.ensure(height + 14);
     const top = this.y;
     doc.roundedRect(PAGE.margin, top, CONTENT_W, height, 10).lineWidth(0.8).fillAndStroke(fill, stroke);
-    drawText(doc, title, PAGE.margin + padding, top + padding, { width: innerW, size: 10.5, font: FONT.bold, color: INK });
-    drawText(doc, text, PAGE.margin + padding, top + padding + 18, { width: innerW, size: 9.5, font: FONT.regular, color: BODY, lineGap: 3 });
+    drawText(doc, title, PAGE.margin + padding, top + padding, this.text({ width: innerW, size: 10.5, font: FONT.bold, color: INK }));
+    drawText(doc, text, PAGE.margin + padding, top + padding + 18, { ...bodyOpts, color: BODY });
     this.y = top + height + 14;
   }
 
@@ -372,15 +405,16 @@ export class Page {
     const padding = 14;
     const innerW = CONTENT_W - padding * 2;
     const text = lines.join('   ·   ');
-    const body = measureTextHeight(doc, text, { width: innerW, size: 9.5, font: FONT.regular, lineGap: 3 });
+    const bodyOpts = this.text({ width: innerW, size: 9.5, font: FONT.regular, lineGap: 3 });
+    const body = measureTextHeight(doc, text, bodyOpts);
     const height = padding * 2 + 16 + body;
     this.ensure(height + 10);
     const top = this.y;
     doc.roundedRect(PAGE.margin, top, CONTENT_W, height, 10).lineWidth(0.8).fillAndStroke(SURFACE, LINE);
-    drawText(doc, `Questions? Contact ${brand.agency_name}`, PAGE.margin + padding, top + padding, {
+    drawText(doc, this.labels.contact(brand.agency_name), PAGE.margin + padding, top + padding, this.text({
       width: innerW, size: 10.5, font: FONT.bold, color: INK,
-    });
-    drawText(doc, text, PAGE.margin + padding, top + padding + 18, { width: innerW, size: 9.5, font: FONT.regular, color: BODY, lineGap: 3 });
+    }));
+    drawText(doc, text, PAGE.margin + padding, top + padding + 18, { ...bodyOpts, color: BODY });
     this.y = top + height + 10;
   }
 
@@ -388,16 +422,25 @@ export class Page {
   finish() {
     const { doc, brand } = this;
     const range = doc.bufferedPageRange();
-    const left = [`Prepared by ${brand.agency_name}`, brand.phone, brand.email].filter(Boolean).join('  ·  ');
+    const left = [this.labels.preparedBy(brand.agency_name), brand.phone, brand.email].filter(Boolean).join('  ·  ');
     for (let i = range.start; i < range.start + range.count; i += 1) {
       doc.switchToPage(i);
       const y = PAGE.height - 30;
       doc.moveTo(PAGE.margin, y - 10).lineTo(PAGE.width - PAGE.margin, y - 10).lineWidth(0.6).strokeColor(LINE).stroke();
-      drawText(doc, left, PAGE.margin, y, { width: CONTENT_W - 80, size: 8, font: FONT.regular, color: MUTED });
-      drawText(doc, `Page ${i - range.start + 1} of ${range.count}`, PAGE.width - PAGE.margin - 80, y, {
+      drawText(doc, left, this.mx(PAGE.margin, CONTENT_W - 80), y, this.text({ width: CONTENT_W - 80, size: 8, font: FONT.regular, color: MUTED }));
+      drawText(doc, this.labels.pageOf(i - range.start + 1, range.count), this.mx(PAGE.width - PAGE.margin - 80, 80), y, this.text({
         width: 80, size: 8, font: FONT.regular, color: MUTED, align: 'right',
-      });
+      }));
     }
     doc.end();
   }
+}
+
+/** Width of a label, in the Arabic font when it has Arabic letters. */
+function measureWidth(doc, text, font, size) {
+  const rtl = hasArabic(text);
+  doc.font(rtl ? arabicFont(font) : font).fontSize(size);
+  const w = doc.widthOfString(text, rtl ? { features: ['rtla'] } : undefined);
+  doc.font(font);
+  return w;
 }

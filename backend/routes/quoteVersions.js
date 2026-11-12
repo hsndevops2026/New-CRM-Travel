@@ -6,18 +6,47 @@ import {
   revokeTokensForVersion,
   resolveShareToken,
   acceptQuoteVersion,
+  listPendingApprovals,
+  requestQuoteApproval,
+  reviewQuoteVersion,
+  reviseQuotePrice,
 } from '../services/quoteVersions.js';
+import { requireRole } from '../middleware/requireRole.js';
+import { safeNotify } from '../services/notifications.js';
 import {
   sendQuoteVersion,
   retryDelivery,
   listDeliveries,
 } from '../services/quoteDelivery.js';
-import { pipeVersionPdf } from '../services/quotationPdf.js';
+import { pipeVersionPdf, quotePdfLanguage } from '../services/quotationPdf.js';
 import { logAuditEvent } from '../services/audit.js';
 import { getAgencySettings, publicAgencySettings } from '../services/agencySettings.js';
 
 const router = Router();
 const publicRouter = Router();
+
+// ── Manager approval ─────────────────────────────────────────────────────────
+
+router.get('/quote-approvals', requireRole('admin'), async (_req, res) => {
+  try {
+    res.json({ approvals: await listPendingApprovals() });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load approvals' });
+  }
+});
+
+router.post('/quote-versions/:id/review', requireRole('admin'), async (req, res) => {
+  try {
+    const version = await reviewQuoteVersion(req.params.id, {
+      decision: req.body?.decision,
+      note: req.body?.note,
+      reviewer: { id: req.admin.id, role: req.admin.role, email: req.admin.email },
+    });
+    res.json({ version });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Review failed' });
+  }
+});
 
 // ── Lock a version (requires auth) ───────────────────────────────────────────
 
@@ -26,8 +55,10 @@ router.post('/leads/:leadId/quote-versions', async (req, res) => {
     const { notes } = req.body || {};
     const { version, snapshot } = await lockQuoteVersion(req.params.leadId, {
       actorId: req.admin?.id,
+      actorRole: req.admin?.role,
       notes,
     });
+    void safeNotify(() => requestQuoteApproval(version, { requestedByEmail: req.admin?.email }));
     void logAuditEvent({
       entityType: 'quote_version',
       entityId: version.id,
@@ -36,6 +67,30 @@ router.post('/leads/:leadId/quote-versions', async (req, res) => {
       actorRole: req.admin?.role,
       after: { version_number: version.version_number, selling_price: version.selling_price },
     });
+    res.status(201).json({ version, snapshot });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message, code: error.code, details: error.details });
+  }
+});
+
+// A new version at a negotiated price: same items, different profit.
+router.post('/leads/:leadId/quote-versions/revise', async (req, res) => {
+  try {
+    const { version, snapshot } = await reviseQuotePrice(req.params.leadId, {
+      sellingPrice: req.body?.selling_price,
+      notes: req.body?.notes,
+      actorId: req.admin?.id,
+      actorRole: req.admin?.role,
+    });
+    void logAuditEvent({
+      entityType: 'quote_version',
+      entityId: version.id,
+      action: 'price_revised',
+      actorId: req.admin?.id,
+      actorRole: req.admin?.role,
+      after: { version_number: version.version_number, selling_price: version.selling_price },
+    });
+    void safeNotify(() => requestQuoteApproval(version, { requestedByEmail: req.admin?.email }));
     res.status(201).json({ version, snapshot });
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message, code: error.code, details: error.details });
@@ -70,7 +125,7 @@ router.get('/quote-versions/:id/pdf', async (req, res) => {
     const snapshot = typeof version.snapshot === 'string'
       ? JSON.parse(version.snapshot)
       : version.snapshot;
-    await pipeVersionPdf(snapshot, res, await getAgencySettings());
+    await pipeVersionPdf(snapshot, res, await getAgencySettings(), await quotePdfLanguage(snapshot, req.query.lang));
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }
@@ -158,7 +213,7 @@ publicRouter.get('/q/:token/pdf', async (req, res) => {
     const data = await resolveShareToken(req.params.token);
     if (!data) return res.status(404).json({ error: 'Quote link is invalid, expired, or revoked' });
     const snapshot = typeof data.snapshot === 'string' ? JSON.parse(data.snapshot) : data.snapshot;
-    await pipeVersionPdf(snapshot, res, await getAgencySettings());
+    await pipeVersionPdf(snapshot, res, await getAgencySettings(), await quotePdfLanguage(snapshot, req.query.lang));
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }

@@ -15,8 +15,13 @@ vi.mock('../lib/quoteVersions', async () => {
     retryDelivery: vi.fn(),
     revokeVersion: vi.fn(),
     openVersionPdf: vi.fn(),
+    reviewVersion: vi.fn(),
+    revisePrice: vi.fn(),
   }
 })
+
+const auth = vi.hoisted(() => ({ role: 'admin' }))
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ admin: { id: 'me', role: auth.role } }) }))
 
 const m = {
   fetchVersions: vi.mocked(versionsLib.fetchVersions),
@@ -203,5 +208,64 @@ describe('QuoteSendPanel — revoking', () => {
     renderPanel()
     const card = await screen.findByRole('article', { name: /Version 2/ })
     expect(within(card).queryByRole('button', { name: /More actions/ })).toBeNull()
+  })
+})
+
+describe('QuoteSendPanel — manager approval', () => {
+  beforeEach(() => {
+    auth.role = 'admin'
+  })
+
+  it('lets a manager approve a pending quote, then it can be sent', async () => {
+    m.fetchVersions.mockResolvedValue([version(1, { approval_status: 'pending' })])
+    vi.mocked(versionsLib.reviewVersion).mockResolvedValue(version(1, { approval_status: 'approved' }))
+    renderPanel()
+    expect(await screen.findByText('Waiting for manager approval')).toBeTruthy()
+    expect(screen.getByText(/waiting for a manager to approve it/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    await waitFor(() => expect(versionsLib.reviewVersion).toHaveBeenCalledWith(expect.any(String), 'approved', undefined))
+    expect(await screen.findByText('Approved by manager')).toBeTruthy()
+    expect(screen.queryByText(/waiting for a manager to approve it/)).toBeNull()
+  })
+
+  it('a manager must say what to change before sending it back', async () => {
+    m.fetchVersions.mockResolvedValue([version(1, { approval_status: 'pending' })])
+    vi.mocked(versionsLib.reviewVersion).mockResolvedValue(version(1, { approval_status: 'rejected', review_note: 'Raise the margin' }))
+    renderPanel()
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask for changes' }))
+    const send = screen.getByRole('button', { name: 'Send back' }) as HTMLButtonElement
+    expect(send.disabled).toBe(true)
+    fireEvent.change(screen.getByRole('textbox', { name: 'What needs changing?' }), { target: { value: 'Raise the margin' } })
+    fireEvent.click(send)
+    expect(await screen.findByText('Raise the margin')).toBeTruthy()
+    expect(screen.getByText(/asked for changes to v1/)).toBeTruthy()
+  })
+
+  it('an employee sees the quote is waiting, with no approve button', async () => {
+    auth.role = 'agent'
+    m.fetchVersions.mockResolvedValue([version(1, { approval_status: 'pending' })])
+    renderPanel()
+    expect(await screen.findByText('Waiting for manager approval')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Send v1/ })).toBeNull()
+  })
+})
+
+describe('QuoteSendPanel — new price after negotiation', () => {
+  it('shows the profit as you type, refuses below cost, and saves a new version', async () => {
+    const base = version(1)
+    const withCost = { ...base, snapshot: { ...base.snapshot, pricing: { net_total: 2000, extras_amount: 0, gross_margin_pct: 13 } as never } }
+    m.fetchVersions.mockResolvedValue([withCost])
+    vi.mocked(versionsLib.revisePrice).mockResolvedValue(version(2, { selling_price: 2150 as never }))
+    renderPanel()
+    fireEvent.click(await screen.findByRole('button', { name: 'New price' }))
+    const input = screen.getByRole('spinbutton', { name: 'Total price (USD)' })
+    fireEvent.change(input, { target: { value: '1900' } })
+    expect(screen.getByText(/Below cost by/)).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Save as v2' }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(input, { target: { value: '2150' } })
+    expect(screen.getByText(/Profit \$150\.00 \(7\.0%\)/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Save as v2' }))
+    await waitFor(() => expect(versionsLib.revisePrice).toHaveBeenCalledWith('l', 2150, undefined))
   })
 })

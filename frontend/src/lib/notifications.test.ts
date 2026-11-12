@@ -24,3 +24,12 @@ describe('notifications', () => {
     expect(notificationLink({ ...base, lead_id: null, contact_id: null })).toBeNull()
   })
 })
+
+describe('task notifications', () => {
+  it('names who gave the task and opens the tasks page', () => {
+    const n: StaffNotification = { ...base, kind: 'task_assigned', data: { by: 'boss@x.com', text: 'Send voucher' } }
+    expect(notificationText(n).title).toContain('boss@x.com')
+    expect(notificationText(n).detail).toBe('Send voucher')
+    expect(notificationLink(n)).toBe('/tasks')
+  })
+})

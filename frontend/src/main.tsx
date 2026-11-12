@@ -20,6 +20,7 @@ import DealersPage from './pages/DealersPage.tsx'
 import ContactsPage from './pages/ContactsPage.tsx'
 import ContactProfilePage from './pages/ContactProfilePage.tsx'
 import RemindersPage from './pages/RemindersPage.tsx'
+import TasksPage from './pages/TasksPage.tsx'
 import SettingsPage from './pages/SettingsPage.tsx'
 import PermissionsPage from './pages/PermissionsPage.tsx'
 import CustomerPortalPage from './pages/CustomerPortalPage.tsx'
@@ -50,6 +51,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/contacts/:id" element={<ContactProfilePage />} />
               <Route path="/reminders" element={<RemindersPage />} />
+              <Route path="/tasks" element={<TasksPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
               <Route path="/reports" element={<ReportsPage />} />

@@ -1,3 +1,4 @@
+import LeadTasksButton from '../components/tasks/LeadTasksButton'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -419,6 +420,7 @@ export default function LeadDetailPage() {
             >
               <MessageCircle className="size-5" aria-hidden="true" />
             </button>
+            <LeadTasksButton leadId={lead.id} contactId={lead.contact_id} />
             <OverflowMenu label={translate("More lead actions")} items={menuItems} />
           </div>
           <div className="flex items-center gap-2 px-2">

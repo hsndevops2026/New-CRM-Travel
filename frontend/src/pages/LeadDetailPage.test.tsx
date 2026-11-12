@@ -38,6 +38,7 @@ vi.mock('../components/LeadDealerRfqPanel', () => ({ default: () => <div>rfq-pan
 vi.mock('../components/LeadDealerResponsesPanel', () => ({ default: () => <div>responses-panel</div> }))
 vi.mock('../components/MarketReferencesPanel', () => ({ default: () => <div>market-panel</div> }))
 vi.mock('../components/PackageOfferBanner', () => ({ default: () => null }))
+vi.mock('../components/tasks/LeadTasksButton', () => ({ default: () => null }))
 
 const m = {
   fetchLeadById: vi.mocked(leadsLib.fetchLeadById),

@@ -3,6 +3,7 @@ import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
+  ListChecks,
   Bell,
   Mail,
   Briefcase,
@@ -46,6 +47,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/dealers', label: 'Dealers', icon: Store, match: (path) => path.startsWith('/dealers') },
   { to: '/contacts', label: 'Contacts', icon: User, match: (path) => path.startsWith('/contacts') },
   { to: '/reminders', label: 'Reminders', icon: Bell, match: (path) => path.startsWith('/reminders') },
+  { to: '/tasks', label: 'Tasks', icon: ListChecks, match: (path) => path.startsWith('/tasks') },
   { to: '/email', label: 'Email', icon: Mail, match: (path) => path.startsWith('/email') },
   { to: '/assistant', label: 'Assistant', icon: Sparkles, match: (path) => path.startsWith('/assistant') },
 ]

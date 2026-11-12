@@ -896,6 +896,28 @@ export async function runMigrations() {
   await pool.query(`ALTER TABLE booking_documents ADD COLUMN IF NOT EXISTS document_type VARCHAR(32)`);
   await pool.query(`ALTER TABLE booking_documents ADD COLUMN IF NOT EXISTS extracted JSONB`);
 
+  // Tasks a manager gives to a staff member, optionally tied to a lead or contact.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS staff_tasks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      title TEXT NOT NULL,
+      notes TEXT,
+      assigned_to UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      lead_id UUID REFERENCES leads(id) ON DELETE SET NULL,
+      contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+      due_at TIMESTAMPTZ,
+      status VARCHAR(16) NOT NULL DEFAULT 'open',
+      done_at TIMESTAMPTZ,
+      done_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      due_notified_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_staff_tasks_assignee ON staff_tasks (assigned_to, status, due_at);
+    CREATE INDEX IF NOT EXISTS idx_staff_tasks_due ON staff_tasks (due_at) WHERE status = 'open' AND due_notified_at IS NULL;
+  `);
+
   // WhatsApp polls the bot sent, with what each option stands for. A vote arrives as the
   // option's text, so it is mapped back to a package item / decision through this row.
   await pool.query(`

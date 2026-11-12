@@ -1,5 +1,6 @@
 import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FileUp, Plus } from 'lucide-react'
 import PredefinedQuotesPanel from '../components/PredefinedQuotesPanel'
 import Button from '../components/ui/Button'
@@ -10,7 +11,9 @@ export default function QuotesPage() {
   useI18n()
   const { query, setPlaceholder } = useSearch()
   const [editorOpen, setEditorOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
+  const [params] = useSearchParams()
+  // /quotes?review=1 (from an email turned into packages) opens the review straight away.
+  const [importOpen, setImportOpen] = useState(() => params.get('review') === '1')
 
   useEffect(() => {
     setPlaceholder('Search by title or destination')

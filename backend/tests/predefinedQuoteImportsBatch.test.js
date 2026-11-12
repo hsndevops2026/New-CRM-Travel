@@ -592,7 +592,8 @@ describe('importPredefinedQuoteBrochure', () => {
     const spy = fakeAi({ offers: three });
     await assert.rejects(
       () => importPredefinedQuoteBrochure({
-        buffer: Buffer.from('this is not a pdf or image'), fileName: 'notes.txt', ai: spy,
+        // Text files are readable now (supplier emails), so use a binary that isn't.
+        buffer: Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]), fileName: 'setup.exe', ai: spy,
       }),
       /Upload a PDF/,
     );

@@ -325,7 +325,14 @@ const BROCHURE_MIME_BY_EXT: Record<string, string> = {
   jpeg: 'image/jpeg',
   webp: 'image/webp',
   gif: 'image/gif',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  csv: 'text/csv',
+  txt: 'text/plain',
 }
+
+/** What the import accepts: brochures (PDF, images), rate sheets (Excel, CSV) and pasted emails (.txt). */
+export const BROCHURE_ACCEPT =
+  'application/pdf,.pdf,image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.csv,.txt'
 
 export function brochureContentType(file: File) {
   if (file.type && file.type !== 'application/octet-stream') return file.type
@@ -336,6 +343,7 @@ export function brochureContentType(file: File) {
 export function isBrochureFile(file: File) {
   const type = brochureContentType(file).toLowerCase()
   if (type === 'application/pdf' || type.startsWith('image/')) return true
+  if (Object.values(BROCHURE_MIME_BY_EXT).includes(type)) return true
   const ext = file.name.toLowerCase().split('.').pop() || ''
   return Boolean(BROCHURE_MIME_BY_EXT[ext])
 }
@@ -365,6 +373,29 @@ export async function uploadPredefinedQuoteBrochure(file: File, { reextract = fa
     /** Unreviewed packages from an earlier read that this re-read replaced. */
     replaced: data.replaced ?? 0,
   }
+}
+
+/**
+ * Reads a supplier email from the employee's Gmail into packages: one attachment, or the
+ * email text itself when `attachmentId` is left out. The packages wait for review.
+ */
+export async function importPackagesFromEmail(accountId: string, messageId: string, attachmentId?: string) {
+  const data = await apiJson<{ imports?: PredefinedQuoteImport[]; import?: PredefinedQuoteImport; duplicate?: boolean }>(
+    '/api/predefined-quotes/imports/email',
+    {
+      method: 'POST',
+      body: JSON.stringify({ account_id: accountId, message_id: messageId, attachment_id: attachmentId || undefined }),
+    },
+  )
+  const records = data.imports?.length ? data.imports : data.import ? [data.import] : []
+  return { importRecords: records, duplicate: Boolean(data.duplicate) }
+}
+
+/** The file types a supplier attachment can be read from. */
+export function isImportableAttachment(filename: string, mimeType = '') {
+  const ext = filename.toLowerCase().split('.').pop() || ''
+  const type = mimeType.toLowerCase()
+  return Boolean(BROCHURE_MIME_BY_EXT[ext]) || type === 'application/pdf' || type.startsWith('image/')
 }
 
 /** @deprecated Prefer uploadPredefinedQuoteBrochure */

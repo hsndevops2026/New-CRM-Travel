@@ -1799,5 +1799,16 @@
   "🎤 Voice note{value0}": "🎤 Voice note{value0}",
   "🎤 Voice note{value0} — failed": "🎤 Voice note{value0} — failed",
   "🎤 Voice note{value0} — queued…": "🎤 Voice note{value0} — queued…",
-  "🎤 Voice note{value0} — transcribing…": "🎤 Voice note{value0} — transcribing…"
+  "🎤 Voice note{value0} — transcribing…": "🎤 Voice note{value0} — transcribing…",
+  "Choose a brochure, rate sheet or email file": "Choose a brochure, rate sheet or email file",
+  "Choose a PDF, image, Excel (.xlsx), CSV or text file": "Choose a PDF, image, Excel (.xlsx), CSV or text file",
+  "Upload a brochure, a photo, an Excel or CSV rate sheet. Each hotel becomes a package for you to check and approve. A new price list for a package you already have updates that package.": "Upload a brochure, a photo, an Excel or CSV rate sheet. Each hotel becomes a package for you to check and approve. A new price list for a package you already have updates that package.",
+  "Brochure or rate sheet (PDF, image, Excel, CSV — up to 50 MB)": "Brochure or rate sheet (PDF, image, Excel, CSV — up to 50 MB)",
+  "Updates the package you already have:": "Updates the package you already have:",
+  "Price list from a supplier? Turn it into packages": "Price list from a supplier? Turn it into packages",
+  "Read the email text": "Read the email text",
+  "Reading… this takes up to a minute.": "Reading… this takes up to a minute.",
+  "{value0} package(s) waiting for your review.": "{value0} package(s) waiting for your review.",
+  "Nothing new to review — this was read before.": "Nothing new to review — this was read before.",
+  "Review them": "Review them"
 }

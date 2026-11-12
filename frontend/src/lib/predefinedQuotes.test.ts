@@ -8,6 +8,7 @@ import {
   hotelLocationLabel,
   importBatchLabel,
   isBrochureFile,
+  isImportableAttachment,
   itemsForQuoteType,
   quoteTypeLabel,
   uploadPredefinedQuoteBrochure,
@@ -75,6 +76,18 @@ describe('predefined quote helpers', () => {
     expect(isBrochureFile(new File(['x'], 'flyer.jpg', { type: '' }))).toBe(true)
     expect(isBrochureFile(new File(['x'], 'notes.docx', { type: '' }))).toBe(false)
     expect(brochureContentType(new File(['x'], 'scan.JPEG', { type: '' }))).toBe('image/jpeg')
+  })
+
+  it('accepts Excel, CSV and text rate sheets, and the same from email attachments', () => {
+    const xlsxType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    expect(isBrochureFile(new File(['x'], 'Hilton Jan.xlsx', { type: xlsxType }))).toBe(true)
+    expect(isBrochureFile(new File(['x'], 'rates.csv', { type: '' }))).toBe(true)
+    expect(brochureContentType(new File(['x'], 'rates.XLSX', { type: '' }))).toBe(xlsxType)
+    expect(isBrochureFile(new File(['x'], 'old.xls', { type: 'application/vnd.ms-excel' }))).toBe(false)
+    expect(isImportableAttachment('Hilton.pdf')).toBe(true)
+    expect(isImportableAttachment('scan', 'image/jpeg')).toBe(true)
+    expect(isImportableAttachment('prices.xlsx')).toBe(true)
+    expect(isImportableAttachment('contract.docx')).toBe(false)
   })
 
   it('uploads a brochure as authenticated PDF or image bytes', async () => {

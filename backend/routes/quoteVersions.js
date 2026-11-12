@@ -6,7 +6,12 @@ import {
   revokeTokensForVersion,
   resolveShareToken,
   acceptQuoteVersion,
+  listPendingApprovals,
+  requestQuoteApproval,
+  reviewQuoteVersion,
 } from '../services/quoteVersions.js';
+import { requireRole } from '../middleware/requireRole.js';
+import { safeNotify } from '../services/notifications.js';
 import {
   sendQuoteVersion,
   retryDelivery,
@@ -19,6 +24,29 @@ import { getAgencySettings, publicAgencySettings } from '../services/agencySetti
 const router = Router();
 const publicRouter = Router();
 
+// ── Manager approval ─────────────────────────────────────────────────────────
+
+router.get('/quote-approvals', requireRole('admin'), async (_req, res) => {
+  try {
+    res.json({ approvals: await listPendingApprovals() });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load approvals' });
+  }
+});
+
+router.post('/quote-versions/:id/review', requireRole('admin'), async (req, res) => {
+  try {
+    const version = await reviewQuoteVersion(req.params.id, {
+      decision: req.body?.decision,
+      note: req.body?.note,
+      reviewer: { id: req.admin.id, role: req.admin.role, email: req.admin.email },
+    });
+    res.json({ version });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Review failed' });
+  }
+});
+
 // ── Lock a version (requires auth) ───────────────────────────────────────────
 
 router.post('/leads/:leadId/quote-versions', async (req, res) => {
@@ -26,8 +54,10 @@ router.post('/leads/:leadId/quote-versions', async (req, res) => {
     const { notes } = req.body || {};
     const { version, snapshot } = await lockQuoteVersion(req.params.leadId, {
       actorId: req.admin?.id,
+      actorRole: req.admin?.role,
       notes,
     });
+    void safeNotify(() => requestQuoteApproval(version, { requestedByEmail: req.admin?.email }));
     void logAuditEvent({
       entityType: 'quote_version',
       entityId: version.id,

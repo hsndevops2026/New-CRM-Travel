@@ -13,7 +13,11 @@ export const DEFAULT_AGENCY_SETTINGS = Object.freeze({
   quotation_footer:
     process.env.AGENCY_QUOTATION_FOOTER ||
     'Prices are indicative and subject to availability.',
+  quote_approval_mode: 'agents',
+  quote_approval_min_margin: 10,
 });
+
+export const QUOTE_APPROVAL_MODES = ['off', 'agents', 'below_margin'];
 
 function httpError(status, message) {
   const error = new Error(message);
@@ -76,6 +80,16 @@ export function normalizeAgencySettings(input = {}, { partial = false } = {}) {
     if (!partial || has(field)) output[field] = optionalText(input[field], maxLength, field);
   }
   if (!partial || has('website')) output.website = validateUrl(input.website, 'website');
+  if (has('quote_approval_mode')) {
+    const mode = String(input.quote_approval_mode || '').trim();
+    if (!QUOTE_APPROVAL_MODES.includes(mode)) throw httpError(400, 'quote_approval_mode must be off, agents or below_margin');
+    output.quote_approval_mode = mode;
+  }
+  if (has('quote_approval_min_margin')) {
+    const margin = Number(input.quote_approval_min_margin);
+    if (!Number.isFinite(margin) || margin < 0 || margin > 100) throw httpError(400, 'quote_approval_min_margin must be between 0 and 100');
+    output.quote_approval_min_margin = Math.round(margin * 100) / 100;
+  }
 
   if (output.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(output.email)) {
     throw httpError(400, 'email must be valid');
@@ -117,5 +131,28 @@ export function publicAgencySettings(settings) {
     website: value.website,
     address: value.address,
     quotation_footer: value.quotation_footer,
+  };
+}
+
+/**
+ * Does a quote locked by this person need a manager's OK before it goes to the customer?
+ * Admins never need it. `marginPct` is the quote's gross margin in percent.
+ */
+export function quoteNeedsApproval(settings, { role, marginPct }) {
+  if (role === 'admin') return false;
+  const mode = settings?.quote_approval_mode || DEFAULT_AGENCY_SETTINGS.quote_approval_mode;
+  if (mode === 'off') return false;
+  if (mode === 'agents') return true;
+  const min = Number(settings?.quote_approval_min_margin ?? DEFAULT_AGENCY_SETTINGS.quote_approval_min_margin);
+  return !Number.isFinite(Number(marginPct)) || Number(marginPct) < min;
+}
+
+/** What staff see in Settings: the public fields plus internal rules like quote approval. */
+export function staffAgencySettings(settings) {
+  const value = settings || DEFAULT_AGENCY_SETTINGS;
+  return {
+    ...publicAgencySettings(value),
+    quote_approval_mode: value.quote_approval_mode || DEFAULT_AGENCY_SETTINGS.quote_approval_mode,
+    quote_approval_min_margin: Number(value.quote_approval_min_margin ?? DEFAULT_AGENCY_SETTINGS.quote_approval_min_margin),
   };
 }

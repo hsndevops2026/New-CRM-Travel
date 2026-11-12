@@ -18,6 +18,10 @@ export type QuoteVersion = {
   notes: string | null
   created_by: string | null
   created_at: string
+  /** not_required · pending (waiting for a manager) · approved · rejected (changes asked). */
+  approval_status?: 'not_required' | 'pending' | 'approved' | 'rejected'
+  reviewed_at?: string | null
+  review_note?: string | null
 }
 
 export type QuoteSnapshot = {
@@ -175,4 +179,19 @@ export async function acceptPublicQuote(
 
 export function publicPdfUrl(token: string): string {
   return `/api/q/${token}/pdf`
+}
+
+export async function reviewVersion(versionId: string, decision: 'approved' | 'rejected', note?: string): Promise<QuoteVersion> {
+  const res = await apiFetch(`/api/quote-versions/${versionId}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ decision, note }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Review failed')
+  return data.version as QuoteVersion
+}
+
+/** Can this version go to the customer yet? */
+export function awaitingApproval(version: Pick<QuoteVersion, 'approval_status'>): boolean {
+  return version.approval_status === 'pending' || version.approval_status === 'rejected'
 }

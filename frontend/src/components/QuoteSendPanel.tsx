@@ -11,10 +11,13 @@ import {
   openVersionPdf,
   type QuoteVersion,
   type QuoteDelivery,
+  awaitingApproval,
+  reviewVersion,
 } from '../lib/quoteVersions'
 import type { QuoteDraft } from '../lib/quoteDrafts'
 import { currentVersion, deliveryTimeline, eventTime, versionStatusLabel, versionSummary } from '../lib/versionView'
 import Button from './ui/Button'
+import { useAuth } from '../context/AuthContext'
 import { useConfirm } from '../hooks/useConfirm'
 import OverflowMenu from './ui/OverflowMenu'
 import SegmentedControl from './ui/SegmentedControl'
@@ -67,14 +70,34 @@ function VersionCard({
   selected,
   onSelect,
   onRevoked,
+  onReviewed,
 }: {
   version: QuoteVersion
   current: boolean
   selected: boolean
   onSelect: () => void
   onRevoked: (id: string) => void
+  onReviewed: (version: QuoteVersion) => void
 }) {
   useI18n()
+  const { admin } = useAuth()
+  const isAdmin = admin?.role === 'admin'
+  const [reviewing, setReviewing] = useState<'approved' | 'rejected' | null>(null)
+  const [askingChanges, setAskingChanges] = useState(false)
+  const [reviewNote, setReviewNote] = useState('')
+  const review = async (decision: 'approved' | 'rejected') => {
+    setReviewing(decision)
+    setError(null)
+    try {
+      onReviewed(await reviewVersion(version.id, decision, decision === 'rejected' ? reviewNote : undefined))
+      setAskingChanges(false)
+      setReviewNote('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Review failed')
+    } finally {
+      setReviewing(null)
+    }
+  }
   const { confirm, dialog } = useConfirm()
   const [openingPdf, setOpeningPdf] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -137,6 +160,9 @@ function VersionCard({
                 className={revoked ? 'line-through' : ''}
               />
               {current && <StatusBadge label={translate("Current")} tone="neutral" />}
+              {version.approval_status === 'pending' && <StatusBadge label={translate('Waiting for manager approval')} tone="warning" />}
+              {version.approval_status === 'approved' && <StatusBadge label={translate('Approved by manager')} tone="success" />}
+              {version.approval_status === 'rejected' && <StatusBadge label={translate('Changes requested')} tone="danger" />}
             </div>
             <span className="text-[13px] text-shop-muted tabular-nums">
               {translate("Created")}{' '}{created}
@@ -164,6 +190,42 @@ function VersionCard({
           {version.accepted_by ? translate(" by {value0}", { value0: translate(String(version.accepted_by)) }) : ''}
         </div>
       )}
+      {version.approval_status === 'rejected' && version.review_note && (
+        <p className="mx-4 mb-3 rounded-lg bg-danger-bg px-3 py-2 text-[13px] text-danger-fg">
+          <strong>{translate('Manager:')}</strong>{' '}<bdi>{version.review_note}</bdi>
+        </p>
+      )}
+      {version.approval_status === 'pending' && isAdmin && !revoked && (
+        <div className="mx-4 mb-3 flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
+          <p className="text-[13px]">{translate('An employee locked this quote. Check the price and margin, then approve it or ask for changes.')}</p>
+          {askingChanges ? (
+            <>
+              <textarea
+                rows={2}
+                dir="auto"
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+                placeholder={translate('What needs changing?')}
+                aria-label={translate('What needs changing?')}
+                className="rounded-lg border border-line-strong bg-white px-2.5 py-2 text-sm"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" variant="danger" loading={reviewing === 'rejected'} disabled={!reviewNote.trim()} onClick={() => void review('rejected')}>
+                  {translate('Send back')}
+                </Button>
+                <Button size="sm" onClick={() => setAskingChanges(false)}>{translate('Cancel')}</Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex gap-2">
+              <Button size="sm" variant="primary" icon={<Check />} loading={reviewing === 'approved'} onClick={() => void review('approved')}>
+                {translate('Approve')}
+              </Button>
+              <Button size="sm" onClick={() => setAskingChanges(true)}>{translate('Ask for changes')}</Button>
+            </div>
+          )}
+        </div>
+      )}
       {error && (
         <p role="alert" className="mx-4 mb-3 rounded-lg bg-danger-bg px-3 py-2 text-[13px] text-danger-fg">
           {translate(error)}
@@ -171,7 +233,7 @@ function VersionCard({
       )}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-shop-border bg-slate-50 px-4 py-3">
-        {!revoked && (
+        {!revoked && !awaitingApproval(version) && (
           <Button variant={selected ? 'secondary' : 'primary'} size="sm" aria-pressed={selected} onClick={onSelect}>
             {selected ? translate("Sending v{value0}", { value0: translate(String(version.version_number)) }) : translate("Send v{value0}", { value0: translate(String(version.version_number)) })}
           </Button>
@@ -517,6 +579,7 @@ export default function QuoteSendPanel({ leadId, leadPhone, leadEmail, draft }: 
               selected={picked?.id === v.id}
               onSelect={() => setPickedId(v.id)}
               onRevoked={handleRevoked}
+              onReviewed={(next) => setVersions((prev) => prev.map((x) => (x.id === next.id ? { ...x, ...next, snapshot: x.snapshot } : x)))}
             />
           ))
         )}
@@ -550,7 +613,15 @@ export default function QuoteSendPanel({ leadId, leadPhone, leadEmail, draft }: 
 
       {picked && (
         <aside className="flex flex-[1_1_380px] flex-col gap-3.5 lg:max-w-[460px]">
-          <SendPanel key={picked.id} version={picked} leadPhone={leadPhone} leadEmail={leadEmail} />
+          {awaitingApproval(picked) ? (
+            <p role="status" className="rounded-[10px] border border-amber-300 bg-amber-50 p-4 text-sm">
+              {picked.approval_status === 'pending'
+                ? translate('v{value0} is waiting for a manager to approve it. You can send it once it is approved.', { value0: picked.version_number })
+                : translate('A manager asked for changes to v{value0}. Fix the quote and lock a new version.', { value0: picked.version_number })}
+            </p>
+          ) : (
+            <SendPanel key={picked.id} version={picked} leadPhone={leadPhone} leadEmail={leadEmail} />
+          )}
         </aside>
       )}
     </div>

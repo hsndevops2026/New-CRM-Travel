@@ -40,22 +40,22 @@ describe('quote safety', () => {
   it('will not lock a quote with an item in another currency', async () => {
     const draft = await setDraftItems(leadId, [item(), item({ label: 'Flight', currency: 'EUR', net_cost: 200 })]);
     assert.deepEqual(draft.issues.other_currency.map((i) => i.currency), ['EUR']);
-    await assert.rejects(lockQuoteVersion(leadId), (err) => err.status === 400 && err.code === 'quote_items_invalid');
+    await assert.rejects(lockQuoteVersion(leadId, { actorRole: 'admin' }), (err) => err.status === 400 && err.code === 'quote_items_invalid');
   });
 
   it('will not lock a quote with an item that has no price', async () => {
     const draft = await setDraftItems(leadId, [item(), item({ label: 'Transfer', net_cost: null })]);
     assert.deepEqual(draft.issues.missing_cost.map((i) => i.label), ['Transfer']);
-    await assert.rejects(lockQuoteVersion(leadId), { code: 'quote_items_invalid' });
+    await assert.rejects(lockQuoteVersion(leadId, { actorRole: 'admin' }), { code: 'quote_items_invalid' });
   });
 
   it('only the latest version can be sent or accepted', async () => {
     await setDraftItems(leadId, [item()]);
-    const { version: v1 } = await lockQuoteVersion(leadId);
+    const { version: v1 } = await lockQuoteVersion(leadId, { actorRole: 'admin' });
     const t1 = await createShareToken(v1.id);
     assert.equal(await versionBlock(v1), null);
 
-    const { version: v2 } = await lockQuoteVersion(leadId);
+    const { version: v2 } = await lockQuoteVersion(leadId, { actorRole: 'admin' });
     assert.equal((await versionBlock(await getVersionById(v1.id))).code, 'superseded');
     assert.equal((await resolveShareToken(t1.token)).superseded, true);
     await assert.rejects(acceptQuoteVersion(t1.token, { customerName: 'Old' }), { status: 409 });
@@ -80,7 +80,7 @@ describe('quote safety', () => {
     await query(`UPDATE leads SET lifecycle_status = 'sent' WHERE id = $1`, [leadId]);
     await upsertDraft(leadId, { currency: 'USD', markup_type: 'percent', markup_value: 10, valid_until: '2020-01-01' });
     await setDraftItems(leadId, [item()]);
-    const { version } = await lockQuoteVersion(leadId);
+    const { version } = await lockQuoteVersion(leadId, { actorRole: 'admin' });
     const token = await createShareToken(version.id);
     assert.equal((await resolveShareToken(token.token)).expired, true);
     await assert.rejects(acceptQuoteVersion(token.token, { customerName: 'Late' }), { status: 410 });

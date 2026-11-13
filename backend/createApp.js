@@ -28,7 +28,7 @@ import { pingDb } from './config/database.js';
 import { redisConfig } from './config/redis.js';
 import opsRoutes from './routes/ops.js';
 import inboxRoutes from './routes/inbox.js';
-import assistantRoutes from './routes/assistant.js';
+import assistantRoutes, { assistantPublicRoutes } from './routes/assistant.js';
 import tripPlanRoutes from './routes/tripPlan.js';
 import reportRoutes from './routes/reports.js';
 import emailRoutes, { emailCallbackRouter } from './routes/email.js';
@@ -164,6 +164,7 @@ export function createApp() {
         redis: false,
         wasender_configured: Boolean(process.env.WASENDER_API_KEY),
         openai_configured: Boolean(process.env.OPENAI_API_KEY),
+        anthropic_env_key: Boolean(process.env.ANTHROPIC_API_KEY),
       },
     };
     try {
@@ -203,13 +204,15 @@ export function createApp() {
   app.use('/api', emailCallbackRouter);
   app.use('/api/q', quoteLimiter);
   app.use('/api', quoteVersionsPublicRoutes);
+  // Generated Assistant images/videos stored in the database (token-protected links).
+  app.use('/api', assistantPublicRoutes);
   // The public offers page and its "I want this" form.
   app.use('/api/public', quoteLimiter, publicGrowthRoutes, publicTravellerRoutes);
   // Customer portal — before staff agentLeadAccess (which rejects role=customer).
   app.use('/api/portal', requireAuth, requireRole('customer'), userLimiter, portalRoutes);
   app.use('/api', requireAuth, userLimiter, agentLeadAccess);
   app.use('/api/permissions', permissionsRoutes);
-  app.use('/api', requireAuth, assistantRoutes);
+  app.use('/api/assistant', requireAuth, assistantRoutes);
   app.use('/api', requireAuth, tripPlanRoutes);
   app.use('/api', requireAuth, reportRoutes);
   app.use('/api', requireAuth, emailRoutes);

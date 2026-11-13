@@ -48,6 +48,7 @@ createRoot(document.getElementById('root')!).render(
               }
             >
               <Route path="/assistant" element={<AssistantPage />} />
+              <Route path="/assistant/:conversationId" element={<AssistantPage />} />
               <Route path="/inbox" element={<InboxPage />} />
               <Route path="/inbox/:threadId" element={<InboxPage />} />
               <Route path="/leads" element={<Navigate to="/leads/hotel" replace />} />

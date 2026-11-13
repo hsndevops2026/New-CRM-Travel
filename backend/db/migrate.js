@@ -1117,6 +1117,113 @@ export async function runMigrations() {
     );
   `);
 
+  // ── Assistant (Claude chat, images and video) ──────────────────────────────────────────────────────────────
+  // Provider API keys, encrypted at rest. One agency-wide key per provider plus an
+  // optional personal key per user; the personal key wins when both exist.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ai_connections (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      provider VARCHAR(16) NOT NULL,
+      scope VARCHAR(8) NOT NULL,
+      admin_id UUID REFERENCES admins(id) ON DELETE CASCADE,
+      key_encrypted TEXT NOT NULL,
+      key_hint VARCHAR(16) NOT NULL,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_ai_connections_agency
+      ON ai_connections (provider) WHERE scope = 'agency';
+  `);
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_ai_connections_user
+      ON ai_connections (provider, admin_id) WHERE scope = 'user';
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS assistant_conversations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      title TEXT NOT NULL DEFAULT 'New chat',
+      model VARCHAR(64) NOT NULL,
+      settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+      container_id TEXT,
+      config_hash TEXT,
+      thinking_cutoff BIGINT NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_assistant_conversations_admin
+      ON assistant_conversations (admin_id, updated_at DESC);
+  `);
+
+  // Messages are stored exactly as they were sent to / received from the model and are
+  // only ever appended, so a conversation can be replayed without changing earlier turns.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS assistant_messages (
+      seq BIGSERIAL PRIMARY KEY,
+      conversation_id UUID NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+      role VARCHAR(16) NOT NULL,
+      content JSONB NOT NULL,
+      meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_assistant_messages_conversation
+      ON assistant_messages (conversation_id, seq);
+  `);
+
+  // Add-ons: custom skills and remote MCP connectors, personal or agency-wide.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS assistant_addons (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      scope VARCHAR(8) NOT NULL,
+      admin_id UUID REFERENCES admins(id) ON DELETE CASCADE,
+      kind VARCHAR(8) NOT NULL,
+      name TEXT NOT NULL,
+      config JSONB NOT NULL DEFAULT '{}'::jsonb,
+      secret_encrypted TEXT,
+      created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_assistant_addons_owner ON assistant_addons (scope, admin_id);
+  `);
+
+  // Generated images and videos. Files go to Cloudinary when it is configured; otherwise
+  // the bytes are kept in "data" and served through an unguessable link.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS assistant_media (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+      conversation_id UUID REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+      kind VARCHAR(8) NOT NULL,
+      provider VARCHAR(16) NOT NULL,
+      model TEXT,
+      prompt TEXT NOT NULL,
+      options JSONB NOT NULL DEFAULT '{}'::jsonb,
+      status VARCHAR(16) NOT NULL DEFAULT 'pending',
+      provider_job_id TEXT,
+      url TEXT,
+      mime TEXT,
+      data BYTEA,
+      access_token TEXT NOT NULL DEFAULT encode(gen_random_bytes(24), 'hex'),
+      error TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_assistant_media_conversation
+      ON assistant_media (conversation_id, created_at);
+  `);
+
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');
   await seedDemoPredefinedQuotes();
 

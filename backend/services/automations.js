@@ -144,10 +144,44 @@ const TEXTS = {
       'Someone from our team will contact you shortly.',
     ],
   },
+  he: {
+    hi: (name) => (name ? `שלום ${name},` : 'שלום,'),
+    followup: ({ destination, link }) => [
+      `רצינו לוודא שהצעת המחיר${destination ? ` ל${destination}` : ''} הגיעה אליך.`,
+      'אם יש שאלות או שתרצו לשנות משהו, פשוט השיבו כאן.',
+      link ? `ההצעה שלך: ${link}` : null,
+    ],
+    week: ({ destination, portal }) => [
+      `הטיול${destination ? ` ל${destination}` : ''} בעוד שבוע.`,
+      'התוכנית ומסמכי ההזמנה נמצאים בחשבון שלך:',
+      portal,
+      'בדקו שדרכוניכם בתוקף, וכתבו לנו אם צריך משהו.',
+    ],
+    two_days: ({ destination }) => [
+      `הטיול${destination ? ` ל${destination}` : ''} בעוד יומיים.`,
+      'אל תשכחו דרכונים וכרטיסים. מומלץ להגיע לשדה התעופה שלוש שעות לפני ההמראה.',
+    ],
+    departure: ({ emergency }) => [
+      'נסיעה נעימה! ✈️',
+      emergency ? `למקרי חירום במהלך הטיול: ${emergency}` : 'אם תצטרכו משהו במהלך הטיול, כתבו לנו כאן.',
+    ],
+    welcome_back: () => [
+      'ברוכים השבים! מקווים שנהניתם מהטיול.',
+      'איך תדרגו אותו מ־1 עד 5? השיבו במספר בלבד (5 = מצוין).',
+    ],
+    thanks_high: ({ review }) => [
+      'תודה רבה על הדירוג! 🙏',
+      review ? `נשמח אם תשתפו בגוגל: ${review}` : null,
+    ],
+    thanks_low: () => [
+      'תודה על הכנות, ומצטערים שהטיול לא היה כפי שציפיתם.',
+      'מישהו מהצוות שלנו ייצור איתכם קשר בקרוב.',
+    ],
+  },
 };
 
 export function customerMessage(key, lang, vars = {}) {
-  const t = TEXTS[lang === 'en' ? 'en' : 'ar'];
+  const t = TEXTS[lang] || TEXTS.ar;
   const body = t[key](vars).filter(Boolean);
   const greet = key.startsWith('thanks_') ? [] : [t.hi(vars.name), ''];
   return [...greet, ...body].join('\n');

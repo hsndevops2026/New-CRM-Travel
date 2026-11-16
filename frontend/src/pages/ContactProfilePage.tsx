@@ -309,7 +309,7 @@ export default function ContactProfilePage() {
               <select
                 value={contact.preferred_language || ''}
                 onChange={async (e) => {
-                  const value = e.target.value === 'ar' || e.target.value === 'en' ? e.target.value : null
+                  const value = e.target.value === 'ar' || e.target.value === 'en' || e.target.value === 'he' ? e.target.value : null
                   try {
                     const updated = await setContactLanguage(contact.id, value)
                     setProfile((prev) => (prev ? { ...prev, contact: { ...prev.contact, ...updated } } : prev))
@@ -321,6 +321,7 @@ export default function ContactProfilePage() {
               >
                 <option value="">{translate('Automatic (from WhatsApp)')}</option>
                 <option value="ar">العربية</option>
+                <option value="he">עברית</option>
                 <option value="en">English</option>
               </select>
             </label>

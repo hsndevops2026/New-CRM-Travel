@@ -109,7 +109,7 @@ export default function TripPlanPanel({ leadId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
-  const [lang, setLang] = useState<'ar' | 'en'>('ar')
+  const [lang, setLang] = useState<'ar' | 'en' | 'he'>('ar')
   const [message, setMessage] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
 
@@ -120,7 +120,7 @@ export default function TripPlanPanel({ leadId }: Props) {
         if (cancelled) return
         setItems(data.items)
         setCustomerName(data.lead.customer_name)
-        if (data.lead.language === 'en' || data.lead.language === 'ar') setLang(data.lead.language)
+        if (data.lead.language === 'en' || data.lead.language === 'ar' || data.lead.language === 'he') setLang(data.lead.language)
         setError(null)
       })
       .catch((err: unknown) => {
@@ -281,10 +281,14 @@ export default function TripPlanPanel({ leadId }: Props) {
                 {translate('Message language')}
                 <select
                   value={lang}
-                  onChange={(e) => setLang(e.target.value === 'en' ? 'en' : 'ar')}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setLang(next === 'en' || next === 'he' ? next : 'ar')
+                  }}
                   className="rounded-lg border border-shop-border bg-white px-2 py-1 text-sm text-shop-ink"
                 >
                   <option value="ar">العربية</option>
+                  <option value="he">עברית</option>
                   <option value="en">English</option>
                 </select>
               </label>

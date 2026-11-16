@@ -1060,6 +1060,8 @@ export async function runMigrations() {
     ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_applied_at DATE;
     ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_expected_at DATE;
     ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS visa_alerted_at TIMESTAMPTZ;
+    -- Room per passenger (splits a family booking across rooms). Falls back to leads.group_room when null.
+    ALTER TABLE lead_travellers ADD COLUMN IF NOT EXISTS room TEXT;
 
     CREATE TABLE IF NOT EXISTS visa_rules (
       destination_key TEXT PRIMARY KEY,

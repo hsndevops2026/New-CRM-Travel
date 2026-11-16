@@ -17,6 +17,9 @@ const HUMAN_REQUEST_PATTERNS = [
   /\b(human|agent|person|representative|real person|someone)\b/i,
   /موظف/, /مندوب/, /انسان|إنسان/, /بدي\s*احكي\s*مع\s*حد/, /بدي\s*أحكي\s*مع\s*حد/,
   /اريد\s*التحدث\s*مع/, /أريد\s*التحدث\s*مع/, /خدمة\s*العملاء/,
+  // Hebrew: talk to a person / agent / representative
+  /נציג/, /אדם/, /מישהו/, /שירות\s*לקוחות/,
+  /לדבר\s*עם/, /אני\s*רוצה\s*(נציג|אדם|מישהו)/,
 ];
 
 export function isHumanRequest(text) {
@@ -27,6 +30,10 @@ export function isHumanRequest(text) {
 
 export function hasArabic(text) {
   return /[؀-ۿ]/.test(String(text || ''));
+}
+
+export function hasHebrew(text) {
+  return /[\u0590-\u05FF]/.test(String(text || ''));
 }
 
 function autoResumeMs(env = process.env) {

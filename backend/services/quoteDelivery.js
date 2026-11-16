@@ -85,24 +85,48 @@ function publicPdfLink(token) {
 // ── WhatsApp delivery ─────────────────────────────────────────────────────────
 
 export function buildWhatsAppMessage(snapshot, token, agency, lang = 'ar') {
+  const he = lang === 'he';
   const ar = lang === 'ar';
   const pricing = snapshot.pricing || {};
   const lead = snapshot.lead || {};
   const lines = [];
 
-  lines.push(ar ? `*عرض سعر رحلتك من ${agency.agency_name}* ✈️` : `*${agency.agency_name} Travel Quote* ✈️`);
+  lines.push(
+    ar ? `*عرض سعر رحلتك من ${agency.agency_name}* ✈️`
+      : he ? `*הצעת מחיר מ־${agency.agency_name}* ✈️`
+        : `*${agency.agency_name} Travel Quote* ✈️`,
+  );
   lines.push('');
   if (lead.destination) lines.push(`📍 ${lead.destination}`);
   if (lead.travel_date) lines.push(`📅 ${lead.travel_date}${lead.return_date ? ' → ' + lead.return_date : ''}`);
   if (pricing.selling_price) {
-    lines.push(ar ? `💰 المجموع: *${money(pricing.selling_price, snapshot.currency)}*` : `💰 Total: *${money(pricing.selling_price, snapshot.currency)}*`);
+    lines.push(
+      ar ? `💰 المجموع: *${money(pricing.selling_price, snapshot.currency)}*`
+        : he ? `💰 סה״כ: *${money(pricing.selling_price, snapshot.currency)}*`
+          : `💰 Total: *${money(pricing.selling_price, snapshot.currency)}*`,
+    );
   }
-  if (snapshot.valid_until) lines.push(ar ? `⏳ ساري حتى: ${snapshot.valid_until}` : `⏳ Valid until: ${snapshot.valid_until}`);
+  if (snapshot.valid_until) {
+    lines.push(
+      ar ? `⏳ ساري حتى: ${snapshot.valid_until}`
+        : he ? `⏳ בתוקף עד: ${snapshot.valid_until}`
+          : `⏳ Valid until: ${snapshot.valid_until}`,
+    );
+  }
   lines.push('');
-  lines.push(ar ? '👉 لمشاهدة العرض والموافقة عليه:' : '👉 View & accept your quote:');
-  lines.push(`${shareLink(token)}${ar ? '?lang=ar' : ''}`);
+  lines.push(
+    ar ? '👉 لمشاهدة العرض والموافقة عليه:'
+      : he ? '👉 לצפייה בהצעה ולאישור:'
+        : '👉 View & accept your quote:',
+  );
+  const langQuery = ar ? '?lang=ar' : he ? '?lang=he' : '';
+  lines.push(`${shareLink(token)}${langQuery}`);
   lines.push('');
-  lines.push(ar ? '_للاستفسار، رد على هذه الرسالة._' : '_Reply to this message if you have any questions._');
+  lines.push(
+    ar ? '_للاستفسار، رد على هذه الرسالة._'
+      : he ? '_לשאלות, השיבו להודעה זו._'
+        : '_Reply to this message if you have any questions._',
+  );
 
   return lines.join('\n');
 }

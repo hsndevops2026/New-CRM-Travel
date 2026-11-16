@@ -6,13 +6,14 @@ import { LanguageProvider } from '../lib/i18n'
 
 /**
  * Language per signed-in user. Customer pages (portal, quote link) default to
- * Arabic; a ?lang=en link (sent to English-speaking customers) switches them.
+ * Arabic; ?lang=en or ?lang=he switches them for that customer.
  */
 export default function InterfaceProviders({ children }: { children: ReactNode }) {
   const { admin } = useAuth()
   const { pathname, search } = useLocation()
   const customerPage = pathname.startsWith('/portal') || pathname.startsWith('/quote/') || pathname.startsWith('/travellers/') || pathname === '/offers'
-  const customerLanguage = new URLSearchParams(search).get('lang') === 'en' ? 'en' : 'ar'
+  const requested = new URLSearchParams(search).get('lang')
+  const customerLanguage = requested === 'en' || requested === 'he' ? requested : 'ar'
   return (
     <LanguageProvider userId={admin?.id} forcedLanguage={customerPage ? customerLanguage : undefined}>
       <ToastProvider>{children}</ToastProvider>

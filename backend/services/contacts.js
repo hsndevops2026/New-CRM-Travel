@@ -132,9 +132,9 @@ export async function updateContact(id, { name, phone, email, preferred_language
   let language = existing.preferred_language ?? null;
   if (preferred_language !== undefined) {
     if (preferred_language === null || preferred_language === '') language = null;
-    else if (['ar', 'en'].includes(preferred_language)) language = preferred_language;
+    else if (['ar', 'en', 'he'].includes(preferred_language)) language = preferred_language;
     else {
-      const error = new Error('preferred_language must be ar or en');
+      const error = new Error('preferred_language must be ar, en or he');
       error.status = 400;
       throw error;
     }

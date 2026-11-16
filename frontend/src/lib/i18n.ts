@@ -1,9 +1,15 @@
 import { createContext, createElement, Fragment, useContext, useLayoutEffect, useSyncExternalStore, type ReactNode } from 'react'
 import ar from '../locales/ar.json'
 import en from '../locales/en.json'
+import he from '../locales/he.json'
 
-const dictionaries = { ar: new Map(Object.entries(ar)), en: new Map(Object.entries(en)) }
+const dictionaries = {
+  ar: new Map(Object.entries(ar)),
+  en: new Map(Object.entries(en)),
+  he: new Map(Object.entries(he)),
+}
 export type Language = keyof typeof dictionaries
+const RTL: ReadonlySet<Language> = new Set(['ar', 'he'])
 const foldedArabic = new Map(Object.entries(ar).map(([key, value]) => [key.toLowerCase(), value]))
 let language: Language = 'ar'
 const listeners = new Set<() => void>()
@@ -12,9 +18,13 @@ const subscribe = (listener: () => void) => {
   return () => { listeners.delete(listener) }
 }
 
+export function isRtlLanguage(lang: Language = language) {
+  return RTL.has(lang)
+}
+
 export function setLanguage(next: Language) {
   document.documentElement.lang = next
-  document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr'
+  document.documentElement.dir = isRtlLanguage(next) ? 'rtl' : 'ltr'
   if (language === next) return
   language = next
   listeners.forEach((listener) => listener())
@@ -29,7 +39,7 @@ export function t(key: string | null | undefined, values: Record<string, string 
   return text.replace(/\{(\w+)\}/g, (match, name: string) => {
     if (!Object.hasOwn(values, name)) return match
     const value = String(values[name])
-    return language === 'ar' ? `\u2068${value}\u2069` : value
+    return isRtlLanguage() ? `\u2068${value}\u2069` : value
   })
 }
 
@@ -39,7 +49,9 @@ export function currentLanguage(): Language {
 }
 
 export function locale() {
-  return language === 'ar' ? 'ar-u-nu-latn' : undefined
+  if (language === 'ar') return 'ar-u-nu-latn'
+  if (language === 'he') return 'he-IL-u-nu-latn'
+  return undefined
 }
 
 /** Put an emphasized number at the catalog's count placeholder. */
@@ -50,6 +62,11 @@ export function translateCount(key: string, count: number, values: Record<string
 
 type LanguageContextValue = { language: Language; setLanguage: (next: Language) => void; t: typeof t }
 const LanguageContext = createContext<LanguageContextValue | null>(null)
+
+function parseStoredLanguage(stored: string | null): Language {
+  if (stored === 'en' || stored === 'he' || stored === 'ar') return stored
+  return 'ar'
+}
 
 export function LanguageProvider({ userId, forcedLanguage, children }: {
   userId?: string
@@ -69,7 +86,7 @@ export function LanguageProvider({ userId, forcedLanguage, children }: {
     } catch {
       // Storage may be disabled.
     }
-    setLanguage(stored === 'en' ? 'en' : 'ar')
+    setLanguage(parseStoredLanguage(stored))
   }, [forcedLanguage, storageKey])
   function choose(next: Language) {
     try {

@@ -10,6 +10,7 @@ export default function LanguageSwitcher() {
       className="max-w-32 rounded-lg border border-shop-border bg-white px-2 py-1 text-sm text-shop-ink"
     >
       <option value="ar" lang="ar" dir="rtl">العربية</option>
+      <option value="he" lang="he" dir="rtl">עברית</option>
       <option value="en" lang="en" dir="ltr">English</option>
     </select>
   )

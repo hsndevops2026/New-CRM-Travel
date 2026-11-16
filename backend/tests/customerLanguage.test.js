@@ -33,10 +33,14 @@ describe('customer language', () => {
     assert.equal(await customerLanguage(phone), 'ar');
     await updateContact(contactId, { preferred_language: null });
     assert.equal(await customerLanguage(phone), 'en');
-    await assert.rejects(() => updateContact(contactId, { preferred_language: 'fr' }), /ar or en/);
+    await updateContact(contactId, { preferred_language: 'he' });
+    assert.equal(await customerLanguage(phone), 'he');
+    await updateContact(contactId, { preferred_language: null });
+    assert.equal(await customerLanguage(phone), 'en');
+    await assert.rejects(() => updateContact(contactId, { preferred_language: 'fr' }), /ar, en or he/);
   });
 
-  it('writes reminders in Arabic or English', () => {
+  it('writes reminders in Arabic, English or Hebrew', () => {
     const reminder = { contact_name: 'Lina', text: 'جواز السفر', remind_at: '2026-12-01T08:00:00Z' };
     const ar = buildReminderWhatsAppMessage(reminder, 'ar');
     assert.match(ar, /^مرحباً Lina،/);
@@ -47,6 +51,9 @@ describe('customer language', () => {
     assert.match(en, /^Hi Lina,/);
     assert.match(en, /When: .*December/);
     assert.match(formatCustomerDate('2026-12-01T08:00:00Z', 'en'), /10:00/, 'shown in the agency time zone');
+    const he = buildReminderWhatsAppMessage(reminder, 'he');
+    assert.match(he, /^שלום Lina,/);
+    assert.match(he, /תזכורת:/);
   });
 
   it('writes the quote message in Arabic with an Arabic link', () => {
@@ -62,5 +69,8 @@ describe('customer language', () => {
     const en = buildWhatsAppMessage({ lead: {}, pricing: {}, currency: 'USD' }, 'tok123', { agency_name: 'Horizon' }, 'en');
     assert.match(en, /View & accept your quote/);
     assert.doesNotMatch(en, /lang=ar/);
+    const he = buildWhatsAppMessage({ lead: {}, pricing: {}, currency: 'USD' }, 'tok123', { agency_name: 'Horizon' }, 'he');
+    assert.match(he, /הצעת מחיר מ־Horizon/);
+    assert.match(he, /\/quote\/tok123\?lang=he/);
   });
 });

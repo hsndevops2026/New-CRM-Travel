@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { isDealerReplyMessage } from '../utils/dealerReply.js';
 import { openaiConfig } from '../config/openai.js';
+import { detectMessageLanguage } from './customerLanguage.js';
 
 const client = openaiConfig.apiKey
   ? new OpenAI({ apiKey: openaiConfig.apiKey })
@@ -102,16 +103,17 @@ export function parseBookingType(text = '') {
   const value = String(text).trim().toLowerCase();
   if (!value) return null;
 
-  const mentionsHotel = /\b(hotel|hotels|فندق)\b/i.test(value) || /حجز\s*فندق/i.test(value);
+  const mentionsHotel =
+    /\b(hotel|hotels|فندق|מלון|מלונות)\b/i.test(value) || /حجز\s*فندق/i.test(value) || /הזמנת\s*מלון/i.test(value);
   const mentionsFlight =
-    /\b(flight|flights|airline|airfare|ticket|طيران|تذكرة)\b/i.test(value);
+    /\b(flight|flights|airline|airfare|ticket|طيران|تذكرة|טיסה|טיסות)\b/i.test(value);
 
   if (mentionsHotel && mentionsFlight) return null;
   if (mentionsHotel) return 'hotel';
   if (mentionsFlight) return 'flight';
 
-  if (/^(hotel|hotels|حجز فندق|فندق)$/i.test(value)) return 'hotel';
-  if (/^(flight|flights|air|airline|ticket|طيران|تذكرة)$/i.test(value)) return 'flight';
+  if (/^(hotel|hotels|حجز فندق|فندق|מלון|מלונות)$/i.test(value)) return 'hotel';
+  if (/^(flight|flights|air|airline|ticket|طيران|تذكرة|טיסה|טיסות)$/i.test(value)) return 'flight';
 
   return null;
 }
@@ -122,8 +124,8 @@ export function parseChildrenCountReply(text = '') {
   if (!value) return null;
 
   if (
-    /^(none|no|nope|nil|zero|0|لا|بدون|مافي|ما في)$/i.test(value) ||
-    /\b(no children|no kids|0 children|0 kids|without children|zero children|بدون أطفال|لا أطفال|لا يوجد أطفال)\b/i.test(
+    /^(none|no|nope|nil|zero|0|لا|بدون|مافي|ما في|אין|ללא)$/i.test(value) ||
+    /\b(no children|no kids|0 children|0 kids|without children|zero children|بدون أطفال|لا أطفال|لا يوجد أطفال|בלי ילדים|אין ילדים)\b/i.test(
       value,
     )
   ) {
@@ -248,60 +250,85 @@ export function applyFieldAwareFixes(text, existing, extracted) {
 function isGreetingLocal(text = '') {
   const value = text.trim().toLowerCase();
   if (!value) return false;
-  return /^(hi|hello|hey|hola|salam|assalam|as-?salam|good\s*(morning|afternoon|evening)|start|book|مرحبا|السلام|اهلا|أهلا|هلا|صباح|مساء)/i.test(
+  return /^(hi|hello|hey|hola|salam|assalam|as-?salam|good\s*(morning|afternoon|evening)|start|book|مرحبا|السلام|اهلا|أهلا|هلا|صباح|مساء|שלום|היי|בוקר\s*טוב|ערב\s*טוב)/i.test(
     value,
   );
 }
 
 function nextQuestion(missing, language = 'en', collected = {}) {
   const ar = language === 'ar';
+  const he = language === 'he';
   const type = collected.booking_type;
 
   const map = {
     booking_type: ar
       ? 'هل تريد حجز فندق أم حجز طيران؟\nأرسل: فندق أو طيران'
-      : 'Do you need a hotel booking or a flight booking?\nReply with: hotel or flight',
+      : he
+        ? 'האם תרצה הזמנת מלון או הזמנת טיסה?\nהשב: מלון או טיסה'
+        : 'Do you need a hotel booking or a flight booking?\nReply with: hotel or flight',
     origin: ar
       ? 'من أي مدينة ستسافر؟ (مدينة المغادرة)'
-      : 'Which city are you flying from? (departure city)',
+      : he
+        ? 'מאיזו עיר תטוס? (עיר יציאה)'
+        : 'Which city are you flying from? (departure city)',
     destination:
       type === 'flight'
         ? ar
           ? 'إلى أي مدينة تريد السفر؟ (مدينة الوصول)'
-          : 'Which city do you want to fly to? (arrival city)'
+          : he
+            ? 'לאיזו עיר תרצה לטוס? (עיר יעד)'
+            : 'Which city do you want to fly to? (arrival city)'
         : ar
           ? 'ما هي وجهة الفندق؟ (مدينة أو دولة)'
-          : 'What is the hotel destination (city or country)?',
+          : he
+            ? 'מה יעד המלון? (עיר או מדינה)'
+            : 'What is the hotel destination (city or country)?',
     travel_date:
       type === 'flight'
         ? ar
           ? 'ما هو تاريخ المغادرة؟ (مثال: 2026-09-10)'
-          : 'What is the departure date? (e.g. 2026-09-10)'
+          : he
+            ? 'מה תאריך היציאה? (לדוגמה: 2026-09-10)'
+            : 'What is the departure date? (e.g. 2026-09-10)'
         : ar
           ? 'ما هو تاريخ تسجيل الوصول؟ (مثال: 2026-09-10)'
-          : 'What is the check-in date? (e.g. 2026-09-10)',
+          : he
+            ? 'מה תאריך הצ׳ק-אין? (לדוגמה: 2026-09-10)'
+            : 'What is the check-in date? (e.g. 2026-09-10)',
     return_date:
       type === 'flight'
         ? ar
           ? 'ما هو تاريخ العودة؟ (مثال: 2026-09-17)'
-          : 'What is the return date? (e.g. 2026-09-17)'
+          : he
+            ? 'מה תאריך החזרה? (לדוגמה: 2026-09-17)'
+            : 'What is the return date? (e.g. 2026-09-17)'
         : ar
           ? 'ما هو تاريخ المغادرة من الفندق؟ (مثال: 2026-09-17)'
-          : 'What is the check-out date? (e.g. 2026-09-17)',
+          : he
+            ? 'מה תאריך הצ׳ק-אאוט? (לדוגמה: 2026-09-17)'
+            : 'What is the check-out date? (e.g. 2026-09-17)',
     adults_count: ar
       ? 'كم عدد البالغين؟'
-      : 'How many adults will be traveling?',
+      : he
+        ? 'כמה מבוגרים?'
+        : 'How many adults will be traveling?',
     children_count: ar
       ? 'كم عدد الأطفال؟ (اكتب 0 إن لم يوجد)'
-      : 'How many children? (send 0 if none)',
+      : he
+        ? 'כמה ילדים? (כתוב 0 אם אין)'
+        : 'How many children? (send 0 if none)',
     children_ages: ar
       ? 'ما أعمار الأطفال؟ (مثال: 5, 8)'
-      : 'Please send the age of each child (e.g. 5, 8).',
+      : he
+        ? 'מה גילאי הילדים? (לדוגמה: 5, 8)'
+        : 'Please send the age of each child (e.g. 5, 8).',
   };
 
   return map[missing[0]] || (ar
     ? 'من فضلك أكمل البيانات المطلوبة.'
-    : 'Please provide the remaining details.');
+    : he
+      ? 'אנא השלם את הפרטים החסרים.'
+      : 'Please provide the remaining details.');
 }
 
 function welcomeMessage(language = 'en') {
@@ -310,6 +337,13 @@ function welcomeMessage(language = 'en') {
       'مرحباً بك 👋\n' +
       'هل تريد حجز فندق أم حجز طيران؟\n' +
       'أرسل: فندق أو طيران'
+    );
+  }
+  if (language === 'he') {
+    return (
+      'ברוך הבא 👋\n' +
+      'האם תרצה הזמנת מלון או הזמנת טיסה?\n' +
+      'השב: מלון או טיסה'
     );
   }
 
@@ -343,6 +377,31 @@ function detailsPrompt(language, bookingType) {
       '4) عدد الأطفال وأعمارهم\n' +
       '5) اسم الفندق (اختياري)\n' +
       '6) أي ملاحظات (اختياري)'
+    );
+  }
+
+  if (language === 'he') {
+    if (bookingType === 'flight') {
+      return (
+        'מעולה — הזמנת טיסה ✈️\n' +
+        'שלח לנו:\n' +
+        '1) עיר יציאה\n' +
+        '2) עיר יעד\n' +
+        '3) תאריך יציאה ותאריך חזרה\n' +
+        '4) מספר מבוגרים\n' +
+        '5) מספר ילדים וגילאיהם\n' +
+        '6) הערות (אופציונלי)'
+      );
+    }
+    return (
+      'מעולה — הזמנת מלון 🏨\n' +
+      'שלח לנו:\n' +
+      '1) יעד\n' +
+      '2) תאריכי צ׳ק-אין וצ׳ק-אאוט\n' +
+      '3) מספר מבוגרים\n' +
+      '4) מספר ילדים וגילאיהם\n' +
+      '5) שם המלון (אופציונלי)\n' +
+      '6) הערות (אופציונלי)'
     );
   }
 
@@ -385,7 +444,9 @@ function buildReply({ complete, isGreeting, missingBefore, missing, language, me
   if (complete) {
     return language === 'ar'
       ? 'شكراً لك. سيتواصل معك مندوبنا قريباً.'
-      : 'Our agent will contact you soon.';
+      : language === 'he'
+        ? 'תודה. נציג שלנו יצור איתך קשר בקרוב.'
+        : 'Our agent will contact you soon.';
   }
 
   if (isGreeting && !merged.booking_type) {
@@ -430,10 +491,10 @@ export async function processUserMessage({ text, collected, languageHint }) {
 
   const system = `You are a travel lead intake assistant for WhatsApp.
 Today's date is ${todayIso()} (use this as "today").
-Extract and normalize booking details from the user's message (Arabic or English).
+Extract and normalize booking details from the user's message (Arabic, Hebrew, or English).
 Return STRICT JSON only with this shape:
 {
-  "language": "en" | "ar",
+  "language": "en" | "ar" | "he",
   "is_greeting": boolean,
   "extracted": {
     "booking_type": "hotel" | "flight" | "package" | null,
@@ -451,16 +512,17 @@ Return STRICT JSON only with this shape:
   "summary": string|null
 }
 Rules:
-- First priority is booking_type: hotel, flight, or package (flight + hotel together).
+- Set language to "he" for Hebrew script, "ar" for Arabic script, otherwise "en" (or follow language_hint).
+- First priority is booking_type: hotel, flight, or package (flight + hotel together). Hebrew: מלון = hotel, טיסה = flight.
 - For flights, origin = departure city, destination = arrival city.
 - For packages, origin = departure city, destination = trip city; user wants both flights and hotel.
 - For hotels, destination = hotel city/country; origin usually null; hotel_name optional.
 - Prefer ISO dates YYYY-MM-DD.
 - If the user omits the year (e.g. "15 Aug" or "15 aug to 16 aug"), use the current year (${todayIso().slice(0, 4)}). If that date is already in the past relative to today, use next year instead. Never invent old years like 2023.
 - Travel dates must be today or in the future.
-- If user says none/no/zero/0/no children for kids, set children_count to 0 and children_ages to [].
+- If user says none/no/zero/0/no children/אין ילדים for kids, set children_count to 0 and children_ages to [].
 - Do not invent values.
-- is_greeting true for hi/hello/مرحبا.
+- is_greeting true for hi/hello/مرحبا/שלום.
 - summary only when lead looks complete.`;
 
   const userPayload = {
@@ -486,7 +548,7 @@ Rules:
     const extracted = applyFieldAwareFixes(text, existing, parsed.extracted || {});
     const merged = mergeCollected(existing, extracted);
     const missing = getMissingFields(merged);
-    const language = parsed.language === 'ar' || languageHint === 'ar' ? 'ar' : 'en';
+    const language = detectLanguage(text, parsed.language || languageHint);
     const isGreeting = Boolean(parsed.is_greeting) || greeting;
     const complete = missing.length === 0;
     const justChoseType = !existing.booking_type && Boolean(merged.booking_type);
@@ -514,9 +576,9 @@ Rules:
   }
 }
 
-function detectLanguage(text = '', hint) {
-  if (hint === 'ar' || hint === 'en') return hint;
-  return /[\u0600-\u06FF]/.test(text) ? 'ar' : 'en';
+/** Prefer an explicit hint / model label, else detect from script (ar / he / en). */
+export function detectLanguage(text = '', hint) {
+  return detectMessageLanguage(text, hint);
 }
 
 const MONTHS = {
@@ -758,7 +820,7 @@ function localProcess({ text, existing, greeting, languageHint, missingBefore })
     }
   }
 
-  const adultsMatch = text.match(/(\d+)\s*(adults?|بالغ|بالغين)/i);
+  const adultsMatch = text.match(/(\d+)\s*(adults?|بالغ|بالغين|מבוגרים|מבוגר)/i);
   if (adultsMatch) extracted.adults_count = Number(adultsMatch[1]);
 
   const parsedChildren = parseChildrenCountReply(text);
@@ -767,7 +829,9 @@ function localProcess({ text, existing, greeting, languageHint, missingBefore })
     if (parsedChildren === 0) extracted.children_ages = [];
   }
 
-  const agesMatch = text.match(/ages?\s*:?\s*([0-9,\s]+)/i) || text.match(/أعمار\s*:?\s*([0-9،,\s]+)/i);
+  const agesMatch = text.match(/ages?\s*:?\s*([0-9,\s]+)/i)
+    || text.match(/أعمار\s*:?\s*([0-9،,\s]+)/i)
+    || text.match(/גילאים?\s*:?\s*([0-9,\s]+)/i);
   if (agesMatch) {
     extracted.children_ages = agesMatch[1]
       .split(/[،,]/)
@@ -798,8 +862,9 @@ function localProcess({ text, existing, greeting, languageHint, missingBefore })
     extracted[priorMissing[0]] = text.trim();
   }
 
+  const placeChar = 'A-Za-z\\u0600-\\u06FF\\u0590-\\u05FF';
   const fromTo = text.match(
-    /(?:from|مغادرة|من)\s+([A-Za-z\u0600-\u06FF][A-Za-z\u0600-\u06FF\s]{1,30}?)\s+(?:to|إلى|الى)\s+([A-Za-z\u0600-\u06FF][A-Za-z\u0600-\u06FF\s]{1,30})/i,
+    new RegExp(`(?:from|مغادرة|من|מ)\\s+([${placeChar}][${placeChar}\\s]{1,30}?)\\s+(?:to|إلى|الى|ל)\\s+([${placeChar}][${placeChar}\\s]{1,30})`, 'i'),
   );
   if (fromTo) {
     extracted.origin = fromTo[1].trim();
@@ -807,7 +872,7 @@ function localProcess({ text, existing, greeting, languageHint, missingBefore })
   }
 
   const destinationMatch = text.match(
-    /(?:destination|dest|to|مدينة|وجهة)\s*(?:is|=|:)?\s*([A-Za-z\u0600-\u06FF][A-Za-z\u0600-\u06FF\s]{1,40})/i,
+    new RegExp(`(?:destination|dest|to|مدينة|وجهة|יעד)\\s*(?:is|=|:)?\\s*([${placeChar}][${placeChar}\\s]{1,40})`, 'i'),
   );
   if (destinationMatch && !extracted.destination) {
     extracted.destination = destinationMatch[1].trim().replace(/\s+(and|from|on|with).*$/i, '');

@@ -45,7 +45,19 @@ export type GroupTrip = {
   notes: string | null
   status: 'open' | 'closed' | 'cancelled'
   bookings?: { id: string; phone: string; adults_count: number | null; children_count: number | null; lifecycle_status: string | null; group_room: string | null; customer: string | null }[]
-  travellers?: { id: string; lead_id: string; full_name: string; is_child: boolean; date_of_birth: string | null; nationality: string | null; passport_number: string | null; passport_expiry: string | null; visa_status: VisaStatus }[]
+  travellers?: {
+    id: string
+    lead_id: string
+    full_name: string
+    is_child: boolean
+    date_of_birth: string | null
+    nationality: string | null
+    passport_number: string | null
+    passport_expiry: string | null
+    visa_status: VisaStatus
+    room: string | null
+    booking_room?: string | null
+  }[]
 }
 
 export const fetchGroupTrips = async (all = false) => (await apiJson<{ groups: GroupTrip[] }>(`/api/group-trips${all ? '?all=1' : ''}`)).groups
@@ -56,8 +68,21 @@ export const updateGroupTrip = async (id: string, input: Partial<GroupTrip>) =>
   (await apiJson<{ group: GroupTrip }>(`/api/group-trips/${id}`, { method: 'PATCH', body: JSON.stringify(input) })).group
 export const setBookingRoom = (groupId: string, leadId: string, room: string) =>
   apiJson(`/api/group-trips/${groupId}/bookings/${leadId}`, { method: 'PATCH', body: JSON.stringify({ room }) })
+export const setTravellerRoom = (groupId: string, travellerId: string, room: string) =>
+  apiJson(`/api/group-trips/${groupId}/travellers/${travellerId}`, { method: 'PATCH', body: JSON.stringify({ room }) })
 export const setLeadGroup = (leadId: string, groupId: string | null) =>
   apiJson(`/api/leads/${leadId}/group`, { method: 'PUT', body: JSON.stringify({ group_trip_id: groupId }) })
+
+/** Traveller room, else booking room, else customer name. */
+export function effectiveTravellerRoom(
+  traveller: { room?: string | null; booking_room?: string | null; lead_id: string },
+  bookings?: GroupTrip['bookings'],
+) {
+  const own = (traveller.room || '').trim()
+  if (own) return own
+  const booking = bookings?.find((b) => b.id === traveller.lead_id)
+  return (traveller.booking_room || booking?.group_room || booking?.customer || booking?.phone || '').trim()
+}
 
 /** Downloads the rooming list (the request needs the sign-in header, so no plain link). */
 export async function downloadRoomingList(groupId: string, title: string) {

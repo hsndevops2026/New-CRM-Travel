@@ -40,12 +40,17 @@ function requireRemindAt(remindAt) {
 
 /** Customer-facing WhatsApp body, sent at remind_at for reminders with notify_customer. */
 export function buildReminderWhatsAppMessage(reminder, lang = 'ar') {
-  const ar = lang === 'ar';
   const whenLabel = formatCustomerDate(reminder.remind_at, lang);
   const name = String(reminder.contact_name || '').trim();
-  const greeting = ar ? (name ? `مرحباً ${name}،` : 'مرحباً،') : (name ? `Hi ${name},` : 'Hi,');
-  const lines = [greeting, '', ar ? 'تذكير:' : 'Reminder:', String(reminder.text || '').trim()];
-  if (whenLabel) lines.push('', ar ? `الموعد: ${whenLabel}` : `When: ${whenLabel}`);
+  const greeting = lang === 'he'
+    ? (name ? `שלום ${name},` : 'שלום,')
+    : lang === 'en'
+      ? (name ? `Hi ${name},` : 'Hi,')
+      : (name ? `مرحباً ${name}،` : 'مرحباً،');
+  const reminderLabel = lang === 'he' ? 'תזכורת:' : lang === 'en' ? 'Reminder:' : 'تذكير:';
+  const whenPrefix = lang === 'he' ? 'מתי:' : lang === 'en' ? 'When:' : 'الموعد:';
+  const lines = [greeting, '', reminderLabel, String(reminder.text || '').trim()];
+  if (whenLabel) lines.push('', `${whenPrefix} ${whenLabel}`);
   return lines.join('\n');
 }
 

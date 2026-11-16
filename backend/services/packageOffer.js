@@ -131,7 +131,7 @@ export function parsePackageDecision(text = '') {
   if (!value) return null;
 
   if (
-    /^(yes|y|yeah|yep|yup|ok|okay|sure|please|deal|book it|take it|i want it|نعم|ايوه|أيوه|موافق|أريد|تمام|حسنا|حسناً)$/i.test(
+    /^(yes|y|yeah|yep|yup|ok|okay|sure|please|deal|book it|take it|i want it|نعم|ايوه|أيوه|موافق|أريد|تمام|حسنا|حسناً|כן|בטח|רוצה)$/i.test(
       value,
     )
   ) {
@@ -139,16 +139,16 @@ export function parsePackageDecision(text = '') {
   }
 
   if (
-    /^(no|n|nope|nah|skip|search|usual|لا|لأ|كلا)$/i.test(value) ||
+    /^(no|n|nope|nah|skip|search|usual|لا|لأ|كلا|לא)$/i.test(value) ||
     /^(no thanks|not this|search hotels)$/i.test(value)
   ) {
     return 'no';
   }
 
-  if (/\b(take (it|this)|book (it|this)|i want (it|this package)|نعم)\b/i.test(value)) {
+  if (/\b(take (it|this)|book (it|this)|i want (it|this package)|نعم|אני רוצה)\b/i.test(value)) {
     return 'yes';
   }
-  if (/\b(no thanks|not this|search hotels?|لا شكرا)\b/i.test(value)) {
+  if (/\b(no thanks|not this|search hotels?|لا شكرا|לא תודה)\b/i.test(value)) {
     return 'no';
   }
 
@@ -166,17 +166,26 @@ function formatDisplayDate(value) {
 const MONTH_NAMES = {
   en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
   ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+  he: ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'],
 };
+
+function langCopy(language, { ar, he, en }) {
+  if (language === 'ar') return ar;
+  if (language === 'he') return he;
+  return en;
+}
 
 /** "Available: January, February, October" — what a period package says instead of dates. */
 export function formatMonthList(months, language = 'en') {
-  const names = MONTH_NAMES[language === 'ar' ? 'ar' : 'en'];
+  const names = MONTH_NAMES[language] || MONTH_NAMES.en;
   const list = [...new Set((months || []).map(Number))]
     .filter((m) => m >= 1 && m <= 12)
     .sort((a, b) => a - b)
     .map((m) => names[m - 1]);
   if (!list.length) return null;
-  return `${language === 'ar' ? 'متاحة في' : 'Available'}: ${list.join(language === 'ar' ? '، ' : ', ')}`;
+  const prefix = langCopy(language, { ar: 'متاحة في', he: 'זמין ב־', en: 'Available' });
+  const sep = language === 'ar' ? '، ' : ', ';
+  return `${prefix}: ${list.join(sep)}`;
 }
 
 function formatMoney(amount, currency = 'USD') {
@@ -350,7 +359,8 @@ export function parseHotelOptionChoice(text, group) {
 function shortDate(iso, language) {
   const date = new Date(`${iso}T12:00:00`);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString(language === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'short' });
+  const locale = language === 'ar' ? 'ar' : language === 'he' ? 'he-IL' : 'en-GB';
+  return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 }
 
 /**
@@ -362,11 +372,12 @@ function datesDiffer(group) {
 }
 
 function stayLabel(item, language, withDates) {
-  const ar = language === 'ar';
   const from = toDateKey(item.check_in);
   const to = toDateKey(item.check_out);
   const dates = from && to ? `${shortDate(from, language)} → ${shortDate(to, language)}` : null;
-  const nights = item.nights ? `${item.nights}${ar ? ' ليال' : ' nights'}` : null;
+  const nights = item.nights
+    ? `${item.nights}${langCopy(language, { ar: ' ليال', he: ' לילות', en: ' nights' })}`
+    : null;
   if (withDates && dates) return [dates, nights].filter(Boolean).join(' · ');
   return nights || dates;
 }
@@ -386,19 +397,26 @@ export function hotelOptionLabel(item, group, language = 'en') {
 }
 
 export function formatHotelOptionQuestion(group, language = 'en') {
-  const ar = language === 'ar';
   const lines =
     group.choice === 'hotel'
-      ? [ar ? 'لدينا عدة فنادق لهذه الليالي. أيها تفضل؟' : 'We have several hotels for these nights. Which one would you like?']
-      : ar
-        ? [`لدى ${group.hotel_name} عدة خيارات. أيها تفضل؟`]
-        : [`${group.hotel_name} has multiple options. Which one do you prefer?`];
+      ? [langCopy(language, {
+        ar: 'لدينا عدة فنادق لهذه الليالي. أيها تفضل؟',
+        he: 'יש לנו כמה מלונות ללילות האלה. איזה תרצו?',
+        en: 'We have several hotels for these nights. Which one would you like?',
+      })]
+      : [langCopy(language, {
+        ar: `لدى ${group.hotel_name} عدة خيارات. أيها تفضل؟`,
+        he: `ל־${group.hotel_name} יש כמה אפשרויות. איזו תרצו?`,
+        en: `${group.hotel_name} has multiple options. Which one do you prefer?`,
+      })];
   group.options.forEach((item, index) => {
-    const recommended = index === 0 ? (ar ? ' — الأنسب لك' : ' — recommended for you') : '';
+    const recommended = index === 0
+      ? langCopy(language, { ar: ' — الأنسب لك', he: ' — מומלץ עבורכם', en: ' — recommended for you' })
+      : '';
     lines.push(`${index + 1}. ${hotelOptionLabel(item, group, language)}${recommended}`);
   });
   lines.push('');
-  lines.push(ar ? 'أرسل رقم الخيار.' : 'Reply with the option number.');
+  lines.push(langCopy(language, { ar: 'أرسل رقم الخيار.', he: 'השיבו עם מספר האפשרות.', en: 'Reply with the option number.' }));
   return lines.join('\n');
 }
 
@@ -436,12 +454,15 @@ export function distinctPollOptions(options) {
 export function hotelOptionPoll(group, language = 'en') {
   const options = group?.options || [];
   if (options.length < 2 || options.length > POLL_MAX_OPTIONS) return null;
-  const ar = language === 'ar';
   return {
     question:
       group.choice === 'hotel'
-        ? ar ? 'اختر فندقاً واحداً:' : 'Which hotel would you like?'
-        : ar ? `${group.hotel_name} — اختر خياراً واحداً:` : `${group.hotel_name} — choose one option:`,
+        ? langCopy(language, { ar: 'اختر فندقاً واحداً:', he: 'בחרו מלון אחד:', en: 'Which hotel would you like?' })
+        : langCopy(language, {
+          ar: `${group.hotel_name} — اختر خياراً واحداً:`,
+          he: `${group.hotel_name} — בחרו אפשרות אחת:`,
+          en: `${group.hotel_name} — choose one option:`,
+        }),
     options: distinctPollOptions(
       options.map((item) => ({ label: hotelOptionLabel(item, group, language), value: item.id })),
     ),
@@ -450,13 +471,22 @@ export function hotelOptionPoll(group, language = 'en') {
 
 /** YES / NO on an offered package, as a poll. */
 export function packageDecisionPoll(language = 'en', kind = 'hotel') {
-  const ar = language === 'ar';
   const search = searchLabel(kind, language);
   return {
-    question: ar ? 'هل تريد هذه الباقة؟' : 'Would you like this package?',
+    question: langCopy(language, { ar: 'هل تريد هذه الباقة؟', he: 'האם תרצו את החבילה הזו?', en: 'Would you like this package?' }),
     options: [
-      { label: ar ? 'نعم، أريد هذه الباقة' : 'Yes, book this package', value: 'yes' },
-      { label: ar ? `لا، ابحث عن ${search} أخرى` : `No, search other ${search}`, value: 'no' },
+      {
+        label: langCopy(language, { ar: 'نعم، أريد هذه الباقة', he: 'כן, אני רוצה את החבילה', en: 'Yes, book this package' }),
+        value: 'yes',
+      },
+      {
+        label: langCopy(language, {
+          ar: `لا، ابحث عن ${search} أخرى`,
+          he: `לא, חפשו ${search} אחרים`,
+          en: `No, search other ${search}`,
+        }),
+        value: 'no',
+      },
     ],
   };
 }
@@ -523,11 +553,12 @@ function hotelLine(item) {
 const SEARCH_LABELS = {
   en: { hotel: 'hotels', flight: 'flights', package: 'flights and hotels' },
   ar: { hotel: 'فنادق', flight: 'رحلات', package: 'رحلات وفنادق' },
+  he: { hotel: 'מלונות', flight: 'טיסות', package: 'טיסות ומלונות' },
 };
 
 /** What "search as usual" means for this kind of request, in the customer's language. */
 export function searchLabel(kind = 'hotel', language = 'en') {
-  const labels = SEARCH_LABELS[language === 'ar' ? 'ar' : 'en'];
+  const labels = SEARCH_LABELS[language] || SEARCH_LABELS.en;
   return labels[kind] || labels.hotel;
 }
 
@@ -544,7 +575,6 @@ function formatFlightTime(value) {
 }
 
 function flightLine(item, language) {
-  const ar = language === 'ar';
   const airline = [item.airline, item.flight_number].filter(Boolean).join(' ');
   const from = item.departure_airport || item.departure_city;
   const to = item.arrival_airport || item.arrival_city;
@@ -558,15 +588,19 @@ function flightLine(item, language) {
     item.stops == null || item.stops === ''
       ? null
       : Number(item.stops) === 0
-        ? ar ? 'مباشرة' : 'nonstop'
-        : ar ? `${item.stops} توقف` : `${item.stops} stop${Number(item.stops) === 1 ? '' : 's'}`;
+        ? langCopy(language, { ar: 'مباشرة', he: 'ישיר', en: 'nonstop' })
+        : langCopy(language, {
+          ar: `${item.stops} توقف`,
+          he: `${item.stops} עצירות`,
+          en: `${item.stops} stop${Number(item.stops) === 1 ? '' : 's'}`,
+        });
   const extras = [item.duration, stops].filter(Boolean).join(', ');
 
   const label =
     item.direction === 'return'
-      ? ar ? 'العودة' : 'Return'
+      ? langCopy(language, { ar: 'العودة', he: 'חזרה', en: 'Return' })
       : item.direction === 'outbound'
-        ? ar ? 'الذهاب' : 'Outbound'
+        ? langCopy(language, { ar: 'الذهاب', he: 'הלוך', en: 'Outbound' })
         : null;
   const body = [airline, leg].filter(Boolean).join(' · ') || item.title;
   if (!body) return null;
@@ -583,7 +617,6 @@ function flightLine(item, language) {
  *   their own rather than in answer to a request.
  */
 export function formatPackageOfferMessage(quote, language = 'en', { kind = 'hotel', question = true } = {}) {
-  const ar = language === 'ar';
   const hotels = (quote.items || []).filter((item) => item.item_type === 'hotel');
   const flights = (quote.items || []).filter((item) => item.item_type === 'flight');
   const flightOnly = flights.length > 0 && hotels.length === 0;
@@ -597,12 +630,24 @@ export function formatPackageOfferMessage(quote, language = 'en', { kind = 'hote
   // "Nights" means accommodation. A flight-only package has none, even though its dates
   // are 10 days apart, so don't suggest a stay is included.
   const nights =
-    quote.nights && !flightOnly ? (ar ? `${quote.nights} ليال` : `${quote.nights} nights`) : null;
+    quote.nights && !flightOnly
+      ? langCopy(language, {
+        ar: `${quote.nights} ليال`,
+        he: `${quote.nights} לילות`,
+        en: `${quote.nights} nights`,
+      })
+      : null;
 
-  const where = quote.destination || (ar ? 'وجهتك' : 'your destination');
-  const lines = ar
-    ? [flightOnly ? `لدينا باقة طيران جاهزة إلى ${where}:` : `لدينا باقة جاهزة لـ ${where}:`, '', `*${quote.title}*`]
-    : [flightOnly ? `We have a ready flight package for ${where}:` : `We have a ready package for ${where}:`, '', `*${quote.title}*`];
+  const where = quote.destination || langCopy(language, { ar: 'وجهتك', he: 'היעד שלכם', en: 'your destination' });
+  const lines = [
+    langCopy(language, {
+      ar: flightOnly ? `لدينا باقة طيران جاهزة إلى ${where}:` : `لدينا باقة جاهزة لـ ${where}:`,
+      he: flightOnly ? `יש לנו חבילת טיסה מוכנה ל${where}:` : `יש לנו חבילה מוכנה ל${where}:`,
+      en: flightOnly ? `We have a ready flight package for ${where}:` : `We have a ready package for ${where}:`,
+    }),
+    '',
+    `*${quote.title}*`,
+  ];
 
   const meta = [nights, dates, total].filter(Boolean);
   if (meta.length) lines.push(meta.join(' · '));
@@ -614,13 +659,13 @@ export function formatPackageOfferMessage(quote, language = 'en', { kind = 'hote
   const flightLines = flights.map((flight) => flightLine(flight, language)).filter(Boolean);
   if (flightLines.length) {
     lines.push('');
-    lines.push(ar ? 'الرحلات:' : 'Flights:');
+    lines.push(langCopy(language, { ar: 'الرحلات:', he: 'טיסות:', en: 'Flights:' }));
     lines.push(...flightLines);
   }
 
   if (hotels.length) {
     lines.push('');
-    lines.push(ar ? 'الفنادق:' : 'Hotels:');
+    lines.push(langCopy(language, { ar: 'الفنادق:', he: 'מלונות:', en: 'Hotels:' }));
     for (const hotel of hotels) {
       const line = hotelLine(hotel);
       if (line) lines.push(line);
@@ -631,9 +676,11 @@ export function formatPackageOfferMessage(quote, language = 'en', { kind = 'hote
     const search = searchLabel(kind, language);
     lines.push('');
     lines.push(
-      ar
-        ? `هل تريد هذه الباقة؟ أرسل نعم لأخذها، أو لا للبحث عن ${search} كالمعتاد.`
-        : `Would you like this package? Reply YES to take it, or NO to search ${search} as usual.`,
+      langCopy(language, {
+        ar: `هل تريد هذه الباقة؟ أرسل نعم لأخذها، أو لا للبحث عن ${search} كالمعتاد.`,
+        he: `האם תרצו את החבילה הזו? השיבו כן כדי לקחת אותה, או לא כדי לחפש ${search} כרגיל.`,
+        en: `Would you like this package? Reply YES to take it, or NO to search ${search} as usual.`,
+      }),
     );
   }
 

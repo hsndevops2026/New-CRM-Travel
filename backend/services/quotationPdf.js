@@ -42,7 +42,7 @@ export function itemLines(item, lang = 'en') {
   if (meta.hotel_name && !said(meta.hotel_name)) lines.push({ text: meta.hotel_name });
   const stay = [meta.room_type, meta.board_name].filter(Boolean).join('  ·  ');
   if (stay) lines.push({ text: stay });
-  const when = [lang === 'ar' ? dateRangeLabel(meta.check_in, meta.check_out, lang) : dateRange(meta.check_in, meta.check_out), nightsText(meta.nights, lang)].filter(Boolean).join('  ·  ');
+  const when = [lang === 'ar' || lang === 'he' ? dateRangeLabel(meta.check_in, meta.check_out, lang) : dateRange(meta.check_in, meta.check_out), nightsText(meta.nights, lang)].filter(Boolean).join('  ·  ');
   if (when) lines.push({ text: when });
   if (meta.airline && !said(meta.airline)) lines.push({ text: meta.airline });
   if (meta.includes) lines.push({ text: L(lang, 'includes', { text: meta.includes }) });
@@ -114,9 +114,9 @@ export function snapshotFacts(snapshot, lang = 'en') {
   ];
 }
 
-/** The PDF's language: asked for, else the customer's message language. Hebrew comes later, so it falls back to English. */
+/** The PDF's language: asked for, else the customer's message language. */
 export async function quotePdfLanguage(rawSnapshot, requested) {
-  if (requested === 'ar' || requested === 'en') return requested;
+  if (requested === 'ar' || requested === 'en' || requested === 'he') return requested;
   const phone = rawSnapshot?.lead?.phone;
   try {
     return pdfLang(await customerLanguage(phone));
@@ -132,7 +132,7 @@ async function renderQuotationPdf(rawSnapshot, doc, agency, lang = 'en') {
   const items = Array.isArray(snapshot.items) ? snapshot.items : [];
   const customer = lead.customer_name || lead.contact_name;
   const title = snapshot.title || L(lang, 'travel_quote');
-  const date = (value) => (lang === 'ar' ? dateLabel(value, lang) : formatDate(value));
+  const date = (value) => (lang === 'ar' || lang === 'he' ? dateLabel(value, lang) : formatDate(value));
 
   const page = await Page.start(doc, agency, {
     lang,

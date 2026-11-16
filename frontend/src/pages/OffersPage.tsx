@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, MapPin, Moon } from 'lucide-react'
-import { currentLanguage, t as translate, useI18n } from '../lib/i18n'
+import { currentLanguage, locale as i18nLocale, t as translate, useI18n } from '../lib/i18n'
 import { fetchPublicOffers, requestPublicOffer, type PublicOffer } from '../lib/growth'
 import type { AgencySettings } from '../lib/agencySettings'
 
 function price(amount: number | null, currency: string) {
   if (amount == null) return null
   try {
-    return new Intl.NumberFormat(currentLanguage() === 'ar' ? 'ar-u-nu-latn' : 'en-GB', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+    return new Intl.NumberFormat(i18nLocale() || 'en-GB', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
   } catch {
     return `${currency} ${Math.round(amount)}`
   }
 }
 
 function monthNames(months: number[]) {
-  const locale = currentLanguage() === 'ar' ? 'ar' : 'en-GB'
-  return months.map((m) => new Date(2026, m - 1, 15).toLocaleDateString(locale, { month: 'long' })).join('، ')
+  const lang = currentLanguage()
+  const locale = lang === 'ar' ? 'ar' : lang === 'he' ? 'he-IL' : 'en-GB'
+  const sep = lang === 'ar' ? '، ' : ', '
+  return months.map((m) => new Date(2026, m - 1, 15).toLocaleDateString(locale, { month: 'long' })).join(sep)
 }
 
 function RequestForm({ offer, brand, onDone }: { offer: PublicOffer; brand: string; onDone: () => void }) {

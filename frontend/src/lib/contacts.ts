@@ -10,7 +10,7 @@ export type Contact = {
   name: string
   email?: string | null
   /** Staff override for the customer's message language; null = follow WhatsApp. */
-  preferred_language?: 'ar' | 'en' | null
+  preferred_language?: 'ar' | 'en' | 'he' | null
   created_at: string
   updated_at?: string
 }
@@ -80,7 +80,7 @@ export async function fetchContactProfile(id: string): Promise<ContactProfile> {
   }
 }
 
-export async function setContactLanguage(id: string, language: 'ar' | 'en' | null): Promise<Contact> {
+export async function setContactLanguage(id: string, language: 'ar' | 'en' | 'he' | null): Promise<Contact> {
   const response = await apiFetch(`/api/contacts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ preferred_language: language }),

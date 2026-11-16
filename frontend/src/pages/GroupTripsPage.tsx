@@ -11,10 +11,12 @@ import {
   VISA_STATUS_LABEL,
   createGroupTrip,
   downloadRoomingList,
+  effectiveTravellerRoom,
   fetchGroupTrip,
   fetchGroupTrips,
   seatsPercent,
   setBookingRoom,
+  setTravellerRoom,
   updateGroupTrip,
   type GroupTrip,
 } from '../lib/groupsVisas'
@@ -76,7 +78,6 @@ function GroupDetail({ id }: { id: string }) {
   if (error) return <p role="alert" className="p-6 text-sm text-danger-fg">{translate(error)}</p>
   if (!group) return <p className="p-6 text-sm text-shop-muted">{translate('Loading…')}</p>
 
-  const room = (leadId: string) => group.bookings?.find((b) => b.id === leadId)
   return (
     <div className="mx-auto w-full max-w-[1000px] p-4 pb-24 sm:p-6">
       <Link to="/groups" className="text-sm font-semibold text-shop-accent hover:underline">{translate('All group trips')}</Link>
@@ -126,7 +127,19 @@ function GroupDetail({ id }: { id: string }) {
           <tbody className="divide-y divide-neutral-bg">
             {(group.travellers || []).map((t) => (
               <tr key={t.id}>
-                <td className="px-3 py-1.5">{room(t.lead_id)?.group_room || room(t.lead_id)?.customer || ''}</td>
+                <td className="px-3 py-1.5">
+                  <input
+                    aria-label={translate('Room for {value0}', { value0: t.full_name })}
+                    placeholder={effectiveTravellerRoom(t, group.bookings) || translate('Room')}
+                    defaultValue={t.room || ''}
+                    className="h-9 w-28 rounded-lg border border-line-strong px-2 text-sm"
+                    onBlur={(e) => {
+                      if (e.target.value !== (t.room || '')) {
+                        void setTravellerRoom(group.id, t.id, e.target.value).then(load)
+                      }
+                    }}
+                  />
+                </td>
                 <td className="px-3 py-1.5 font-semibold" dir="ltr">{t.full_name}{t.is_child ? ` (${translate('Child')})` : ''}</td>
                 <td className="px-3 py-1.5 tabular-nums">{t.date_of_birth || ''}</td>
                 <td className="px-3 py-1.5 tabular-nums" dir="ltr">{t.passport_number || ''}</td>

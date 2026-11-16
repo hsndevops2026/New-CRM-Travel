@@ -47,10 +47,10 @@ export default function SegmentedControl({ items, value, onChange, ariaLabel }: 
             onKeyDown={(event) => {
               if (event.key === 'ArrowRight') {
                 event.preventDefault()
-                move(index, language === 'ar' ? -1 : 1)
+                move(index, language === 'ar' || language === 'he' ? -1 : 1)
               } else if (event.key === 'ArrowLeft') {
                 event.preventDefault()
-                move(index, language === 'ar' ? 1 : -1)
+                move(index, language === 'ar' || language === 'he' ? 1 : -1)
               }
             }}
             className={`inline-flex h-[30px] items-center gap-1.5 rounded-[7px] px-3 text-[13px] font-semibold max-sm:h-10 ${

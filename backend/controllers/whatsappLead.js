@@ -1,7 +1,8 @@
 import { flagTravellerMessage } from '../services/travellers.js';
 import { handleRatingReply } from '../services/automations.js';
 import { notifyCustomerMessage, notifyNewLead, safeNotify } from '../services/notifications.js';
-import { getAiHandover, hasArabic, isHumanRequest, pauseAi } from '../services/aiHandover.js';
+import { getAiHandover, isHumanRequest, pauseAi } from '../services/aiHandover.js';
+import { detectMessageLanguage } from '../services/customerLanguage.js';
 import { getCustomerText } from '../services/customerTexts.js';
 import {
   getActiveConversationOrExpire,
@@ -310,7 +311,9 @@ async function handlePackageDecision({ conversation, phone, text, choice, skipWh
     const reply =
       language === 'ar'
         ? `من فضلك أجب بنعم لأخذ هذه الباقة، أو لا للبحث عن ${search} كالمعتاد.`
-        : `Please reply YES to take this package, or NO to search ${search} as usual.`;
+        : language === 'he'
+          ? `אנא השיבו כן כדי לקחת את החבילה הזו, או לא כדי לחפש ${search} כרגיל.`
+          : `Please reply YES to take this package, or NO to search ${search} as usual.`;
     await askWithPoll(
       phone,
       { text: reply, poll: packageDecisionPoll(language, kind), kind: 'package_decision', context: { package_id: pending.packageId } },
@@ -345,7 +348,9 @@ async function handlePackageDecision({ conversation, phone, text, choice, skipWh
     const reply =
       language === 'ar'
         ? 'رائع، تم ربط طلبك بهذه الباقة. سيتواصل معك مندوبنا قريباً.'
-        : 'Great — this package is now attached to your request. Our agent will contact you soon.';
+        : language === 'he'
+          ? 'מעולה — החבילה קושרה לבקשה שלך. נציג שלנו יצור איתך קשר בקרוב.'
+          : 'Great — this package is now attached to your request. Our agent will contact you soon.';
     await replyToUser(phone, reply, skipWhatsApp, {
       leadId: pending.leadId,
       conversationId: conversation.id,
@@ -379,7 +384,9 @@ async function handlePackageDecision({ conversation, phone, text, choice, skipWh
   const reply =
     language === 'ar'
       ? `حسناً، سنبحث عن ${searching} حسب تواريخك. سيتواصل معك مندوبنا قريباً.`
-      : `Okay — we will search ${searching} for your dates. Our agent will contact you soon.`;
+      : language === 'he'
+        ? `בסדר — נחפש ${searching} לפי התאריכים שלך. נציג שלנו יצור איתך קשר בקרוב.`
+        : `Okay — we will search ${searching} for your dates. Our agent will contact you soon.`;
   await replyToUser(phone, reply, skipWhatsApp, {
     leadId: pending.leadId,
     conversationId: conversation.id,
@@ -511,7 +518,7 @@ export async function handleIncomingLeadMessage({
   if (isHumanRequest(messageText)) {
     await pauseAi(phone, { reason: 'customer_request' });
     await safeNotify(() => notifyCustomerMessage(phone, { text: messageText, humanRequested: true }));
-    const reply = getCustomerText('humanHandover', hasArabic(messageText) ? 'ar' : 'en');
+    const reply = getCustomerText('humanHandover', detectMessageLanguage(messageText));
     await replyToUser(phone, reply, skipWhatsApp, { conversationId: conversation.id, leadId: existingLead?.id || null });
     return { phone, complete: false, missing: [], collected: conversation.collected || {}, reply, ai_paused: true, human_requested: true };
   }
@@ -548,7 +555,9 @@ export async function handleIncomingLeadMessage({
       ? ''
       : conversation.language === 'ar'
         ? 'عذراً، هذا الخيار لم يعد متاحاً. أرسل طلبك من جديد وسنساعدك.'
-        : 'Sorry, that choice is no longer open. Please send your request again and we will help you.';
+        : conversation.language === 'he'
+          ? 'מצטערים, האפשרות הזו כבר לא זמינה. שלחו שוב את הבקשה ונעזור.'
+          : 'Sorry, that choice is no longer open. Please send your request again and we will help you.';
     if (reply) await replyToUser(phone, reply, skipWhatsApp, { conversationId: conversation.id });
     return { phone, complete: false, missing: [], collected: conversation.collected || {}, reply, ignored_vote: true, restart_notice: restartNotice, restarted };
   }

@@ -35,7 +35,8 @@ async function leadSummary(leadId) {
 }
 
 function lang(value) {
-  return value === 'en' ? 'en' : 'ar';
+  if (value === 'en' || value === 'he') return value;
+  return 'ar';
 }
 
 router.get('/leads/:leadId/trip-plan', async (req, res) => {

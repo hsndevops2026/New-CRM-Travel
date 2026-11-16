@@ -144,8 +144,8 @@ export class Page {
     this.brand = resolvedBranding(agency);
     this.color = this.brand.primary_color;
     this.runningTitle = runningTitle || '';
-    this.lang = lang === 'ar' ? 'ar' : 'en';
-    this.rtl = this.lang === 'ar';
+    this.lang = lang === 'ar' || lang === 'he' ? lang : 'en';
+    this.rtl = this.lang === 'ar' || this.lang === 'he';
     this.labels = {
       contact: (agency) => `Questions? Contact ${agency}`,
       preparedBy: (agency) => `Prepared by ${agency}`,

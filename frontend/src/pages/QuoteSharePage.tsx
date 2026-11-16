@@ -17,13 +17,15 @@ import {
 } from '../lib/quoteVersions'
 import { formatDateRange, nightsLabel } from '../lib/leadSummary'
 import { cancellationTerms, firstName, itemKind, linkProblem, travellersText, whatsappLink } from '../lib/publicQuoteView'
-import { currentLanguage, t as translate, useI18n } from '../lib/i18n'
+import { currentLanguage, locale, t as translate, useI18n } from '../lib/i18n'
 
 function money(v: number | string | null | undefined, currency = 'USD') {
   const amount = v == null || v === '' ? NaN : Number(v)
   if (!Number.isFinite(amount)) return ''
   try {
-    return amount.toLocaleString(currentLanguage() === 'ar' ? 'ar-u-nu-latn' : 'en-GB', { style: 'currency', currency, maximumFractionDigits: 0 })
+    const lang = currentLanguage()
+    const locale = lang === 'ar' ? 'ar-u-nu-latn' : lang === 'he' ? 'he-IL-u-nu-latn' : 'en-GB'
+    return amount.toLocaleString(locale, { style: 'currency', currency, maximumFractionDigits: 0 })
   } catch {
     return `${currency} ${Math.round(amount)}`
   }
@@ -33,7 +35,9 @@ function longDate(d?: string | null) {
   if (!d) return null
   const date = new Date(d)
   if (Number.isNaN(date.getTime())) return d.slice(0, 10)
-  return date.toLocaleDateString(currentLanguage() === 'ar' ? 'ar-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const lang = currentLanguage()
+  const locale = lang === 'ar' ? 'ar-u-nu-latn' : lang === 'he' ? 'he-IL-u-nu-latn' : 'en-GB'
+  return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 const FALLBACK_AGENCY: ShareTokenView['agency'] = {
@@ -204,7 +208,7 @@ export default function QuoteSharePage() {
             {accepted.at && (
               <Row
                 label={translate('When')}
-                value={new Date(accepted.at).toLocaleString(currentLanguage() === 'ar' ? 'ar-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                value={new Date(accepted.at).toLocaleString(locale() || 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
               />
             )}
           </section>
@@ -241,7 +245,7 @@ export default function QuoteSharePage() {
           )}
           {token && (
             <a
-              href={`${publicPdfUrl(token)}?lang=${currentLanguage() === 'ar' ? 'ar' : 'en'}`}
+              href={`${publicPdfUrl(token)}?lang=${currentLanguage()}`}
               target="_blank"
               rel="noreferrer"
               className="flex h-12 items-center justify-center gap-2 rounded-xl border border-line-strong bg-white font-bold"
@@ -346,7 +350,7 @@ export default function QuoteSharePage() {
 
         {token && (
           <a
-            href={`${publicPdfUrl(token)}?lang=${currentLanguage() === 'ar' ? 'ar' : 'en'}`}
+            href={`${publicPdfUrl(token)}?lang=${currentLanguage()}`}
             target="_blank"
             rel="noreferrer"
             className="flex h-[52px] items-center justify-center gap-2 rounded-xl border border-line-strong bg-white font-bold"

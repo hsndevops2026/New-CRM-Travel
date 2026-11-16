@@ -32,7 +32,7 @@ async function json<T>(res: Response, fallback: string): Promise<T> {
 const base = (leadId: string) => `/api/leads/${encodeURIComponent(leadId)}/trip-plan`
 
 export async function fetchTripPlan(leadId: string) {
-  return json<{ lead: { id: string; destination: string; customer_name: string; language?: 'ar' | 'en' }; items: TripPlanItem[] }>(
+  return json<{ lead: { id: string; destination: string; customer_name: string; language?: 'ar' | 'en' | 'he' }; items: TripPlanItem[] }>(
     await apiFetch(base(leadId)),
     'Failed to load the trip program',
   )
@@ -62,7 +62,7 @@ export async function deleteTripPlanItem(leadId: string, itemId: string) {
   return data.items
 }
 
-export async function previewTripPlan(leadId: string, lang: 'ar' | 'en') {
+export async function previewTripPlan(leadId: string, lang: 'ar' | 'en' | 'he') {
   const data = await json<{ text: string }>(
     await apiFetch(`${base(leadId)}/preview`, { method: 'POST', body: JSON.stringify({ lang }) }),
     'Failed to prepare the message',

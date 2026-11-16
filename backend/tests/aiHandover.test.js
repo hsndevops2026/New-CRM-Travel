@@ -8,14 +8,23 @@ import { handleIncomingLeadMessage } from '../controllers/whatsappLead.js';
 import { getCustomerText } from '../services/customerTexts.js';
 
 describe('human request detection', () => {
-  it('recognises English and Arabic requests for a person', () => {
-    for (const text of ['agent', 'I want to talk to a human please', 'بدي احكي مع حدا', 'أريد التحدث مع موظف', 'موظف']) {
+  it('recognises English, Arabic and Hebrew requests for a person', () => {
+    for (const text of [
+      'agent',
+      'I want to talk to a human please',
+      'بدي احكي مع حدا',
+      'أريد التحدث مع موظف',
+      'موظف',
+      'אני רוצה נציג',
+      'לדבר עם מישהו',
+      'שירות לקוחות',
+    ]) {
       assert.equal(isHumanRequest(text), true, text);
     }
   });
 
   it('ignores ordinary trip messages', () => {
-    for (const text of ['Hotel in Dubai 12-15 March', 'فندق في اسطنبول لشخصين', '2 adults 1 child', '']) {
+    for (const text of ['Hotel in Dubai 12-15 March', 'فندق في اسطنبول لشخصين', 'מלון באיסטנבול לשניים', '2 adults 1 child', '']) {
       assert.equal(isHumanRequest(text), false, text);
     }
   });

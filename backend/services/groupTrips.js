@@ -106,9 +106,11 @@ export async function getGroupTrip(id) {
   );
   const { rows: travellers } = await query(
     `SELECT t.id, t.lead_id, t.full_name, t.is_child, t.date_of_birth::text AS date_of_birth, t.nationality,
-            t.passport_number, t.passport_expiry::text AS passport_expiry, t.visa_status
+            t.passport_number, t.passport_expiry::text AS passport_expiry, t.visa_status, t.room,
+            l.group_room AS booking_room
      FROM lead_travellers t JOIN leads l ON l.id = t.lead_id
-     WHERE l.group_trip_id = $1 ORDER BY l.group_room NULLS LAST, l.created_at, t.position`,
+     WHERE l.group_trip_id = $1
+     ORDER BY COALESCE(NULLIF(TRIM(t.room), ''), l.group_room) NULLS LAST, l.created_at, t.position`,
     [id],
   );
   return { ...group, seats_left: Math.max(0, group.seats_total - group.seats_used), bookings, travellers };
@@ -145,6 +147,18 @@ export async function setLeadRoom(groupId, leadId, room) {
   if (!rowCount) throw httpErr(404, 'Booking not in this group');
 }
 
+/** Assign a room to one traveller on a booking that is already in the group. */
+export async function setTravellerRoom(groupId, travellerId, room) {
+  const { rowCount } = await query(
+    `UPDATE lead_travellers t
+        SET room = $3, updated_at = NOW()
+       FROM leads l
+      WHERE t.id = $2 AND t.lead_id = l.id AND l.group_trip_id = $1`,
+    [groupId, travellerId, String(room ?? '').trim().slice(0, 60) || null],
+  );
+  if (!rowCount) throw httpErr(404, 'Traveller not in this group');
+}
+
 const csvCell = (v) => {
   const text = v == null ? '' : String(v);
   // Leading = + - @ would be read as a formula by Excel.
@@ -152,13 +166,22 @@ const csvCell = (v) => {
   return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 };
 
+/** Effective room for a passenger: their own room, else the booking's room, else customer name. */
+export function travellerRoom(traveller, booking) {
+  const own = String(traveller?.room ?? '').trim();
+  if (own) return own;
+  const bookingRoom = String(traveller?.booking_room ?? booking?.group_room ?? '').trim();
+  if (bookingRoom) return bookingRoom;
+  return booking?.customer || booking?.phone || '';
+}
+
 /** Rooming list for the hotel / passenger list for the airline, as CSV (Excel-friendly). */
 export async function roomingListCsv(groupId) {
   const group = await getGroupTrip(groupId);
-  const roomOf = new Map(group.bookings.map((b) => [b.id, b.group_room || b.customer || b.phone]));
+  const bookingOf = new Map(group.bookings.map((b) => [b.id, b]));
   const header = ['Room', 'Full name', 'Child', 'Date of birth', 'Nationality', 'Passport', 'Passport expiry', 'Visa'];
   const lines = [header, ...group.travellers.map((t) => [
-    roomOf.get(t.lead_id), t.full_name, t.is_child ? 'yes' : '', t.date_of_birth, t.nationality, t.passport_number, t.passport_expiry, t.visa_status,
+    travellerRoom(t, bookingOf.get(t.lead_id)), t.full_name, t.is_child ? 'yes' : '', t.date_of_birth, t.nationality, t.passport_number, t.passport_expiry, t.visa_status,
   ])];
   return `﻿${lines.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }

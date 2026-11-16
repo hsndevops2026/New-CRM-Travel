@@ -7,6 +7,7 @@ import {
   roomingListCsv,
   setLeadGroup,
   setLeadRoom,
+  setTravellerRoom,
   updateGroupTrip,
 } from '../services/groupTrips.js';
 import { listVisaRules, listVisas, saveVisaRule, updateVisa } from '../services/visas.js';
@@ -34,6 +35,9 @@ router.patch('/group-trips/:groupId', requireRole('admin'), async (req, res) => 
 });
 router.patch('/group-trips/:groupId/bookings/:leadId', staff, async (req, res) => {
   try { await setLeadRoom(req.params.groupId, req.params.leadId, req.body?.room); res.json({ ok: true }); } catch (e) { fail(res, e); }
+});
+router.patch('/group-trips/:groupId/travellers/:travellerId', staff, async (req, res) => {
+  try { await setTravellerRoom(req.params.groupId, req.params.travellerId, req.body?.room); res.json({ ok: true }); } catch (e) { fail(res, e); }
 });
 router.get('/group-trips/:groupId/rooming.csv', staff, async (req, res) => {
   try {

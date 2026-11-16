@@ -67,10 +67,13 @@ export const sendPastCustomerOffer = (input: { phone: string; text: string; offe
 export const fetchTravelHistory = (contactId: string) => apiJson<TravelHistory>(`/api/contacts/${contactId}/travel-history`)
 
 /** The suggested message for a past customer; staff edit it before sending. */
-export function offerTemplate(c: Pick<PastCustomer, 'name' | 'last_destination'>, offersUrl: string, lang: 'ar' | 'en') {
+export function offerTemplate(c: Pick<PastCustomer, 'name' | 'last_destination'>, offersUrl: string, lang: 'ar' | 'en' | 'he') {
   const name = (c.name || '').trim().split(/\s+/)[0]
   if (lang === 'en') {
     return `Hi${name ? ` ${name}` : ''}! ${c.last_destination ? `Hope you have good memories of ${c.last_destination}. ` : ''}We have new offers for this season, take a look: ${offersUrl}\nReply here if anything catches your eye.`
+  }
+  if (lang === 'he') {
+    return `שלום${name ? ` ${name}` : ''}! ${c.last_destination ? `מקווים שיש לך זיכרונות טובים מ${c.last_destination}. ` : ''}יש לנו הצעות חדשות לעונה הזאת, כדאי להציץ: ${offersUrl}\nאם משהו מדבר אליכם, כתבו לנו כאן.`
   }
   return `مرحباً${name ? ` ${name}` : ''}! ${c.last_destination ? `نتمنى أن تكون رحلتك إلى ${c.last_destination} قد تركت لك ذكريات جميلة. ` : ''}لدينا عروض جديدة لهذا الموسم، تفضّل بالاطلاع عليها: ${offersUrl}\nإذا أعجبك شيء، اكتب لنا هنا.`
 }

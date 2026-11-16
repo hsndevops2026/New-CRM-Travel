@@ -5,7 +5,7 @@ import { pingDb, query } from '../config/database.js';
 import { runMigrations } from '../db/migrate.js';
 import { saveTravellers } from '../services/travellers.js';
 import { listVisas, notifyVisaRisks, saveVisaRule, updateVisa } from '../services/visas.js';
-import { createGroupTrip, getGroupTrip, roomingListCsv, setLeadGroup, setLeadRoom, updateGroupTrip } from '../services/groupTrips.js';
+import { createGroupTrip, getGroupTrip, roomingListCsv, setLeadGroup, setLeadRoom, setTravellerRoom, updateGroupTrip } from '../services/groupTrips.js';
 import { listNotifications } from '../services/notifications.js';
 
 const tag = String(Date.now()).slice(-7);
@@ -91,5 +91,20 @@ describe('visas and group trips', () => {
     assert.ok(csv.startsWith('﻿Room,Full name'));
     assert.ok(csv.includes('Room 1,AHMAD OMAR'));
     assert.ok(csv.includes(`Room 2,"'=HYPERLINK(""x"")"`), 'formula is neutralised');
+  });
+
+  it('assigns rooms per traveller and prefers them over the booking room', async () => {
+    const group = await getGroupTrip(ids.group);
+    const ahmad = group.travellers.find((t) => t.full_name === 'AHMAD OMAR');
+    const huda = group.travellers.find((t) => t.full_name === 'HUDA OMAR');
+    assert.ok(ahmad && huda);
+    await setTravellerRoom(ids.group, ahmad.id, 'Room 1A');
+    await setTravellerRoom(ids.group, huda.id, 'Room 1B');
+    const csv = await roomingListCsv(ids.group);
+    assert.ok(csv.includes('Room 1A,AHMAD OMAR'));
+    assert.ok(csv.includes('Room 1B,HUDA OMAR'));
+    const refreshed = await getGroupTrip(ids.group);
+    assert.equal(refreshed.travellers.find((t) => t.id === ahmad.id).room, 'Room 1A');
+    await assert.rejects(setTravellerRoom(ids.group, '00000000-0000-4000-8000-000000000099', 'X'), { status: 404 });
   });
 });

@@ -232,10 +232,12 @@ export async function sendTravellerLink(leadId, { actorId, send = sendTextMessag
   if (!lead.phone) throw httpErr(400, 'This lead has no phone number');
   const lang = await customerLanguage(lead.phone);
   const created = await createTravellerLink(leadId, { actorId });
-  const url = lang === 'en' ? `${created.url}?lang=en` : created.url;
+  const url = lang === 'en' || lang === 'he' ? `${created.url}?lang=${lang}` : created.url;
   const text = lang === 'en'
     ? `Hi, to finish your booking${lead.destination ? ` to ${lead.destination}` : ''}, please fill in each traveller's details exactly as in the passport:\n${url}`
-    : `مرحباً، لإكمال حجزك${lead.destination ? ` إلى ${lead.destination}` : ''}، نرجو تعبئة بيانات كل مسافر كما هي في جواز السفر:\n${url}`;
+    : lang === 'he'
+      ? `שלום, כדי להשלים את ההזמנה${lead.destination ? ` ל${lead.destination}` : ''}, מלאו את פרטי כל נוסע בדיוק כפי שמופיעים בדרכון:\n${url}`
+      : `مرحباً، لإكمال حجزك${lead.destination ? ` إلى ${lead.destination}` : ''}، نرجو تعبئة بيانات كل مسافر كما هي في جواز السفر:\n${url}`;
   await send(lead.phone, text);
   await saveMessage({
     leadId,

@@ -54,10 +54,47 @@ const STRINGS = {
     prepared_by: 'إعداد {agency}',
     page_of: 'صفحة {n} من {count}',
   },
+  he: {
+    travel_quotation: 'הצעת מחיר לטיול',
+    quotation: 'הצעת מחיר',
+    quote_v: 'הצעה מס׳ {n}',
+    issued: 'הונפק ב־{date}',
+    travel_quote: 'הצעת מחיר לטיול',
+    prepared_for: 'הוכן עבור {name}',
+    your_quotation: 'הצעת המחיר שלך',
+    route: 'מסלול',
+    destination: 'יעד',
+    dates: 'תאריכים',
+    duration: 'משך',
+    travellers: 'נוסעים',
+    included: 'מה כלול',
+    included_item: 'כלול',
+    includes: 'כולל: {text}',
+    total_price: 'מחיר כולל',
+    for_travellers: 'עבור {who}',
+    valid_until: 'בתוקף עד {date}',
+    notes: 'הערות',
+    terms: 'תנאים',
+    questions: 'שאלות? צרו קשר עם {agency}',
+    prepared_by: 'הוכן על ידי {agency}',
+    page_of: 'עמוד {n} מתוך {count}',
+  },
 };
 
 export function pdfLang(value) {
-  return value === 'en' ? 'en' : value === 'ar' ? 'ar' : 'en';
+  if (value === 'ar' || value === 'he' || value === 'en') return value;
+  return 'en';
+}
+
+export function pdfIsRtl(lang) {
+  const code = pdfLang(lang);
+  return code === 'ar' || code === 'he';
+}
+
+function pdfDateLocale(lang) {
+  if (pdfLang(lang) === 'ar') return 'ar-u-nu-latn';
+  if (pdfLang(lang) === 'he') return 'he-IL-u-nu-latn';
+  return 'en-GB';
 }
 
 export function L(lang, key, vars = {}) {
@@ -69,10 +106,16 @@ export function L(lang, key, vars = {}) {
 export function nightsLabel(nights, lang) {
   const n = Number(nights);
   if (!n) return null;
-  if (pdfLang(lang) === 'ar') {
+  const code = pdfLang(lang);
+  if (code === 'ar') {
     if (n === 1) return 'ليلة واحدة';
     if (n === 2) return 'ليلتان';
     return n <= 10 ? `${n} ليالٍ` : `${n} ليلة`;
+  }
+  if (code === 'he') {
+    if (n === 1) return 'לילה אחד';
+    if (n === 2) return 'שני לילות';
+    return `${n} לילות`;
   }
   return `${n} night${n === 1 ? '' : 's'}`;
 }
@@ -81,12 +124,20 @@ export function travellersLabel(adults, children, lang) {
   const a = Number(adults) || 0;
   const c = Number(children) || 0;
   const parts = [];
-  if (pdfLang(lang) === 'ar') {
+  const code = pdfLang(lang);
+  if (code === 'ar') {
     const adult = (n) => (n === 1 ? 'بالغ واحد' : n === 2 ? 'بالغان' : n <= 10 ? `${n} بالغين` : `${n} بالغًا`);
     const child = (n) => (n === 1 ? 'طفل واحد' : n === 2 ? 'طفلان' : n <= 10 ? `${n} أطفال` : `${n} طفلًا`);
     if (a || !c) parts.push(adult(a));
     if (c) parts.push(child(c));
     return parts.join('، ');
+  }
+  if (code === 'he') {
+    const adult = (n) => (n === 1 ? 'מבוגר אחד' : `${n} מבוגרים`);
+    const child = (n) => (n === 1 ? 'ילד אחד' : `${n} ילדים`);
+    if (a || !c) parts.push(adult(a));
+    if (c) parts.push(child(c));
+    return parts.join(', ');
   }
   if (a || !c) parts.push(`${a} adult${a === 1 ? '' : 's'}`);
   if (c) parts.push(`${c} child${c === 1 ? '' : 'ren'}`);
@@ -98,8 +149,7 @@ export function dateLabel(value, lang) {
   if (!value) return null;
   const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  const locale = pdfLang(lang) === 'ar' ? 'ar-u-nu-latn' : 'en-GB';
-  return date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+  return date.toLocaleDateString(pdfDateLocale(lang), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export function dateRangeLabel(from, to, lang) {
@@ -107,8 +157,7 @@ export function dateRangeLabel(from, to, lang) {
   const mb = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(to ?? ''));
   if (ma && mb && ma[1] === mb[1] && ma[2] === mb[2] && ma[3] !== mb[3]) {
     // Same month: "12–18 ديسمبر 2026".
-    const locale = pdfLang(lang) === 'ar' ? 'ar-u-nu-latn' : 'en-GB';
-    const month = new Date(`${ma[1]}-${ma[2]}-15T12:00:00`).toLocaleDateString(locale, { month: 'long' });
+    const month = new Date(`${ma[1]}-${ma[2]}-15T12:00:00`).toLocaleDateString(pdfDateLocale(lang), { month: 'long' });
     return `${Number(ma[3])}–${Number(mb[3])} ${month} ${ma[1]}`;
   }
   const a = dateLabel(from, lang);

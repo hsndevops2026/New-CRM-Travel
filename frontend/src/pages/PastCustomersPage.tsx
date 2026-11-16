@@ -20,7 +20,7 @@ function Row({ customer, onSent }: { customer: PastCustomer; onSent: () => void 
   const recent = customer.last_offer_at && now - new Date(customer.last_offer_at).getTime() < 7 * 86_400_000
 
   const open = () => {
-    setText(offerTemplate(customer, `${window.location.origin}/offers`, currentLanguage() === 'en' ? 'en' : 'ar'))
+    setText(offerTemplate(customer, `${window.location.origin}/offers`, currentLanguage() === 'en' || currentLanguage() === 'he' ? currentLanguage() : 'ar'))
     setWriting(true)
   }
   const send = async () => {

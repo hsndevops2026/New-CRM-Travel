@@ -107,15 +107,20 @@ export async function deleteTripPlanItem(leadId, itemId, { actorId = null } = {}
   return listTripPlan(leadId);
 }
 
-/** Message the customer receives: grouped by day, Arabic or English. */
+/** Message the customer receives: grouped by day, in their language. */
 export function formatTripPlanMessage(items, { lang = 'ar', customerName = '', destination = '' } = {}) {
+  const he = lang === 'he';
   const ar = lang === 'ar';
   const lines = [];
-  const hello = customerName ? (ar ? `مرحباً ${customerName}،` : `Hi ${customerName},`) : (ar ? 'مرحباً،' : 'Hi,');
+  const hello = customerName
+    ? (ar ? `مرحباً ${customerName}،` : he ? `שלום ${customerName},` : `Hi ${customerName},`)
+    : (ar ? 'مرحباً،' : he ? 'שלום,' : 'Hi,');
   lines.push(hello);
-  lines.push(ar
-    ? `هذا برنامج رحلتك المقترح${destination ? ` إلى ${destination}` : ''}:`
-    : `Here is your suggested trip program${destination ? ` for ${destination}` : ''}:`);
+  lines.push(
+    ar ? `هذا برنامج رحلتك المقترح${destination ? ` إلى ${destination}` : ''}:`
+      : he ? `זהו תוכנית הטיול המוצעת${destination ? ` ל${destination}` : ''}:`
+        : `Here is your suggested trip program${destination ? ` for ${destination}` : ''}:`,
+  );
   const groups = new Map();
   for (const item of items) {
     const key = item.day_number ?? 0;
@@ -125,7 +130,11 @@ export function formatTripPlanMessage(items, { lang = 'ar', customerName = '', d
   const keys = [...groups.keys()].sort((a, b) => (a || 999) - (b || 999));
   for (const key of keys) {
     lines.push('');
-    lines.push(key ? (ar ? `اليوم ${key}:` : `Day ${key}:`) : (ar ? 'اقتراحات إضافية:' : 'More ideas:'));
+    lines.push(
+      key
+        ? (ar ? `اليوم ${key}:` : he ? `יום ${key}:` : `Day ${key}:`)
+        : (ar ? 'اقتراحات إضافية:' : he ? 'רעיונות נוספים:' : 'More ideas:'),
+    );
     for (const item of groups.get(key)) {
       const price = item.price != null && item.currency ? ` (${Number(item.price).toLocaleString('en-US')} ${item.currency})` : '';
       lines.push(`• ${item.title}${price}`);
@@ -133,8 +142,10 @@ export function formatTripPlanMessage(items, { lang = 'ar', customerName = '', d
     }
   }
   lines.push('');
-  lines.push(ar
-    ? 'المواعيد والتوفر قابلة للتأكيد. أخبرنا بما يعجبك وسنكمل الترتيبات.'
-    : 'Times and availability are to be confirmed. Tell us what you like and we will arrange the rest.');
+  lines.push(
+    ar ? 'المواعيد والتوفر قابلة للتأكيد. أخبرنا بما يعجبك وسنكمل الترتيبات.'
+      : he ? 'הזמנים והזמינות לאישור. ספרו לנו מה מתאים ונשלים את הסידורים.'
+        : 'Times and availability are to be confirmed. Tell us what you like and we will arrange the rest.',
+  );
   return lines.join('\n');
 }

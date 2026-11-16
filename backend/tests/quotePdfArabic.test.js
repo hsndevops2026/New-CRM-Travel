@@ -58,6 +58,15 @@ describe('Arabic quote PDF', () => {
   it('picks the language asked for, else the customer default (Arabic)', async () => {
     assert.equal(await quotePdfLanguage(snapshot, 'en'), 'en');
     assert.equal(await quotePdfLanguage(snapshot, 'ar'), 'ar');
+    assert.equal(await quotePdfLanguage(snapshot, 'he'), 'he');
     assert.equal(await quotePdfLanguage({ lead: {} }), 'ar');
+  });
+
+  it('uses Hebrew labels and RTL counts', () => {
+    const facts = snapshotFacts({ ...snapshot, lead: { ...snapshot.lead, origin: 'תל אביב', destination: 'איסטנבול' } }, 'he');
+    assert.equal(facts[0].label, 'מסלול');
+    assert.equal(facts[2].value, '6 לילות');
+    assert.equal(facts[3].value, '2 מבוגרים, ילד אחד');
+    assert.equal(L('he', 'total_price'), 'מחיר כולל');
   });
 });

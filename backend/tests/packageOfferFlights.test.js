@@ -291,6 +291,7 @@ describe('searchLabel', () => {
     assert.equal(searchLabel('flight'), 'flights');
     assert.equal(searchLabel('package'), 'flights and hotels');
     assert.equal(searchLabel('flight', 'ar'), 'رحلات');
+    assert.equal(searchLabel('hotel', 'he'), 'מלונות');
     assert.equal(searchLabel(undefined), 'hotels');
   });
 });

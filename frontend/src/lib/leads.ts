@@ -1,3 +1,4 @@
+import type { WebAttribution } from './webchat'
 import { locale } from './i18n'
 export type Lead = {
   id: string
@@ -17,6 +18,8 @@ export type Lead = {
   summary: string | null
   status?: string
   source?: string
+  /** Website chat leads: the site, page and campaign the visitor came from. */
+  web_attribution?: WebAttribution | null
   quote_status?: 'processing' | 'completed' | 'error' | 'package' | null
   quote_error?: string | null
   quotes_fetched_at?: string | null

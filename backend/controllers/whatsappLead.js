@@ -17,6 +17,7 @@ import {
   reopenConversationForVote,
 } from '../services/leads.js';
 import { processUserMessage, getMissingFields } from '../services/openaiLead.js';
+import { assignLeadToUser } from '../services/permissions.js';
 import { sendPollMessage, sendTextMessage } from '../services/wasender.js';
 import {
   closePoll,
@@ -426,6 +427,8 @@ export async function handleIncomingLeadMessage({
   providerMessageId = null,
   messageMeta = {},
   choice = null,
+  // Website chat: the user whose chat this is gets the lead it creates.
+  ownerId = null,
 }) {
   const phone = normalizePhone(from);
   const messageText = (text || '').trim();
@@ -609,6 +612,8 @@ export async function handleIncomingLeadMessage({
       pendingPackageOfferId: matchedPackage?.id || null,
     });
     console.log('Lead created:', lead.id, result.summary);
+    // Before notifying, so the owner is among the people told about it.
+    if (ownerId) await assignLeadToUser(ownerId, lead.id).catch((error) => console.error('[webchat] lead owner not set:', error.message));
     void safeNotify(() => notifyNewLead(lead.id));
     await linkConversationMessagesToLead(conversation.id, lead.id);
 

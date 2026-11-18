@@ -26,6 +26,7 @@ import LifecycleBadge from '../components/ui/LifecycleBadge'
 import StatusBadge from '../components/ui/StatusBadge'
 import Timeline from '../components/ui/Timeline'
 import LeadWorkspaceTabs from '../components/leads/LeadWorkspaceTabs'
+import WebSource from '../components/leads/WebSource'
 import BookLeadsModal from '../components/BookLeadsModal'
 import LeadDocumentsPanel from '../components/LeadDocumentsPanel'
 import TripPlanPanel from '../components/tripPlan/TripPlanPanel'
@@ -434,6 +435,11 @@ export default function LeadDetailPage() {
               {closed ? translate("No longer active") : translate("Stage {value0} of {value1} · next: {value2}", { value0: translate(String(stageNumber)), value1: translate(String(HAPPY_PATH.length)), value2: translate(String(next.text.toLowerCase())) })}
             </span>
           </div>
+          {lead.web_attribution && (
+            <div className="px-2 text-[13px] text-slate-700">
+              <WebSource attribution={lead.web_attribution} as="div" />
+            </div>
+          )}
         </div>
 
         <nav aria-label={translate("Breadcrumb")} className="mb-3 flex items-center gap-1.5 text-[13px] text-shop-muted max-md:hidden">
@@ -477,6 +483,7 @@ export default function LeadDetailPage() {
                   <bdi dir="ltr">{formatPhone(lead.phone)}</bdi>
                 </a>
               </li>
+              <WebSource attribution={lead.web_attribution} />
             </ul>
           </div>
           <div className="flex flex-wrap items-center gap-2">

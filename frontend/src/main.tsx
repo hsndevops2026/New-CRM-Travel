@@ -18,6 +18,7 @@ import TargetsPage from './pages/TargetsPage.tsx'
 import QuoteSharePage from './pages/QuoteSharePage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
 import AssistantPage from './pages/AssistantPage.tsx'
+import WebsiteChatPage from './pages/WebsiteChatPage.tsx'
 import ReportsPage from './pages/ReportsPage.tsx'
 import EmailPage from './pages/EmailPage.tsx'
 import LeadsSegmentRoute from './pages/LeadsSegmentRoute.tsx'
@@ -49,6 +50,7 @@ createRoot(document.getElementById('root')!).render(
             >
               <Route path="/assistant" element={<AssistantPage />} />
               <Route path="/assistant/:conversationId" element={<AssistantPage />} />
+              <Route path="/website-chat" element={<WebsiteChatPage />} />
               <Route path="/inbox" element={<InboxPage />} />
               <Route path="/inbox/:threadId" element={<InboxPage />} />
               <Route path="/leads" element={<Navigate to="/leads/hotel" replace />} />

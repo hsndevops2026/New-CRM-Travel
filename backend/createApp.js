@@ -39,7 +39,8 @@ import businessReportRoutes from './routes/businessReports.js';
 import growthRoutes, { publicGrowthRoutes } from './routes/growth.js';
 import travellerRoutes, { publicTravellerRoutes } from './routes/travellers.js';
 import staffTaskRoutes from './routes/staffTasks.js';
-import { createWebchatRouter } from './routes/webchat.js';
+import { createWebchatRouter, webchatTestPage } from './routes/webchat.js';
+import webchatSettingsRoutes from './routes/webchatSettings.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classifyError, logError } from './services/logger.js';
@@ -86,6 +87,7 @@ export function createApp() {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.type('application/javascript').sendFile(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public', 'webchat.js'));
   });
+  app.get('/webchat-test', webchatTestPage);
 
   app.use(
     cors({
@@ -237,6 +239,7 @@ export function createApp() {
   app.use('/api', requireAuth, foundationRoutes);
   app.use('/api', requireAuth, bookingDocumentsRoutes);
   app.use('/api', requireAuth, agencySettingsRoutes);
+  app.use('/api', requireAuth, webchatSettingsRoutes);
   app.use('/api/ops', requireAuth, opsRoutes);
   app.use('/api', requireAuth, predefinedQuotesRoutes);
   app.use('/api', requireAuth, uploadsRoutes);

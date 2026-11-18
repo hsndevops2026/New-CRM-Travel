@@ -1226,6 +1226,66 @@ export async function runMigrations() {
       ON assistant_media (conversation_id, created_at);
   `);
 
+  // Website chat widget: settings edited in the CRM, one session per visitor chat,
+  // and where each website lead came from.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS webchat_settings (
+      id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+      enabled BOOLEAN NOT NULL DEFAULT TRUE,
+      language VARCHAR(2) NOT NULL DEFAULT 'ar' CHECK (language IN ('ar', 'en')),
+      title TEXT,
+      greeting TEXT,
+      color VARCHAR(7) CHECK (color IS NULL OR color ~ '^#[0-9A-Fa-f]{6}$'),
+      side VARCHAR(5) CHECK (side IS NULL OR side IN ('left', 'right')),
+      allowed_origins TEXT[] NOT NULL DEFAULT '{}',
+      verify_phone BOOLEAN NOT NULL DEFAULT FALSE,
+      show_staff_replies BOOLEAN NOT NULL DEFAULT TRUE,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    INSERT INTO webchat_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+    CREATE TABLE IF NOT EXISTS webchat_sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      token_hash TEXT NOT NULL UNIQUE,
+      phone VARCHAR(32) NOT NULL,
+      name TEXT NOT NULL,
+      verified_at TIMESTAMPTZ,
+      phone_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
+      code_hash TEXT,
+      code_expires_at TIMESTAMPTZ,
+      code_attempts INTEGER NOT NULL DEFAULT 0,
+      codes_sent INTEGER NOT NULL DEFAULT 0,
+      code_sent_at TIMESTAMPTZ,
+      origin TEXT,
+      attribution JSONB NOT NULL DEFAULT '{}'::jsonb,
+      lead_id UUID REFERENCES leads(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_webchat_sessions_phone ON webchat_sessions (phone, created_at DESC);
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS web_attribution JSONB;
+  `);
+  // One website chat per user: its own public key (in the script tag) and its own look.
+  // Empty fields fall back to the agency defaults in webchat_settings.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS webchat_widgets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id UUID NOT NULL UNIQUE REFERENCES admins(id) ON DELETE CASCADE,
+      public_key TEXT NOT NULL UNIQUE,
+      enabled BOOLEAN NOT NULL DEFAULT TRUE,
+      language VARCHAR(2) CHECK (language IS NULL OR language IN ('ar', 'en')),
+      title TEXT,
+      greeting TEXT,
+      color VARCHAR(7) CHECK (color IS NULL OR color ~ '^#[0-9A-Fa-f]{6}$'),
+      side VARCHAR(5) CHECK (side IS NULL OR side IN ('left', 'right')),
+      allowed_origins TEXT[] NOT NULL DEFAULT '{}',
+      last_used_at TIMESTAMPTZ,
+      key_rotated_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    ALTER TABLE webchat_sessions ADD COLUMN IF NOT EXISTS widget_id UUID REFERENCES webchat_widgets(id) ON DELETE SET NULL;
+  `);
+
   const { seedDemoPredefinedQuotes } = await import('./seedPredefinedQuotes.js');
   await seedDemoPredefinedQuotes();
 

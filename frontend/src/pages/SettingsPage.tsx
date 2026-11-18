@@ -92,7 +92,7 @@ export default function SettingsPage() {
       <PageHeader title={translate("Settings")} subtitle="Branding and delivery settings apply to every customer quote." />
 
       <div className="flex flex-wrap items-start gap-6">
-        <nav aria-label={translate("Settings sections")} className="flex flex-[0_1_200px] flex-col gap-0.5 max-lg:w-full max-lg:flex-none max-lg:flex-row max-lg:overflow-x-auto lg:sticky lg:top-0">
+        <nav aria-label={translate("Settings sections")} className="flex flex-[0_1_200px] flex-col gap-0.5 max-xl:w-full max-xl:flex-none max-xl:flex-row max-xl:overflow-x-auto xl:sticky xl:top-0">
           {sections.map((item) => (
             <a
               key={item.id}

@@ -13,6 +13,7 @@ import {
   Inbox,
   LogOut,
   Menu,
+  MessagesSquare,
   Search,
   ShieldCheck,
   SlidersHorizontal,
@@ -56,6 +57,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/targets', label: 'Targets', icon: Target, match: (path) => path.startsWith('/targets') },
   { to: '/email', label: 'Email', icon: Mail, match: (path) => path.startsWith('/email') },
   { to: '/assistant', label: 'Assistant', icon: Sparkles, match: (path) => path.startsWith('/assistant') },
+  { to: '/website-chat', label: 'Website chat', icon: MessagesSquare, match: (path) => path.startsWith('/website-chat') },
 ]
 const ADMIN_NAV: NavEntry[] = [
   { to: '/reports', label: 'Reports', icon: BarChart3, match: (path) => path.startsWith('/reports'), adminOnly: true },

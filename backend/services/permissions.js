@@ -115,3 +115,18 @@ export async function leadIdForResource(table, id) {
   const result = await query(sql, [id]);
   return result.rows[0]?.lead_id || null;
 }
+
+/**
+ * Gives a lead to one user (a lead has at most one). Used for leads that came in
+ * through a user's own website chat; these do not use the user's lead credits.
+ * Returns false when the lead already belongs to someone.
+ */
+export async function assignLeadToUser(userId, leadId) {
+  const inserted = await query(
+    `INSERT INTO user_leads (user_id, lead_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING lead_id`,
+    [userId, leadId],
+  );
+  if (!inserted.rowCount) return false;
+  await query(`UPDATE leads SET assigned_to = $1 WHERE id = $2 AND assigned_to IS NULL`, [userId, leadId]);
+  return true;
+}

@@ -1,4 +1,5 @@
 import type { ChatMessage, Thread, ThreadKind } from './inbox'
+import { t } from './i18n'
 
 export type InboxFilter = 'all' | ThreadKind
 
@@ -27,8 +28,8 @@ export function threadInitials(title: string): string {
 /** The last message as a list preview, marked "You:" when the agency wrote it. */
 export function threadPreview(thread: Pick<Thread, 'last_message' | 'last_direction'>): string {
   const text = String(thread.last_message || '').replace(/\s+/g, ' ').trim()
-  if (!text) return 'No messages yet'
-  return thread.last_direction === 'outbound' ? `You: ${text}` : text
+  if (!text) return t('No messages yet')
+  return thread.last_direction === 'outbound' ? t('You: {value0}', { value0: text }) : text
 }
 
 /** Customer threads can exist without a lead (a number that only said hello). */

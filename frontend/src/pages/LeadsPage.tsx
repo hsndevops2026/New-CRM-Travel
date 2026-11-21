@@ -28,6 +28,8 @@ import {
 } from '../lib/leads'
 import { customerThreadId } from '../lib/inbox'
 import { BOARD_STAGES, lifecycleLabel, nextActionFor } from '../lib/lifecycle'
+import { travelersLabel } from '../lib/leadSummary'
+import Banner from '../components/ui/Banner'
 
 type LeadType = 'hotel' | 'flight' | 'package'
 
@@ -279,7 +281,11 @@ export default function LeadsPage() {
         </div>
       )}
 
-      {!loading && error && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{translate(error)}</div>}
+      {!loading && error && (
+        <div className="mb-3">
+          <Banner tone="danger" title={translate("Could not load leads")}>{translate(error)}</Banner>
+        </div>
+      )}
 
       <section className="overflow-hidden rounded-xl border border-shop-border bg-white">
         {loading && <TableSkeleton rows={6} label={translate("Loading leads")} />}
@@ -346,14 +352,13 @@ export default function LeadsPage() {
                           </div>
                           <span className="truncate font-semibold">{leadTitle(lead)}</span>
                           <span className="text-xs tabular-nums text-shop-muted">
-                            <bdi dir="ltr">{formatDate(lead.travel_date)}</bdi> → <bdi dir="ltr">{formatDate(lead.return_date)}</bdi> · {lead.adults_count}A
-                            {lead.children_count ? ` · ${lead.children_count}C` : ''}
+                            <bdi dir="ltr">{formatDate(lead.travel_date)}</bdi> → <bdi dir="ltr">{formatDate(lead.return_date)}</bdi> · {travelersLabel(lead.adults_count, lead.children_count)}
                           </span>
                           <div className="h-px bg-neutral-bg" />
                           <span
                             className={`text-[13px] font-semibold ${next.blocker ? 'text-danger' : 'text-neutral-fg'}`}
                           >
-                            {next.text}
+                            {translate(next.text)}
                           </span>
                         </Link>
                       )

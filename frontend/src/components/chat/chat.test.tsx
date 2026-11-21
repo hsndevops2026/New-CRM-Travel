@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { setLanguage } from '../../lib/i18n'
 import type { Thread } from '../../lib/inbox'
 import ChatComposer from './ChatComposer'
 import ChatThreadList from './ChatThreadList'
@@ -9,6 +10,8 @@ const thread = (over: Partial<Thread>): Thread => ({
   id: 't1', kind: 'customer', title: 'Sarah Ahmed', subtitle: '', last_message: 'Can we keep breakfast included?',
   last_at: null, last_direction: 'inbound', lead_id: 'l1', lifecycle_status: 'comparing', ...over,
 })
+
+beforeAll(() => setLanguage('en'))
 
 describe('MessageBubble', () => {
   it('shows the message and its time', () => {

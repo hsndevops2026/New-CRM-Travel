@@ -44,9 +44,9 @@ export default function DataTable<T>({
     <div className="overflow-x-auto">
       <table className="min-w-full text-start text-sm">
         <thead>
-          <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
+          <tr className="border-b border-shop-border bg-[#f8fafc] text-[11px] font-semibold tracking-[0.06em] text-slate-500 uppercase">
             {columns.map((col) => (
-              <th key={col.key} className={`whitespace-nowrap px-3 py-2.5 ${col.className || ''}`}>
+              <th key={col.key} className={`whitespace-nowrap px-3 py-2.5 text-start ${col.className || ''}`}>
                 {translate(col.header)}
               </th>
             ))}
@@ -56,7 +56,7 @@ export default function DataTable<T>({
           {rows.map((row) => (
             <tr
               key={rowKey(row)}
-              className={`border-b border-neutral-bg last:border-0 hover:bg-shop-bg ${
+              className={`border-b border-[#eef1f5] transition-colors last:border-0 hover:bg-[#f7fafb] ${
                 onRowClick ? 'cursor-pointer focus-visible:bg-shop-bg' : ''
               }`}
               tabIndex={onRowClick ? 0 : undefined}
@@ -64,7 +64,7 @@ export default function DataTable<T>({
               onKeyDown={onRowClick ? (event) => onKey(event, row) : undefined}
             >
               {columns.map((col) => (
-                <td key={col.key} className={`px-3 py-3 ${col.className || ''}`}>
+                <td key={col.key} className={`px-3 py-3.5 ${col.className || ''}`}>
                   {col.render(row)}
                 </td>
               ))}

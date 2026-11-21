@@ -1,5 +1,5 @@
 import { t as translate, useI18n } from '../../lib/i18n'
-import { Check } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import type { LifecycleStatus } from '../../lib/leads'
 import { HAPPY_PATH, LIFECYCLE_STEP_LABELS, lifecycleLabel } from '../../lib/lifecycle'
 import LifecycleBadge from './LifecycleBadge'
@@ -106,7 +106,12 @@ export default function StagePath({ current, allowed, onSelect, disabled, hint }
           </li>
         )
       })}
-      {hint ? <li className="ms-2 text-[13px] text-slate-600">{hint}</li> : null}
+      {hint ? (
+        <li className="ms-auto inline-flex h-7 items-center gap-1.5 rounded-full bg-tint px-3 text-xs font-semibold text-primary-800 max-sm:h-9">
+          <ArrowRight className="size-3.5" aria-hidden="true" />
+          {hint}
+        </li>
+      ) : null}
     </ol>
   )
 }

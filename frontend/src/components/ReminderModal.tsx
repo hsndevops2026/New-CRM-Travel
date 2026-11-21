@@ -146,7 +146,7 @@ export default function ReminderModal({ open, contact, reminder, onClose, onSave
             </span>
           </span>
         </label>
-        {error && text.trim() ? <p className="text-sm text-red-600">{translate(error)}</p> : null}
+        {error && text.trim() ? <p className="text-sm text-danger-fg">{translate(error)}</p> : null}
       </form>
     </ModalDrawer>
   )

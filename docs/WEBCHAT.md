@@ -50,7 +50,7 @@ Optional attributes on the script tag override the settings for one site: `data-
 
 | Variable | Meaning |
 |---|---|
-| `WEBCHAT_PUBLIC_URL` | Public address of the backend, used in the code shown in Settings. Default: the address the request came in on. |
+| `WEBCHAT_PUBLIC_URL` | Public address of the backend, including any path it is served under, e.g. `https://api.agency.com/travel`. Used in the code and test page shown in the CRM. If empty, `BACKEND_URL` is used, then the request's own address plus a proxy's `X-Forwarded-Prefix`. A localhost address is never given to a live site. |
 | `WEBCHAT_ALLOWED_ORIGINS` | Fallback list of allowed sites (comma separated) while the list in Settings is empty. |
 | `WEBCHAT_RATE_LIMIT_PER_MINUTE` | Messages per minute per visitor IP (default 20). Each number may also start at most 3 chats a minute, and each chat send 12 messages a minute. |
 

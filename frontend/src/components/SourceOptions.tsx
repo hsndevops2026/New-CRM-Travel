@@ -206,12 +206,12 @@ export default function SourceOptions({ lead, draft, onDraftChange, onCompare, o
         </p>
       )}
       {loadError && (
-        <p role="alert" className="rounded-lg border border-red-200 bg-danger-bg px-3.5 py-2.5 text-[13px] text-danger-fg">
+        <p role="alert" className="rounded-lg border border-danger bg-danger-bg px-3.5 py-2.5 text-[13px] text-danger-fg">
           {loadError}
         </p>
       )}
       {saveError && (
-        <p role="alert" className="rounded-lg border border-red-200 bg-danger-bg px-3.5 py-2.5 text-[13px] text-danger-fg">
+        <p role="alert" className="rounded-lg border border-danger bg-danger-bg px-3.5 py-2.5 text-[13px] text-danger-fg">
           {saveError}
         </p>
       )}

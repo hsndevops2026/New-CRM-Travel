@@ -1,6 +1,20 @@
 import { t as translate, useI18n } from '../lib/i18n'
-import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { Check, ChevronLeft, ChevronRight, CircleAlert, FileText, Pencil, Plane, Bed, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from 'react'
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  FileText,
+  Image as ImageIcon,
+  LoaderCircle,
+  Pencil,
+  Plane,
+  Bed,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react'
 import {
   approvePredefinedQuoteImport,
   fetchPredefinedQuoteImports,
@@ -13,6 +27,7 @@ import {
   type PredefinedQuote,
   type PredefinedQuoteImport,
 } from '../lib/predefinedQuotes'
+import { formatFileSize } from '../lib/bookingDocuments'
 import {
   approvalProblems,
   carouselOrder,
@@ -21,12 +36,46 @@ import {
   pageLabel,
   summaryCounts,
 } from '../lib/importCarousel'
+import Banner from './ui/Banner'
 import Button from './ui/Button'
 import EmptyState from './ui/EmptyState'
 import ModalDrawer from './ui/ModalDrawer'
 import StatusBadge from './ui/StatusBadge'
 import { TableSkeleton } from './ui/Skeleton'
 import { useConfirm } from '../hooks/useConfirm'
+
+type FileJobStatus = 'queued' | 'reading' | 'done' | 'kept' | 'failed'
+type FileJob = {
+  key: string
+  name: string
+  size: number
+  status: FileJobStatus
+  detail?: string
+}
+
+const MAX_BROCHURE_BYTES = 50 * 1024 * 1024
+
+function fileIcon(name: string) {
+  const ext = name.toLowerCase().split('.').pop() || ''
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) return <ImageIcon className="size-3.5 shrink-0 text-shop-muted" aria-hidden="true" />
+  return <FileText className="size-3.5 shrink-0 text-shop-muted" aria-hidden="true" />
+}
+
+function jobTone(status: FileJobStatus): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  if (status === 'reading') return 'info'
+  if (status === 'done') return 'success'
+  if (status === 'kept') return 'warning'
+  if (status === 'failed') return 'danger'
+  return 'neutral'
+}
+
+function jobLabel(status: FileJobStatus) {
+  if (status === 'queued') return 'Queued'
+  if (status === 'reading') return 'Reading'
+  if (status === 'done') return 'Done'
+  if (status === 'kept') return 'Kept'
+  return 'Failed'
+}
 
 type Props = {
   open: boolean
@@ -41,6 +90,7 @@ type Props = {
 export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onReview, onApproved }: Props) {
   useI18n()
   const { confirm, dialog } = useConfirm()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [imports, setImports] = useState<PredefinedQuoteImport[]>([])
   // Which slide is showing. The id says WHICH package; the index remembers WHERE it was, so if
   // that package disappears (approved elsewhere, rejected) we land on its neighbour — never on
@@ -48,19 +98,82 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
   const [cursor, setCursor] = useState<{ id: string | null; index: number }>({ id: null, index: 0 })
   // "Update an existing package" belongs to ONE import, so it can never leak to the next slide.
   const [targetChoice, setTargetChoice] = useState<{ importId: string; quoteId: string } | null>(null)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [fileJobs, setFileJobs] = useState<FileJob[] | null>(null)
+  const [dragging, setDragging] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [busyId, setBusyId] = useState<string | 'all' | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   // Whatever is on screen is stale from the moment the dialog reopens until the fresh list
   // arrives, so mark it loading right away.
   const [wasOpen, setWasOpen] = useState(open)
   if (open !== wasOpen) {
     setWasOpen(open)
-    if (open) setLoading(true)
+    if (open) {
+      setLoading(true)
+      setFiles([])
+      setFileJobs(null)
+      setDragging(false)
+      setNotice(null)
+      setError(null)
+    }
   }
-  const [uploading, setUploading] = useState(false)
-  const [busyId, setBusyId] = useState<string | 'all' | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const uploading = fileJobs !== null
+
+  const patchJob = (key: string, patch: Partial<FileJob>) => {
+    setFileJobs((prev) => prev?.map((job) => (job.key === key ? { ...job, ...patch } : job)) ?? null)
+  }
+
+  const addFiles = (incoming: File[]) => {
+    if (!incoming.length) return
+    const rejected: string[] = []
+    const accepted: File[] = []
+    for (const file of incoming) {
+      if (!isBrochureFile(file)) {
+        rejected.push(translate('“{value0}” is not a supported file type', { value0: file.name }))
+        continue
+      }
+      if (file.size > MAX_BROCHURE_BYTES) {
+        rejected.push(translate('“{value0}” is larger than 50 MB', { value0: file.name }))
+        continue
+      }
+      accepted.push(file)
+    }
+    if (accepted.length) {
+      setFiles((prev) => {
+        const map = new Map(prev.map((f) => [`${f.name}:${f.size}`, f]))
+        for (const file of accepted) map.set(`${file.name}:${file.size}`, file)
+        return [...map.values()]
+      })
+      setError(null)
+    }
+    if (rejected.length) setError(rejected.join('; '))
+  }
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, at) => at !== index))
+  }
+
+  const onDragOver = (event: DragEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!uploading) setDragging(true)
+  }
+
+  const onDragLeave = (event: DragEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.currentTarget === event.target) setDragging(false)
+  }
+
+  const onDrop = (event: DragEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragging(false)
+    if (uploading) return
+    addFiles(Array.from(event.dataTransfer.files || []))
+  }
 
   const slides = useMemo(() => carouselOrder(imports), [imports])
   const position = (() => {
@@ -122,59 +235,212 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
     }
   }, [open])
 
+  /** Ask whether to re-read a file the server already knows. */
+  const resolveDuplicate = async (
+    file: File,
+    result: Awaited<ReturnType<typeof uploadPredefinedQuoteBrochure>>,
+  ) => {
+    const waiting = result.importRecords.filter((r) => r.status === 'needs_review').length
+    const approved = result.importRecords.filter((r) => r.status === 'approved').length
+    const total = result.importRecords.length
+    const parts = [
+      waiting ? translate('{value0} waiting for review', { value0: translate(String(waiting)) }) : null,
+      approved ? translate('{value0} already approved', { value0: translate(String(approved)) }) : null,
+    ].filter(Boolean)
+    const again = await confirm({
+      title: 'This file was already imported',
+      description: translate(
+        '“{value0}” was read before and gave {value1} package{value2}{value3}. Read it again? Reading uses AI again{value4}. Approved packages stay in your library.',
+        {
+          value0: translate(String(file.name)),
+          value1: translate(String(total)),
+          value2: translate(String(total === 1 ? '' : 's')),
+          value3: translate(String(parts.length ? ` (${parts.join(', ')})` : '')),
+          value4: translate(
+            String(
+              waiting
+                ? `, and the ${waiting} package${waiting === 1 ? '' : 's'} waiting for review ${waiting === 1 ? 'is' : 'are'} replaced by the new result`
+                : '',
+            ),
+          ),
+        },
+      ),
+      confirmLabel: 'Read it again',
+      cancelLabel: 'Keep what I have',
+      tone: 'primary',
+    })
+    if (!again) {
+      return {
+        kind: 'kept' as const,
+        fileName: file.name,
+        waiting,
+        total,
+        firstWaiting: result.importRecords.find((r) => r.status === 'needs_review') || null,
+      }
+    }
+    return {
+      kind: 'reextracted' as const,
+      result: await uploadPredefinedQuoteBrochure(file, { reextract: true }),
+    }
+  }
+
   const upload = async (event: FormEvent) => {
     event.preventDefault()
-    if (!file) return setError(translate('Choose a brochure, rate sheet or email file'))
-    if (!isBrochureFile(file)) return setError(translate('Choose a PDF, image, Excel (.xlsx), CSV or text file'))
-    if (file.size > 50 * 1024 * 1024) return setError('File must be smaller than 50 MB')
-    setUploading(true)
+    if (!files.length) return setError(translate('Choose a brochure, rate sheet or email file'))
+
+    const selected = [...files]
+    const multi = selected.length > 1
+    const jobs: FileJob[] = selected.map((file, index) => ({
+      key: `${file.name}:${file.size}:${index}`,
+      name: file.name,
+      size: file.size,
+      status: 'queued',
+    }))
+    setFileJobs(jobs)
     setError(null)
     setNotice(null)
+
+    let packagesFound = 0
+    let filesOk = 0
+    let replacedTotal = 0
+    let firstWaitingId: string | null = null
+    const failed: string[] = []
+    const kept: { fileName: string; waiting: number; total: number }[] = []
+
     try {
-      let result = await uploadPredefinedQuoteBrochure(file)
-      if (result.duplicate) {
-        // Say what exists, and let the person decide whether it is worth reading again.
-        const waiting = result.importRecords.filter((r) => r.status === 'needs_review').length
-        const approved = result.importRecords.filter((r) => r.status === 'approved').length
-        const total = result.importRecords.length
-        const parts = [waiting ? translate("{value0} waiting for review", { value0: translate(String(waiting)) }) : null, approved ? translate("{value0} already approved", { value0: translate(String(approved)) }) : null].filter(Boolean)
-        const again = await confirm({
-          title: 'This file was already imported',
-          description: translate("“{value0}” was read before and gave {value1} package{value2}{value3}. Read it again? Reading uses AI again{value4}. Approved packages stay in your library.", { value0: translate(String(file.name)), value1: translate(String(total)), value2: translate(String(total === 1 ? '' : 's')), value3: translate(String(parts.length ? ` (${parts.join(', ')})` : '')), value4: translate(String(waiting ? `, and the ${waiting} package${waiting === 1 ? '' : 's'} waiting for review ${waiting === 1 ? 'is' : 'are'} replaced by the new result` : '')) }),
-          confirmLabel: 'Read it again',
-          cancelLabel: 'Keep what I have',
-          tone: 'primary',
-        })
-        if (!again) {
-          const first = result.importRecords.find((r) => r.status === 'needs_review')
-          if (first) setCursor({ id: first.id, index: 0 })
-          setNotice(
-            waiting
-              ? translate("Kept the {value0} package{value1} from the earlier read — {value2} still waiting for review.", { value0: translate(String(total)), value1: translate(String(total === 1 ? '' : 's')), value2: translate(String(waiting)) })
-              : 'Kept the earlier read. Everything from this file has already been reviewed.',
-          )
-          setFile(null)
-          await load()
-          return
+      for (let i = 0; i < selected.length; i += 1) {
+        const file = selected[i]
+        const key = jobs[i].key
+        patchJob(key, { status: 'reading', detail: translate('Extracting packages…') })
+        try {
+          let result = await uploadPredefinedQuoteBrochure(file)
+          if (result.duplicate) {
+            const resolved = await resolveDuplicate(file, result)
+            if (resolved.kind === 'kept') {
+              kept.push({ fileName: resolved.fileName, waiting: resolved.waiting, total: resolved.total })
+              if (resolved.firstWaiting && !firstWaitingId) firstWaitingId = resolved.firstWaiting.id
+              patchJob(key, {
+                status: 'kept',
+                detail: resolved.waiting
+                  ? translate('{value0} waiting', { value0: translate(String(resolved.waiting)) })
+                  : translate('Already reviewed'),
+              })
+              continue
+            }
+            result = resolved.result
+          }
+
+          packagesFound += result.importRecords.length
+          replacedTotal += result.replaced
+          filesOk += 1
+          const first = result.importRecords.find((record) => record.status === 'needs_review')
+          if (first && !firstWaitingId) firstWaitingId = first.id
+          patchJob(key, {
+            status: 'done',
+            detail: translate('{value0} package{value1}', {
+              value0: translate(String(result.importRecords.length)),
+              value1: translate(String(result.importRecords.length === 1 ? '' : 's')),
+            }),
+          })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'failed'
+          failed.push(`${file.name}: ${message}`)
+          patchJob(key, { status: 'failed', detail: message })
         }
-        result = await uploadPredefinedQuoteBrochure(file, { reextract: true })
       }
-      const count = result.importRecords.length
-      setNotice(
-        result.replaced
-          ? translate("Read again: {value0} package{value1} found, replacing the {value2} that were waiting. Check each one and approve.", { value0: translate(String(count)), value1: translate(String(count === 1 ? '' : 's')), value2: translate(String(result.replaced)) })
-          : count > 1
-            ? translate("Found {value0} packages in this brochure — one per hotel. Check each one and approve.", { value0: translate(String(count)) })
-            : 'Extraction finished. Check the details, then approve.',
-      )
-      setFile(null)
-      const first = result.importRecords.find((record) => record.status === 'needs_review')
-      if (first) setCursor({ id: first.id, index: 0 })
+
+      if (firstWaitingId) setCursor({ id: firstWaitingId, index: 0 })
       await load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import brochure')
+
+      const summaryParts: string[] = []
+      if (filesOk > 0) {
+        if (!multi && kept.length === 0 && failed.length === 0) {
+          summaryParts.push(
+            replacedTotal
+              ? translate(
+                  'Read again: {value0} package{value1} found, replacing the {value2} that were waiting. Check each one and approve.',
+                  {
+                    value0: translate(String(packagesFound)),
+                    value1: translate(String(packagesFound === 1 ? '' : 's')),
+                    value2: translate(String(replacedTotal)),
+                  },
+                )
+              : packagesFound > 1
+                ? translate(
+                    'Found {value0} packages in this brochure — one per hotel. Check each one and approve.',
+                    { value0: translate(String(packagesFound)) },
+                  )
+                : 'Extraction finished. Check the details, then approve.',
+          )
+        } else {
+          summaryParts.push(
+            translate(
+              'Read {value0} file{value1}: {value2} package{value3} ready to review.',
+              {
+                value0: translate(String(filesOk)),
+                value1: translate(String(filesOk === 1 ? '' : 's')),
+                value2: translate(String(packagesFound)),
+                value3: translate(String(packagesFound === 1 ? '' : 's')),
+              },
+            ),
+          )
+          if (replacedTotal > 0) {
+            summaryParts.push(
+              translate('Replaced {value0} that were waiting.', {
+                value0: translate(String(replacedTotal)),
+              }),
+            )
+          }
+        }
+      }
+
+      if (kept.length === 1 && !multi && filesOk === 0 && failed.length === 0) {
+        const only = kept[0]
+        summaryParts.push(
+          only.waiting
+            ? translate(
+                'Kept the {value0} package{value1} from the earlier read — {value2} still waiting for review.',
+                {
+                  value0: translate(String(only.total)),
+                  value1: translate(String(only.total === 1 ? '' : 's')),
+                  value2: translate(String(only.waiting)),
+                },
+              )
+            : 'Kept the earlier read. Everything from this file has already been reviewed.',
+        )
+      } else if (kept.length) {
+        for (const item of kept) {
+          summaryParts.push(
+            item.waiting
+              ? translate(
+                  '“{value0}”: kept {value1} package{value2} from earlier — {value3} still waiting.',
+                  {
+                    value0: item.fileName,
+                    value1: translate(String(item.total)),
+                    value2: translate(String(item.total === 1 ? '' : 's')),
+                    value3: translate(String(item.waiting)),
+                  },
+                )
+              : translate('“{value0}”: already reviewed — kept as is.', { value0: item.fileName }),
+          )
+        }
+      }
+
+      if (summaryParts.length) setNotice(summaryParts.join(' '))
+      if (failed.length) {
+        setError(
+          !multi && failed.length === 1 && filesOk === 0 && kept.length === 0
+            ? failed[0].replace(/^[^:]+:\s*/, '')
+            : translate('{value0} could not be imported — {value1}', {
+                value0: translate(String(failed.length)),
+                value1: translate(String(failed.join('; '))),
+              }),
+        )
+      }
+      setFiles([])
+      if (fileInputRef.current) fileInputRef.current.value = ''
     } finally {
-      setUploading(false)
+      setFileJobs(null)
     }
   }
 
@@ -322,16 +588,20 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
   const problems = approvalProblems(payload)
   const rows = offerRows(payload)
   const counts = summaryCounts(payload)
-  const busy = busyId !== null
+  const busy = busyId !== null || uploading
   const total = payload?.total_price ?? null
+  const jobsDone = fileJobs?.filter((j) => j.status !== 'queued' && j.status !== 'reading').length ?? 0
+  const jobsTotal = fileJobs?.length ?? 0
+  const jobsReading = fileJobs?.find((j) => j.status === 'reading')
+  const progressPct = jobsTotal ? Math.round((jobsDone / jobsTotal) * 100) : 0
 
   return (
     <>
       <ModalDrawer
         open={open}
-        title={translate("Import brochure")}
-        subtitle="Upload a brochure, a photo, an Excel or CSV rate sheet. Each hotel becomes a package for you to check and approve. A new price list for a package you already have updates that package."
-        onClose={onClose}
+        title={translate('Import brochure')}
+        subtitle="Upload one or more brochures, photos, Excel or CSV rate sheets. Each hotel becomes a package for you to check and approve. A new price list for a package you already have updates that package."
+        onClose={uploading ? () => {} : onClose}
         maxWidthClassName="max-w-4xl"
         footer={
           current ? (
@@ -343,7 +613,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                   disabled={busy}
                   onChange={(event) => setTargetChoice({ importId: current.id, quoteId: event.target.value })}
                 >
-                  <option value="">{translate("Create a new package")}</option>
+                  <option value="">{translate("Create a new predefined quote")}</option>
                   {quotes.map((quote) => (
                     <option key={quote.id} value={quote.id}>
                       {translate("Update:")}{' '}{quote.title}
@@ -369,39 +639,206 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
           ) : undefined
         }
       >
-        <form onSubmit={upload} className="flex flex-wrap items-end gap-3 rounded-[10px] border border-shop-border bg-shop-bg p-3.5">
-          <label className="grid min-w-[220px] flex-1 gap-1.5 text-xs font-semibold text-slate-600">
-            {translate("Brochure or rate sheet (PDF, image, Excel, CSV — up to 50 MB)")}<input
-              type="file"
-              accept={BROCHURE_ACCEPT}
-              className="block w-full rounded-lg border border-line-strong bg-white p-1.5 text-sm font-normal"
-              onChange={(event) => setFile(event.target.files?.[0] || null)}
-            />
-          </label>
-          <Button type="submit" variant="primary" loading={uploading}>
-            {uploading ? translate("Reading brochure…") : translate("Upload and extract")}
-          </Button>
+        <form onSubmit={upload} className="flex flex-col gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={BROCHURE_ACCEPT}
+            className="sr-only"
+            disabled={uploading}
+            onChange={(event) => {
+              addFiles(Array.from(event.target.files || []))
+              if (fileInputRef.current) fileInputRef.current.value = ''
+            }}
+          />
+
+          {uploading && fileJobs ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className="rounded-[12px] border border-shop-border bg-white p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-tint text-shop-accent">
+                    <LoaderCircle className="size-5 motion-safe:animate-spin" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <strong className="block text-sm text-shop-ink">
+                      {translate('Reading brochures…')}
+                    </strong>
+                    <p className="mt-0.5 text-[13px] text-shop-muted">
+                      {jobsReading
+                        ? translate('Extracting “{value0}” ({value1} of {value2})', {
+                            value0: jobsReading.name,
+                            value1: translate(String(Math.min(jobsDone + 1, jobsTotal))),
+                            value2: translate(String(jobsTotal)),
+                          })
+                        : translate('{value0} of {value1} finished', {
+                            value0: translate(String(jobsDone)),
+                            value1: translate(String(jobsTotal)),
+                          })}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold tabular-nums text-shop-muted">
+                  {progressPct}%
+                </span>
+              </div>
+              <div
+                className="mt-3 h-1.5 overflow-hidden rounded-full bg-neutral-bg"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPct}
+              >
+                <div
+                  className="h-full rounded-full bg-shop-accent transition-[width] duration-300 ease-out"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <ul className="mt-3 m-0 flex list-none flex-col gap-1.5 p-0">
+                {fileJobs.map((job) => (
+                  <li
+                    key={job.key}
+                    className="flex items-center gap-2 rounded-lg border border-shop-border bg-shop-bg px-2.5 py-2"
+                  >
+                    {job.status === 'reading' ? (
+                      <LoaderCircle className="size-3.5 shrink-0 text-shop-accent motion-safe:animate-spin" aria-hidden="true" />
+                    ) : (
+                      fileIcon(job.name)
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-semibold text-shop-ink">{job.name}</span>
+                      <span className="block truncate text-[11px] text-shop-muted">
+                        {[formatFileSize(job.size), job.detail].filter(Boolean).join(' · ')}
+                      </span>
+                    </div>
+                    <StatusBadge label={jobLabel(job.status)} tone={jobTone(job.status)} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div
+              onDragOver={onDragOver}
+              onDragEnter={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              className={`rounded-[12px] border-2 border-dashed p-4 transition-colors ${
+                dragging
+                  ? 'border-shop-accent bg-tint'
+                  : 'border-shop-border bg-shop-bg hover:border-line-strong'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:text-start">
+                <span
+                  className={`grid size-12 shrink-0 place-items-center rounded-[12px] [&_svg]:size-5 ${
+                    dragging ? 'bg-shop-accent text-white' : 'bg-white text-shop-accent shadow-[0_1px_2px_rgb(16_24_40/0.06)]'
+                  }`}
+                  aria-hidden="true"
+                >
+                  <Upload />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <strong className="block text-sm text-shop-ink">
+                    {dragging
+                      ? translate('Drop files to add them')
+                      : translate('Drop brochures here, or browse')}
+                  </strong>
+                  <p className="mt-0.5 text-[13px] text-shop-muted">
+                    {translate('PDF, image, Excel or CSV — up to 50 MB each. Select multiple files at once.')}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {translate('Browse files')}
+                </Button>
+              </div>
+
+              {files.length > 0 && (
+                <div className="mt-3 border-t border-shop-border pt-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-600">
+                      {translate('{value0} file{value1} selected', {
+                        value0: translate(String(files.length)),
+                        value1: translate(String(files.length === 1 ? '' : 's')),
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-shop-muted hover:text-shop-ink"
+                      onClick={() => setFiles([])}
+                    >
+                      {translate('Clear all')}
+                    </button>
+                  </div>
+                  <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                    {files.map((file, index) => (
+                      <li
+                        key={`${file.name}:${file.size}:${index}`}
+                        className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-shop-border bg-white py-1 ps-2.5 pe-1 text-xs font-medium"
+                      >
+                        {fileIcon(file.name)}
+                        <span className="max-w-[160px] truncate">{file.name}</span>
+                        <span className="text-shop-muted tabular-nums">{formatFileSize(file.size)}</span>
+                        <button
+                          type="button"
+                          aria-label={translate('Remove {value0}', { value0: file.name })}
+                          onClick={() => removeFile(index)}
+                          className="grid size-6 place-items-center rounded-md text-neutral-fg hover:bg-neutral-bg"
+                        >
+                          <X className="size-3.5" aria-hidden="true" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 flex justify-end">
+                    <Button type="submit" variant="primary" icon={<Upload />} disabled={!files.length}>
+                      {translate('Upload and extract')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </form>
 
         {notice && (
-          <div role="status" className="mt-3 rounded-lg bg-shop-green-bg px-3 py-2 text-sm text-primary-800">
-            {notice}
+          <div className="mt-3">
+            <Banner tone="success" title={translate('Ready to review')}>
+              {notice}
+            </Banner>
           </div>
         )}
         {error && (
-          <div role="alert" className="mt-3 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">
-            {translate(error)}
+          <div className="mt-3">
+            <Banner
+              tone="danger"
+              title={
+                /could not be imported/i.test(error)
+                  ? translate('Could not finish every file')
+                  : translate('Upload problem')
+              }
+            >
+              {error}
+            </Banner>
           </div>
         )}
 
-        {loading && !current && <TableSkeleton rows={3} label={translate("Loading imports")} />}
+        {loading && !current && !uploading && <TableSkeleton rows={3} label={translate("Loading imports")} />}
 
-        {!loading && !current && (
+        {!loading && !current && !uploading && (
           <EmptyState
             icon={<FileText />}
             tone="neutral"
             title={translate("No brochures are waiting for review")}
-            description={translate("Upload a brochure above. Every hotel it contains shows up here as a page you can check and approve.")}
+            description={translate('Upload brochures above. Every hotel they contain shows up here as a page you can check and approve.')}
           />
         )}
 

@@ -19,7 +19,12 @@ import QuoteSharePage from './pages/QuoteSharePage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
 import AssistantPage from './pages/AssistantPage.tsx'
 import WebsiteChatPage from './pages/WebsiteChatPage.tsx'
-import ReportsPage from './pages/ReportsPage.tsx'
+import ReportsLayout from './pages/reports/ReportsLayout.tsx'
+import PipelineReportPage from './pages/reports/PipelineReportPage.tsx'
+import TeamReportPage from './pages/reports/TeamReportPage.tsx'
+import AttentionReportPage from './pages/reports/AttentionReportPage.tsx'
+import ProfitReportPage from './pages/reports/ProfitReportPage.tsx'
+import SuppliersReportPage from './pages/reports/SuppliersReportPage.tsx'
 import EmailPage from './pages/EmailPage.tsx'
 import LeadsSegmentRoute from './pages/LeadsSegmentRoute.tsx'
 import QuotesPage from './pages/QuotesPage.tsx'
@@ -32,6 +37,8 @@ import SettingsPage from './pages/SettingsPage.tsx'
 import PermissionsPage from './pages/PermissionsPage.tsx'
 import CustomerPortalPage from './pages/CustomerPortalPage.tsx'
 import HomeRedirect from './components/HomeRedirect.tsx'
+import PrivacyPolicyPage from './pages/legal/PrivacyPolicyPage.tsx'
+import TermsOfServicePage from './pages/legal/TermsOfServicePage.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -68,7 +75,14 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/past-customers" element={<PastCustomersPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/reports" element={<ReportsLayout />}>
+                <Route index element={<Navigate to="pipeline" replace />} />
+                <Route path="pipeline" element={<PipelineReportPage />} />
+                <Route path="team" element={<TeamReportPage />} />
+                <Route path="attention" element={<AttentionReportPage />} />
+                <Route path="profit" element={<ProfitReportPage />} />
+                <Route path="suppliers" element={<SuppliersReportPage />} />
+              </Route>
               <Route path="/email" element={<EmailPage />} />
             </Route>
             <Route
@@ -85,6 +99,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/quote/:token" element={<QuoteSharePage />} />
             <Route path="/offers" element={<OffersPage />} />
             <Route path="/travellers/:token" element={<TravellerFormPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/privacy-policy" element={<Navigate to="/privacy-policy" replace />} />
+            <Route path="/term-and-service" element={<TermsOfServicePage />} />
+            <Route path="/terms-and-service" element={<Navigate to="/term-and-service" replace />} />
+            <Route path="/terms-of-service" element={<Navigate to="/term-and-service" replace />} />
             <Route path="/" element={<HomeRedirect />} />
             <Route path="*" element={<HomeRedirect />} />
           </Routes>

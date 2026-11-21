@@ -19,5 +19,7 @@ COPY services ./services
 COPY utils ./utils
 COPY workers ./workers
 COPY assets ./assets
+# The website chat script (served at /webchat.js).
+COPY public ./public
 EXPOSE 3000
 CMD ["node", "server.js"]

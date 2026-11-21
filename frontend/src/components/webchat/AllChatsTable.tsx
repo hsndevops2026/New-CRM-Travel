@@ -37,11 +37,23 @@ export default function AllChatsTable({ data, onData }: {
     }
   }
 
-  const toggle = (w: WebchatWidget) => run(
-    w.id,
-    () => setWidgetEnabled(w.id, !w.enabled),
-    translate(w.enabled ? 'Chat of {value0} switched off.' : 'Chat of {value0} switched on.', { value0: nameFromEmail(w.owner_email) }),
-  )
+  const toggle = async (w: WebchatWidget) => {
+    if (w.enabled) {
+      const ok = await confirm({
+        title: translate('Switch off the chat of {value0}?', { value0: nameFromEmail(w.owner_email) }),
+        description: translate('Their chat bubble disappears from their websites until it is switched on again.'),
+        confirmLabel: translate('Switch off'),
+        tone: 'danger',
+      })
+      if (!ok) return
+    }
+    await run(
+      w.id,
+      () => setWidgetEnabled(w.id, !w.enabled),
+      translate(w.enabled ? 'Chat of {value0} switched off.' : 'Chat of {value0} switched on.', { value0: nameFromEmail(w.owner_email) }),
+    )
+  }
+  const agencySites = data.settings.allowed_origins.length ? data.settings.allowed_origins : data.env_origins
 
   const rotate = async (w: WebchatWidget) => {
     const ok = await confirm({
@@ -63,7 +75,7 @@ export default function AllChatsTable({ data, onData }: {
   return (
     <section aria-labelledby="wc-all" className={CARD}>
       {dialog}
-      <h2 id="wc-all" className="text-base font-bold">{translate('Everyone\'s chats')}</h2>
+      <h2 id="wc-all" className="text-base font-bold">{translate('Everyone\'s chats')} <span className="font-normal text-shop-muted tabular-nums">({widgets.length})</span></h2>
       <p className="m-0 text-sm text-shop-muted">
         {translate('Each user has their own code. A chat appears here once its user has opened the Website chat page.')}
       </p>
@@ -97,8 +109,10 @@ export default function AllChatsTable({ data, onData }: {
                       <span className="block truncate text-xs" dir="ltr" title={w.allowed_origins.join('\n')}>
                         {w.allowed_origins.map((o) => o.replace(/^https?:\/\//, '')).join(', ')}
                       </span>
-                    ) : (
+                    ) : agencySites.length ? (
                       <span className="text-xs text-shop-muted">{translate('Agency list')}</span>
+                    ) : (
+                      <StatusBadge label={translate('Any website')} tone="warning" />
                     )}
                   </td>
                   <td className="py-2.5 pe-3 tabular-nums">{w.lead_count ?? 0}</td>

@@ -297,7 +297,7 @@ export default function TestWhatsAppModal({ open, onClose, onLeadCreated }: Prop
         )}
 
         {error && (
-          <div className="shrink-0 border-t border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 sm:px-5">
+          <div className="shrink-0 border-t border-danger bg-danger-bg px-4 py-2 text-sm text-danger-fg sm:px-5">
             {translate(error)}
           </div>
         )}

@@ -99,6 +99,11 @@ export default function LoginPage() {
           <Link to="/signup" className="font-bold text-shop-accent hover:underline">
             {translate("Request access")}</Link>
         </p>
+        <p className="text-center text-xs text-shop-muted">
+          <Link to="/privacy-policy" className="hover:text-shop-ink hover:underline">{translate('Privacy Policy')}</Link>
+          {' · '}
+          <Link to="/term-and-service" className="hover:text-shop-ink hover:underline">{translate('Terms of Service')}</Link>
+        </p>
       </form>
     </AuthLayout>
   )

@@ -519,3 +519,119 @@ describe('import carousel — uploading a file that was already imported', () =>
     expect((await screen.findAllByRole('alert')).some((a) => /still being read/.test(a.textContent || ''))).toBe(true)
   })
 })
+
+describe('import carousel — uploading multiple files at once', () => {
+  const upload = vi.mocked(api.uploadPredefinedQuoteBrochure)
+
+  const chooseMany = (...names: string[]) => {
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const list = names.map((name) => new File(['x'], name, { type: 'application/pdf' }))
+    fireEvent.change(input, { target: { files: list } })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload and extract' }))
+  }
+
+  beforeEach(() => upload.mockReset())
+
+  it('accepts more than one file on the input and shows a drop zone', async () => {
+    fetchImports.mockResolvedValue([])
+    renderModal()
+    await screen.findByText('No brochures are waiting for review')
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    expect(input.multiple).toBe(true)
+    expect(screen.getByText(/Drop brochures here, or browse/)).toBeTruthy()
+  })
+
+  it('lists selected files before extract, and lets one be removed', async () => {
+    fetchImports.mockResolvedValue([])
+    renderModal()
+    await screen.findByText('No brochures are waiting for review')
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File(['x'], 'belek.pdf', { type: 'application/pdf' }),
+          new File(['y'], 'kemer.pdf', { type: 'application/pdf' }),
+        ],
+      },
+    })
+    expect(screen.getByText('2 files selected')).toBeTruthy()
+    expect(screen.getByText('belek.pdf')).toBeTruthy()
+    expect(screen.getByText('kemer.pdf')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Remove kemer.pdf' }))
+    expect(screen.getByText('1 file selected')).toBeTruthy()
+    expect(screen.queryByText('kemer.pdf')).toBeNull()
+  })
+
+  it('shows per-file reading progress while extracting', async () => {
+    fetchImports.mockResolvedValueOnce([]).mockResolvedValue([A])
+    let finish: (value: unknown) => void = () => {}
+    upload.mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
+    renderModal()
+    await screen.findByText('No brochures are waiting for review')
+    chooseMany('belek.pdf')
+    expect(await screen.findByText('Reading brochures…')).toBeTruthy()
+    expect(screen.getByText(/Extracting “belek.pdf”/)).toBeTruthy()
+    expect(screen.getByText('Reading')).toBeTruthy()
+    finish({ importRecord: A, importRecords: [A], duplicate: false, replaced: 0 })
+    expect(await screen.findByRole('heading', { name: 'Mövenpick Taba' })).toBeTruthy()
+  })
+
+  it('uploads each selected file and shows how many packages are ready', async () => {
+    fetchImports.mockResolvedValueOnce([]).mockResolvedValue([A, B, C])
+    upload
+      .mockResolvedValueOnce({ importRecord: A, importRecords: [A], duplicate: false, replaced: 0 })
+      .mockResolvedValueOnce({ importRecord: B, importRecords: [B, C], duplicate: false, replaced: 0 })
+    renderModal()
+    await screen.findByText('No brochures are waiting for review')
+    chooseMany('belek.pdf', 'kemer.pdf')
+    await waitFor(() => expect(upload).toHaveBeenCalledTimes(2))
+    expect(upload.mock.calls.map((c) => c[0].name)).toEqual(['belek.pdf', 'kemer.pdf'])
+    expect(await screen.findByText(/Read 2 files: 3 packages ready to review/)).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Mövenpick Taba' })).toBeTruthy()
+  })
+
+  it('asks read-again for each duplicate file, then continues with the rest', async () => {
+    fetchImports.mockResolvedValueOnce([A]).mockResolvedValue([A, B, C])
+    upload
+      .mockResolvedValueOnce({ importRecord: A, importRecords: [A], duplicate: true, replaced: 0 })
+      .mockResolvedValueOnce({ importRecord: A, importRecords: [A, B], duplicate: false, replaced: 1 })
+      .mockResolvedValueOnce({ importRecord: C, importRecords: [C], duplicate: false, replaced: 0 })
+    renderModal()
+    await screen.findByRole('article')
+    chooseMany('rates.pdf', 'lara.pdf')
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'This file was already imported' })).getByRole('button', { name: 'Read it again' }))
+    await waitFor(() => expect(upload).toHaveBeenCalledTimes(3))
+    expect(upload.mock.calls[1][1]).toEqual({ reextract: true })
+    expect(upload.mock.calls[2][0].name).toBe('lara.pdf')
+    expect(await screen.findByText(/Read 2 files: 3 packages ready to review/)).toBeTruthy()
+  })
+
+  it('keeps a duplicate when declined and still uploads the next file', async () => {
+    fetchImports.mockResolvedValueOnce([A]).mockResolvedValue([A, C])
+    upload
+      .mockResolvedValueOnce({ importRecord: A, importRecords: [A], duplicate: true, replaced: 0 })
+      .mockResolvedValueOnce({ importRecord: C, importRecords: [C], duplicate: false, replaced: 0 })
+    renderModal()
+    await screen.findByRole('article')
+    chooseMany('old.pdf', 'new.pdf')
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'This file was already imported' })).getByRole('button', { name: 'Keep what I have' }))
+    await waitFor(() => expect(upload).toHaveBeenCalledTimes(2))
+    expect(upload.mock.calls[1][0].name).toBe('new.pdf')
+    expect(await screen.findByText(/Read 1 file: 1 package ready to review/)).toBeTruthy()
+    expect(screen.getByText(/“old.pdf”: kept 1 package from earlier/)).toBeTruthy()
+  })
+
+  it('continues after a failed file and reports which ones failed', async () => {
+    fetchImports.mockResolvedValueOnce([]).mockResolvedValue([C])
+    upload
+      .mockRejectedValueOnce(new Error('Server unavailable'))
+      .mockResolvedValueOnce({ importRecord: C, importRecords: [C], duplicate: false, replaced: 0 })
+    renderModal()
+    await screen.findByText('No brochures are waiting for review')
+    chooseMany('bad.pdf', 'good.pdf')
+    await waitFor(() => expect(upload).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText(/Read 1 file: 1 package ready to review/)).toBeTruthy()
+    expect((await screen.findByRole('alert')).textContent).toMatch(/1 could not be imported.*bad\.pdf: Server unavailable/)
+    expect(screen.getByRole('heading', { name: 'Titanic Beach Lara' })).toBeTruthy()
+  })
+})

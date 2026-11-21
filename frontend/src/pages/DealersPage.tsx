@@ -30,6 +30,92 @@ import {
 import { formatPhone, formatWhen } from '../lib/leads'
 import { dealerInitials, dealerStats, destinationOptions, filterDealers, GROUPS_ONLY, serviceLabel } from '../lib/dealerView'
 
+function StatTile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+  return (
+    <li className="flex flex-col gap-0.5 rounded-xl border border-shop-border bg-white px-4 py-3">
+      <span className="text-xs font-semibold text-shop-muted">{label}</span>
+      <span className="text-2xl font-extrabold tabular-nums">{value}</span>
+      {hint && <span className="text-xs text-shop-muted">{hint}</span>}
+    </li>
+  )
+}
+
+function DealerName({ dealer }: { dealer: Dealer }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-dealer-bg text-xs font-bold text-dealer-fg">
+        {dealerInitials(dealer.name)}
+      </span>
+      <div className="flex min-w-0 flex-col leading-tight">
+        <strong dir="auto" className="truncate text-start">{dealer.name}</strong>
+        {dealer.company && <span dir="auto" className="truncate text-start text-xs text-shop-muted">{dealer.company}</span>}
+      </div>
+    </div>
+  )
+}
+
+function ChannelBadges({ dealer }: { dealer: Dealer }) {
+  useI18n()
+  return (
+    <div className="flex gap-1">
+      <StatusBadge label={translate("Direct")} tone="success" />
+      {dealer.whatsapp_group_id && <StatusBadge label={translate("Group")} tone="info" />}
+    </div>
+  )
+}
+
+function Places({ dealer }: { dealer: Dealer }) {
+  const places = dealer.destinations ?? []
+  if (!places.length) return <span className="text-shop-muted">—</span>
+  return (
+    <div className="flex flex-wrap gap-1">
+      {places.map((place) => (
+        <span key={place} dir="auto" className="inline-flex h-6 items-center rounded-full border border-shop-border bg-[#f8fafb] px-2.5 text-xs font-semibold text-neutral-fg">
+          {place}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** How a dealer answers: a reply-rate bar (green good, amber middling, red poor), requests and the last one. */
+function Activity({ stats }: { stats: ReturnType<typeof dealerStats> }) {
+  useI18n()
+  if (!stats.rfqs) return <span className="text-shop-muted">{translate("No RFQs yet")}</span>
+  const rate = stats.replyRate ?? 0
+  const tone = rate >= 60 ? 'bg-emerald-500' : rate >= 30 ? 'bg-amber-500' : 'bg-rose-500'
+  return (
+    <div className="flex min-w-[170px] flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-bg" role="meter" aria-label={translate("Reply rate")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate}>
+          <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.max(rate, 4)}%` }} />
+        </div>
+        <span className="text-xs font-bold tabular-nums">{rate}%</span>
+      </div>
+      <span className="text-xs text-shop-muted tabular-nums">
+        {translate('{count} RFQ{suffix}', { count: stats.rfqs, suffix: stats.rfqs === 1 ? '' : 's' })}
+        {stats.lastAt ? <> · {translate("last {value0}", { value0: formatWhen(stats.lastAt) })}</> : null}
+      </span>
+    </div>
+  )
+}
+
+function DealerActions({ dealer, onEdit, onInbox, onDelete }: { dealer: Dealer; onEdit: () => void; onInbox: () => void; onDelete: () => void }) {
+  useI18n()
+  return (
+    <div className="flex items-center justify-end gap-0.5">
+      <Button variant="ghost" size="sm" iconOnly aria-label={translate("Edit {value0}", { value0: translate(String(dealer.name)) })} icon={<Pencil />} onClick={onEdit} />
+      <OverflowMenu
+        label={translate("More actions for {value0}", { value0: translate(String(dealer.name)) })}
+        items={[
+          { id: 'inbox', label: translate("Open Inbox"), onClick: onInbox },
+          { id: 'delete', label: translate("Delete dealer…"), tone: 'danger', onClick: onDelete },
+        ]}
+      />
+    </div>
+  )
+}
+
 export default function DealersPage() {
   useI18n()
   const { admin } = useAuth()
@@ -111,6 +197,30 @@ export default function DealersPage() {
   const destinations = useMemo(() => destinationOptions(dealers), [dealers])
   const groupCount = useMemo(() => dealers.filter((d) => d.whatsapp_group_id).length, [dealers])
 
+  const totals = useMemo(() => {
+    const direct = requests.filter((r) => r.dealer_id)
+    const replied = direct.filter((r) => r.status === 'replied').length
+    return { rfqs: requests.length, replied, rate: direct.length ? Math.round((replied / direct.length) * 100) : null }
+  }, [requests])
+  const showList = !loading && !error && filtered.length > 0
+
+  const removeDealer = async (dealer: Dealer) => {
+    const ok = await confirm({
+      title: translate("Delete {value0}?", { value0: translate(String(dealer.name)) }),
+      description: translate("The dealer is removed from the list. RFQs already sent to them stay on their leads."),
+      confirmLabel: translate("Delete dealer"),
+      tone: 'danger',
+    })
+    if (!ok) return
+    setActionError(null)
+    try {
+      await deleteDealer(dealer.id)
+      await load()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : translate("Failed to delete dealer"))
+    }
+  }
+
   const pills = [
     { id: 'all', label: 'All' },
     ...destinations.map((d) => ({ id: d, label: d })),
@@ -180,11 +290,24 @@ export default function DealersPage() {
         </section>
       )}
 
+      {!loading && !error && dealers.length > 0 && (
+        <ul className="grid list-none grid-cols-2 gap-3 p-0 lg:grid-cols-4">
+          <StatTile label={translate("Dealers")} value={dealers.length} />
+          <StatTile label={translate("WhatsApp groups")} value={groupCount} />
+          <StatTile label={translate("Quote requests sent")} value={totals.rfqs} />
+          <StatTile
+            label={translate("Replied")}
+            value={totals.rate == null ? '—' : `${totals.rate}%`}
+            hint={totals.rfqs ? translate("{value0} of {value1} requests", { value0: totals.replied, value1: totals.rfqs }) : translate("No requests yet")}
+          />
+        </ul>
+      )}
+
       {!loading && !error && dealers.length > 0 && pills.length > 1 && (
         <FilterPills ariaLabel="Destination" value={destination} onChange={setDestination} items={pills} />
       )}
 
-      <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
+      <section className={showList ? '' : 'overflow-hidden rounded-xl border border-shop-border bg-white'}>
         {loading && <TableSkeleton rows={5} label={translate("Loading dealers")} />}
         {!loading && error && (
           <EmptyState
@@ -211,120 +334,71 @@ export default function DealersPage() {
             }
           />
         )}
-        {!loading && !error && filtered.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-start text-sm">
-              <thead>
-                <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
-                  <th className="px-3.5 py-2.5">{translate("Dealer")}</th>
-                  <th className="px-3 py-2.5">WhatsApp</th>
-                  <th className="px-3 py-2.5">{translate("Destinations")}</th>
-                  <th className="px-3 py-2.5">{translate("Services")}</th>
-                  <th className="px-3 py-2.5">{translate("Activity")}</th>
-                  <th className="relative w-24 px-3.5 py-2.5">
-                    <span className="sr-only">{translate("Actions")}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((dealer) => {
-                  const stats = dealerStats(dealer.id, requests)
-                  return (
-                    <tr key={dealer.id} className="border-b border-neutral-bg last:border-0 hover:bg-shop-bg">
-                      <td className="px-3.5 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            aria-hidden="true"
-                            className="grid size-8 shrink-0 place-items-center rounded-lg bg-dealer-bg text-xs font-bold text-dealer-fg"
-                          >
-                            {dealerInitials(dealer.name)}
-                          </span>
-                          <div className="flex min-w-0 flex-col">
-                            <strong>{dealer.name}</strong>
-                            {dealer.company && <span className="text-xs text-shop-muted">{dealer.company}</span>}
+        {showList && (
+          <>
+            {/* Desktop: a table. */}
+            <div className="overflow-x-auto rounded-xl border border-shop-border bg-white shadow-[var(--shadow-card)] max-md:hidden">
+              <table className="w-full min-w-[900px] text-sm">
+                <thead>
+                  <tr className="border-b border-shop-border bg-[#f8fafc] text-[11px] font-semibold tracking-[0.06em] text-slate-500 uppercase [&>th]:text-start">
+                    <th className="px-4 py-2.5">{translate("Dealer")}</th>
+                    <th className="px-3 py-2.5">WhatsApp</th>
+                    <th className="px-3 py-2.5">{translate("Destinations")}</th>
+                    <th className="px-3 py-2.5">{translate("Services")}</th>
+                    <th className="px-3 py-2.5">{translate("Activity")}</th>
+                    <th className="w-24 px-4 py-2.5"><span className="sr-only">{translate("Actions")}</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((dealer) => {
+                    const stats = dealerStats(dealer.id, requests)
+                    return (
+                      <tr key={dealer.id} className="border-b border-[#eef1f5] transition-colors last:border-0 hover:bg-[#f7fafb]">
+                        <td className="px-4 py-3.5">
+                          <DealerName dealer={dealer} />
+                        </td>
+                        <td className="px-3 py-3.5">
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="tabular-nums text-slate-700"><bdi dir="ltr">{formatPhone(dealer.phone)}</bdi></span>
+                            <ChannelBadges dealer={dealer} />
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex flex-col items-start gap-0.5">
-                          <span className="tabular-nums"><bdi dir="ltr">{formatPhone(dealer.phone)}</bdi></span>
-                          <div className="flex gap-1">
-                            <StatusBadge label={translate("Direct")} tone="success" />
-                            {dealer.whatsapp_group_id && <StatusBadge label={translate("Group")} tone="info" />}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {(dealer.destinations ?? []).length ? (
-                            dealer.destinations!.map((place) => (
-                              <span key={place} className="inline-flex h-[22px] items-center rounded-md bg-neutral-bg px-2 text-xs font-semibold text-neutral-fg">
-                                {place}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-shop-muted">—</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 text-slate-700">
-                        {(dealer.services ?? []).length ? dealer.services!.map(serviceLabel).join(', ') : <span className="text-shop-muted">—</span>}
-                      </td>
-                      <td className="px-3 py-3">
-                        {stats.rfqs ? (
-                          <div className="flex flex-col tabular-nums">
-                            <span>{stats.lastAt ? translate("Last RFQ {value0}", { value0: translate(String(formatWhen(stats.lastAt))) }) : translate("{value0} RFQs", { value0: translate(String(stats.rfqs)) })}</span>
-                            <span className="text-xs text-shop-muted">
-                              {translate('{count} RFQ{suffix}', { count: stats.rfqs, suffix: stats.rfqs === 1 ? '' : 's' })} · {stats.replyRate}{translate("% reply")}</span>
-                          </div>
-                        ) : (
-                          <span className="text-shop-muted">{translate("No RFQs yet")}</span>
-                        )}
-                      </td>
-                      <td className="px-3.5 py-3">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            iconOnly
-                            aria-label={translate("Edit {value0}", { value0: translate(String(dealer.name)) })}
-                            icon={<Pencil />}
-                            onClick={() => setDealerEditor(dealer)}
-                          />
-                          <OverflowMenu
-                            label={translate("More actions for {value0}", { value0: translate(String(dealer.name)) })}
-                            items={[
-                              { id: 'inbox', label: translate("Open Inbox"), onClick: () => navigate('/inbox') },
-                              {
-                                id: 'delete',
-                                label: translate("Delete dealer…"),
-                                tone: 'danger',
-                                onClick: async () => {
-                                  const ok = await confirm({
-                                    title: translate("Delete {value0}?", { value0: translate(String(dealer.name)) }),
-                                    description: translate("The dealer is removed from the list. RFQs already sent to them stay on their leads."),
-                                    confirmLabel: translate("Delete dealer"),
-                                  })
-                                  if (!ok) return
-                                  setActionError(null)
-                                  try {
-                                    await deleteDealer(dealer.id)
-                                    await load()
-                                  } catch (err) {
-                                    setActionError(err instanceof Error ? err.message : translate("Failed to delete dealer"))
-                                  }
-                                },
-                              },
-                            ]}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                        <td className="px-3 py-3.5"><Places dealer={dealer} /></td>
+                        <td className="px-3 py-3.5 text-slate-700">
+                          {(dealer.services ?? []).length ? dealer.services!.map(serviceLabel).join(', ') : <span className="text-shop-muted">—</span>}
+                        </td>
+                        <td className="px-3 py-3.5"><Activity stats={stats} /></td>
+                        <td className="px-4 py-3.5">
+                          <DealerActions dealer={dealer} onEdit={() => setDealerEditor(dealer)} onInbox={() => navigate('/inbox')} onDelete={() => void removeDealer(dealer)} />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Phones: one card per dealer. */}
+            <ul className="m-0 grid list-none gap-3 p-0 md:hidden">
+              {filtered.map((dealer) => {
+                const stats = dealerStats(dealer.id, requests)
+                return (
+                  <li key={dealer.id} className="flex flex-col gap-3 rounded-xl border border-shop-border bg-white p-4">
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1"><DealerName dealer={dealer} /></div>
+                      <DealerActions dealer={dealer} onEdit={() => setDealerEditor(dealer)} onInbox={() => navigate('/inbox')} onDelete={() => void removeDealer(dealer)} />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="tabular-nums text-slate-700"><bdi dir="ltr">{formatPhone(dealer.phone)}</bdi></span>
+                      <ChannelBadges dealer={dealer} />
+                    </div>
+                    {(dealer.destinations ?? []).length > 0 && <Places dealer={dealer} />}
+                    <Activity stats={stats} />
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
       </section>
 

@@ -184,7 +184,7 @@ export default function TripPlanPanel({ leadId }: Props) {
   }
 
   if (loading) return <p role="status" className="text-sm text-shop-muted">{translate('Loading…')}</p>
-  if (error) return <p className="text-sm text-red-600">{translate(error)}</p>
+  if (error) return <p className="text-sm text-danger-fg">{translate(error)}</p>
 
   return (
     <section aria-labelledby="trip-plan-h" className="space-y-4">

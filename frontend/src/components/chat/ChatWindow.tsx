@@ -140,7 +140,7 @@ export default function ChatWindow({
       <div ref={scrollRef} role="log" aria-live="polite" className="min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-6">
         {loading && <p role="status" className="py-8 text-center text-sm text-shop-muted">{translate("Loading messages…")}</p>}
         {!loading && error && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-danger-bg px-3 py-2 text-sm text-danger-fg">
+          <div role="alert" className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm text-danger-fg">
             {translate(error)}
           </div>
         )}
@@ -188,7 +188,7 @@ export default function ChatWindow({
         onSend={onSend}
         quickReplies={customer && !compact}
         label={translate("Message {value0}", { value0: translate(String(thread.title)) })}
-        placeholder={thread.kind === 'group' ? translate("Message this group…") : translate("Message {value0}… (Enter to send)", { value0: translate(String(thread.title)) })}
+        placeholder={thread.kind === 'group' ? translate("Message this group…") : translate("Message {value0}…", { value0: translate(String(thread.title)) })}
       />
     </div>
   )

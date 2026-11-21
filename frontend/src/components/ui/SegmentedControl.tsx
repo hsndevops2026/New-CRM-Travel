@@ -31,7 +31,7 @@ export default function SegmentedControl({ items, value, onChange, ariaLabel }: 
     <div
       role="tablist"
       aria-label={translate(ariaLabel)}
-      className="inline-flex gap-0.5 rounded-[9px] bg-neutral-bg p-[3px]"
+      className="inline-flex gap-0.5 rounded-[10px] border border-shop-border bg-[#eef1f5] p-[3px]"
     >
       {items.map((item, index) => {
         const on = item.id === value
@@ -53,13 +53,13 @@ export default function SegmentedControl({ items, value, onChange, ariaLabel }: 
                 move(index, language === 'ar' || language === 'he' ? 1 : -1)
               }
             }}
-            className={`inline-flex h-[30px] items-center gap-1.5 rounded-[7px] px-3 text-[13px] font-semibold max-sm:h-10 ${
-              on ? 'bg-white text-shop-ink shadow-sm' : 'text-slate-600 hover:text-shop-ink'
+            className={`inline-flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 text-[13px] font-semibold max-sm:h-11 ${
+              on ? 'bg-white text-shop-ink shadow-[0_1px_2px_rgb(16_24_40/0.08),0_1px_3px_rgb(16_24_40/0.06)]' : 'text-slate-600 hover:bg-white/60 hover:text-shop-ink'
             }`}
           >
             {item.icon && <span className="flex [&_svg]:size-4">{item.icon}</span>}
             {translate(item.label)}
-            {item.count != null && <span className="text-xs tabular-nums text-shop-muted">{item.count}</span>}
+            {item.count != null && <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${on ? 'bg-tint text-shop-accent' : 'text-shop-muted'}`}>{item.count}</span>}
           </button>
         )
       })}

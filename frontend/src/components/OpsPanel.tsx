@@ -1,3 +1,4 @@
+import { Wrench } from 'lucide-react'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useState } from 'react'
 import Button from './ui/Button'
@@ -90,9 +91,12 @@ export default function OpsPanel() {
   return (
     <section id="ops" aria-labelledby="s-ops" className="scroll-mt-4 rounded-[10px] border border-shop-border bg-white p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 id="s-ops" className="text-base font-bold">{translate("Operational tools")}</h2>
-          <p className="text-xs text-shop-muted">{translate("Failed queue jobs and quote deliveries")}</p>
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-tint text-shop-accent"><Wrench className="size-[18px]" strokeWidth={1.8} /></span>
+          <div className="min-w-0">
+            <h2 id="s-ops" className="m-0 text-base font-bold">{translate("Operational tools")}</h2>
+            <p className="m-0 mt-0.5 text-[13px] text-shop-muted">{translate("Failed queue jobs and quote deliveries")}</p>
+          </div>
         </div>
         <Button size="sm" onClick={() => void load()} disabled={loading}>
           {translate("Refresh")}</Button>

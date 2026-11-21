@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ListChecks, Plus, Trash2 } from 'lucide-react'
+import { AlarmClock, CalendarClock, CircleCheck, Clock, ListChecks, Plus, Trash2, UserRound, Briefcase, type LucideIcon } from 'lucide-react'
 import Button from '../components/ui/Button'
 import NewTaskForm from '../components/tasks/NewTaskForm'
 import EmptyState from '../components/ui/EmptyState'
 import PageHeader from '../components/ui/PageHeader'
+import SegmentedControl from '../components/ui/SegmentedControl'
 import { useAuth } from '../context/AuthContext'
 import { useConfirm } from '../hooks/useConfirm'
+import { nameFromEmail } from '../lib/people'
 import { locale, t as translate, useI18n } from '../lib/i18n'
 import {
   TASK_GROUP_ORDER,
@@ -27,6 +29,14 @@ const GROUP_TITLES: Record<TaskGroup, string> = {
   upcoming: 'Upcoming',
   no_date: 'No deadline',
   done: 'Done',
+}
+
+const GROUP_LOOK: Record<TaskGroup, { icon: LucideIcon; dot: string; text: string; chip: string }> = {
+  overdue: { icon: AlarmClock, dot: 'bg-rose-500', text: 'text-rose-700', chip: 'bg-rose-50 text-rose-700 border-rose-200' },
+  today: { icon: Clock, dot: 'bg-amber-500', text: 'text-amber-800', chip: 'bg-amber-50 text-amber-800 border-amber-200' },
+  upcoming: { icon: CalendarClock, dot: 'bg-teal-500', text: 'text-teal-800', chip: 'bg-[#f8fafb] text-slate-700 border-shop-border' },
+  no_date: { icon: ListChecks, dot: 'bg-slate-400', text: 'text-slate-600', chip: 'bg-[#f8fafb] text-slate-700 border-shop-border' },
+  done: { icon: CircleCheck, dot: 'bg-emerald-500', text: 'text-emerald-800', chip: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
 }
 
 const field = taskField
@@ -97,6 +107,7 @@ export default function TasksPage() {
   }
 
   const openCount = tasks.filter((t) => t.status === 'open').length
+  const counts = useMemo(() => Object.fromEntries(groups.map(([g, list]) => [g, list.length])) as Partial<Record<TaskGroup, number>>, [groups])
 
   return (
     <div className="mx-auto w-full max-w-[900px] p-4 pb-24 sm:p-6">
@@ -114,17 +125,50 @@ export default function TasksPage() {
           onCreated={(task) => { setAdding(false); setTasks((list) => [task, ...list]) }}
         /></div>
       )}
-      <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+      {!loading && tasks.length > 0 && (
+        <ul className="mb-4 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4">
+          {(['overdue', 'today', 'upcoming', 'no_date'] as TaskGroup[]).map((g) => {
+            const count = counts[g] || 0
+            const look = GROUP_LOOK[g]
+            const Icon = look.icon
+            return (
+              <li key={g}>
+                <a
+                  href={count ? `#tasks-${g}` : undefined}
+                  className={`flex items-center gap-3 rounded-xl border bg-white px-3.5 py-3 shadow-[var(--shadow-card)] ${count ? 'border-shop-border hover:border-line-strong' : 'border-shop-border opacity-60'}`}
+                >
+                  <span aria-hidden="true" className={`grid size-9 shrink-0 place-items-center rounded-[10px] border ${look.chip}`}>
+                    <Icon className="size-[18px]" strokeWidth={1.8} />
+                  </span>
+                  <span className="flex flex-col leading-tight">
+                    <span className={`text-xl font-extrabold tabular-nums ${count && g === 'overdue' ? 'text-rose-700' : ''}`}>{count}</span>
+                    <span className="text-xs font-semibold text-shop-muted">{translate(GROUP_TITLES[g])}</span>
+                  </span>
+                </a>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <SegmentedControl
+          ariaLabel="Which tasks"
+          value={showDone ? 'all' : 'open'}
+          onChange={(id) => setShowDone(id === 'all')}
+          items={[
+            { id: 'open', label: 'Open' },
+            { id: 'all', label: 'Include done' },
+          ]}
+        />
         {isAdmin && (
-          <select aria-label={translate('Employee')} value={filter} onChange={(e) => setFilter(e.target.value)} className={field}>
-            <option value="">{translate('Everyone')}</option>
-            {assignees.map((a) => <option key={a.id} value={a.id}>{a.email}</option>)}
-          </select>
+          <label className="flex items-center gap-2 text-shop-muted">
+            <UserRound className="size-4" aria-hidden="true" />
+            <select aria-label={translate('Employee')} value={filter} onChange={(e) => setFilter(e.target.value)} className={`${field} min-w-[200px]`}>
+              <option value="">{translate('Everyone')}</option>
+              {assignees.map((a) => <option key={a.id} value={a.id}>{a.email}</option>)}
+            </select>
+          </label>
         )}
-        <label className="inline-flex items-center gap-2 text-shop-muted">
-          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} />
-          {translate('Show done tasks')}
-        </label>
       </div>
       {error && <p className="mb-3 text-sm text-danger-fg">{translate(error)}</p>}
       {loading ? (
@@ -136,35 +180,48 @@ export default function TasksPage() {
       ) : (
         <div className="grid gap-4">
           {groups.map(([group, list]) => (
-            <section key={group} className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
-              <h2 className={`border-b border-shop-border px-3.5 py-2 text-xs font-bold ${group === 'overdue' ? 'text-danger-fg' : 'text-shop-muted'}`}>
-                {translate(GROUP_TITLES[group])} · {list.length}
+            <section key={group} id={`tasks-${group}`} className="scroll-mt-4 overflow-hidden rounded-xl border border-shop-border bg-white">
+              <h2 className={`flex items-center gap-2 border-b border-shop-border bg-[#f8fafc] px-4 py-2.5 text-[13px] font-bold ${GROUP_LOOK[group].text}`}>
+                <span aria-hidden="true" className={`size-2 rounded-full ${GROUP_LOOK[group].dot}`} />
+                {translate(GROUP_TITLES[group])}
+                <span className="rounded-full bg-white px-2 text-xs font-semibold text-shop-muted tabular-nums shadow-[var(--shadow-card)]">{list.length}</span>
               </h2>
-              <ul className="divide-y divide-neutral-bg">
+              <ul className="divide-y divide-[#eef1f5]">
                 {list.map((task) => {
                   const canDelete = isAdmin || (task.created_by === admin?.id && task.assigned_to === admin?.id)
                   const done = task.status === 'done'
                   return (
-                    <li key={task.id} className="flex items-start gap-3 px-3.5 py-3">
+                    <li key={task.id} className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[#f7fafb]">
                       <input
                         type="checkbox"
-                        className="mt-1 size-4 shrink-0"
+                        className="mt-0.5 size-[18px] shrink-0 rounded-full"
                         checked={done}
                         disabled={busy === task.id}
                         aria-label={translate(done ? 'Mark as not done' : 'Mark as done')}
                         onChange={() => void toggle(task)}
                       />
                       <div className="min-w-0 flex-1">
-                        <p dir="auto" className={`text-sm font-semibold ${done ? 'text-shop-muted line-through' : 'text-shop-ink'}`}>{task.title}</p>
+                        <p dir="auto" className={`text-[14px] font-semibold ${done ? 'text-shop-muted line-through' : 'text-shop-ink'}`}>{task.title}</p>
                         {task.notes && <p dir="auto" className="mt-0.5 whitespace-pre-line text-xs text-shop-muted">{task.notes}</p>}
-                        <p className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-shop-muted">
-                          {task.due_at && <span className={group === 'overdue' ? 'font-semibold text-danger-fg' : ''}>{formatDue(task.due_at)}</span>}
-                          {isAdmin && <span>{translate('For {value0}', { value0: task.assigned_to_email })}</span>}
+                        <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-shop-muted">
+                          {task.due_at && (
+                            <span className={`inline-flex h-6 items-center gap-1 rounded-full border px-2 font-semibold tabular-nums ${GROUP_LOOK[group].chip}`}>
+                              <Clock className="size-3" aria-hidden="true" />
+                              {formatDue(task.due_at)}
+                            </span>
+                          )}
+                          {isAdmin && (
+                            <span className="inline-flex h-6 items-center gap-1 rounded-full border border-shop-border bg-white px-2" title={task.assigned_to_email}>
+                              <UserRound className="size-3" aria-hidden="true" />
+                              {translate('For {value0}', { value0: nameFromEmail(task.assigned_to_email) })}
+                            </span>
+                          )}
                           {task.created_by && task.created_by !== task.assigned_to && task.created_by_email && !isAdmin && (
                             <span>{translate('From {value0}', { value0: task.created_by_email })}</span>
                           )}
                           {task.lead_id && (
-                            <Link to={`/leads/${task.lead_id}`} className="font-semibold text-shop-accent hover:underline">
+                            <Link to={`/leads/${task.lead_id}`} className="inline-flex h-6 items-center gap-1 rounded-full border border-teal-200 bg-tint px-2 font-semibold text-primary-800 hover:border-shop-accent">
+                              <Briefcase className="size-3" aria-hidden="true" />
                               {[task.customer_name, task.lead_destination].filter(Boolean).join(' · ') || translate('Open lead')}
                             </Link>
                           )}
@@ -174,7 +231,7 @@ export default function TasksPage() {
                       {canDelete && (
                         <button
                           type="button"
-                          className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-danger-fg hover:bg-danger-bg"
+                          className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-shop-muted transition-opacity hover:bg-danger-bg hover:text-danger-fg focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                           aria-label={translate('Delete {value0}', { value0: task.title })}
                           disabled={busy === task.id}
                           onClick={() => void remove(task)}

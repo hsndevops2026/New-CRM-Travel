@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { setLanguage } from './i18n'
 import type { Thread } from './inbox'
 import { bubbleDelivery, filterThreads, hasLead, QUICK_REPLIES, threadCounts, threadInitials, threadPreview } from './inboxView'
 
 const t = (over: Partial<Thread>): Thread => ({ id: 'x', kind: 'customer', title: 'T', subtitle: '', last_message: '', last_at: null, ...over })
+
+beforeAll(() => setLanguage('en'))
 
 describe('filterThreads / threadCounts', () => {
   const threads = [t({ id: '1' }), t({ id: '2', kind: 'dealer' }), t({ id: '3', kind: 'group' }), t({ id: '4' })]
@@ -35,6 +38,10 @@ describe('threadPreview', () => {
     expect(threadPreview({ last_message: 'Quote v1\nattached', last_direction: 'outbound' })).toBe('You: Quote v1 attached')
     expect(threadPreview({ last_message: 'Hello', last_direction: 'inbound' })).toBe('Hello')
     expect(threadPreview({ last_message: '', last_direction: null })).toBe('No messages yet')
+    setLanguage('ar')
+    expect(threadPreview({ last_message: 'hello', last_direction: 'outbound' })).toBe('أنت: \u2068hello\u2069')
+    expect(threadPreview({ last_message: '', last_direction: null })).toBe('لا توجد رسائل بعد')
+    setLanguage('en')
   })
 })
 

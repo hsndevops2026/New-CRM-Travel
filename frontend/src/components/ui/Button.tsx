@@ -19,9 +19,9 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary: 'border-shop-accent bg-shop-accent text-white hover:border-primary-800 hover:bg-primary-800',
-  secondary: 'border-line-strong bg-white text-shop-ink hover:bg-neutral-bg',
-  danger: 'border-danger bg-danger text-white hover:border-danger-hover hover:bg-danger-hover',
+  primary: 'border-shop-accent bg-shop-accent text-white shadow-[0_1px_2px_rgb(15_118_110/0.3),inset_0_1px_0_rgb(255_255_255/0.12)] hover:border-primary-800 hover:bg-primary-800',
+  secondary: 'border-line-strong bg-white text-shop-ink shadow-[0_1px_2px_rgb(16_24_40/0.05)] hover:border-slate-300 hover:bg-shop-bg',
+  danger: 'border-danger bg-danger text-white shadow-[0_1px_2px_rgb(185_28_28/0.3)] hover:border-danger-hover hover:bg-danger-hover',
   ghost: 'border-transparent bg-transparent text-neutral-fg hover:bg-neutral-bg',
 }
 
@@ -50,7 +50,7 @@ export default function Button({
       {...props}
       disabled={inactive}
       aria-busy={loading || undefined}
-      className={`relative inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border font-semibold transition-colors disabled:cursor-not-allowed ${
+      className={`relative inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] border font-semibold transition-[background-color,border-color,box-shadow,transform] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:active:translate-y-0 ${
         // A disabled control is grey whatever its variant; a loading one keeps its colour.
         disabled && !loading
           ? 'border-shop-border bg-neutral-bg text-slate-400'

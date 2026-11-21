@@ -28,9 +28,11 @@
     var v = script && script.getAttribute('data-' + name);
     return v && v.trim() ? v.trim() : '';
   };
-  var scriptOrigin = '';
-  try { scriptOrigin = new URL(script.src, location.href).origin; } catch (e) { scriptOrigin = ''; }
-  var API = (attr('api') || scriptOrigin).replace(/\/$/, '');
+  // The backend may live under a path (https://api.agency.com/travel/webchat.js), so the
+  // API is next to the script, not at the root of its domain.
+  var scriptBase = '';
+  try { scriptBase = new URL(script.src, location.href).href.replace(/[?#].*$/, '').replace(/\/[^/]*$/, ''); } catch (e) { scriptBase = ''; }
+  var API = (attr('api') || scriptBase).replace(/\/$/, '');
   var CHAT_KEY = /^wc_[A-Za-z0-9_-]{20,64}$/.test(attr('key')) ? attr('key') : '';
   // The key goes in the address of every call, so the server knows whose chat this is.
   function endpoint(path) {

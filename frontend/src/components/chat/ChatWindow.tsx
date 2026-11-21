@@ -188,7 +188,7 @@ export default function ChatWindow({
         onSend={onSend}
         quickReplies={customer && !compact}
         label={translate("Message {value0}", { value0: translate(String(thread.title)) })}
-        placeholder={thread.kind === 'group' ? translate("Message this group…") : translate("Message {value0}… (Enter to send)", { value0: translate(String(thread.title)) })}
+        placeholder={thread.kind === 'group' ? translate("Message this group…") : translate("Message {value0}…", { value0: translate(String(thread.title)) })}
       />
     </div>
   )

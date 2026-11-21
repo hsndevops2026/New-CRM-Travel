@@ -2,7 +2,7 @@ import { setPackagePublic } from '../lib/growth'
 import { useAuth } from '../context/AuthContext'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
-import { Download, Send, Trash2, X } from 'lucide-react'
+import { Download, LayoutGrid, List, Send, Trash2, X } from 'lucide-react'
 import { useConfirm } from '../hooks/useConfirm'
 import { useToast } from '../hooks/useToast'
 import { formatWhen } from '../lib/leads'
@@ -11,6 +11,7 @@ import FilterPills from './ui/FilterPills'
 import StatusBadge from './ui/StatusBadge'
 import EmptyState from './ui/EmptyState'
 import OverflowMenu from './ui/OverflowMenu'
+import SegmentedControl from './ui/SegmentedControl'
 import {
   approvePredefinedQuoteImport,
   deletePredefinedQuote,
@@ -18,7 +19,7 @@ import {
   downloadPredefinedQuotePdf,
   fetchPredefinedQuotes,
   formatQuoteMoney,
-  quoteSummary,
+  quoteSummaryParts,
   quoteTypeLabel,
   type PredefinedQuote,
   type PredefinedQuoteImport,
@@ -46,22 +47,48 @@ function TypeBadge({ type }: { type: string }) {
 const COVER_TONES = ['#0F766E', '#134E4A', '#1E3A8A', '#7C2D12', '#0369A1', '#3F6212', '#334155']
 
 /** 56×40 cover: the photo when there is one, else a flat colour with the destination code. */
-function Cover({ quote, className = 'h-10 w-14' }: { quote: PredefinedQuote; className?: string }) {
+function Cover({ quote, className = 'h-10 w-14 rounded-md', large = false }: { quote: PredefinedQuote; className?: string; large?: boolean }) {
   useI18n()
-  if (quote.cover_image_url) {
-    return <img src={quote.cover_image_url} alt="" className={`${className} shrink-0 rounded-md object-cover`} />
+  const [broken, setBroken] = useState(false)
+  if (quote.cover_image_url && !broken) {
+    return <img src={quote.cover_image_url} alt="" onError={() => setBroken(true)} className={`${className} shrink-0 object-cover`} />
   }
   const label = (quote.destination || quote.title || '?').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 3).toUpperCase()
   const tone = COVER_TONES[(quote.id.charCodeAt(0) || 0) % COVER_TONES.length]
   return (
     <div
       aria-hidden="true"
-      className={`${className} grid shrink-0 place-items-center rounded-md text-[10px] font-bold text-white/85`}
-      style={{ background: tone }}
+      className={`${className} grid shrink-0 place-items-center font-bold text-white/85 ${large ? 'text-3xl tracking-[0.12em]' : 'text-[10px]'}`}
+      style={{ background: `linear-gradient(135deg, ${tone}, ${tone}cc)` }}
     >
       {translate(label)}
     </div>
   )
+}
+
+/** Route, dates, hotels and flights, each kept in its own direction (an English city in an Arabic line). */
+function SummaryLine({ quote }: { quote: PredefinedQuote }) {
+  const parts = quoteSummaryParts(quote)
+  return (
+    <>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {i > 0 && ' · '}
+          <bdi>{part}</bdi>
+        </span>
+      ))}
+    </>
+  )
+}
+
+type View = 'grid' | 'list'
+const VIEW_KEY = 'quotes:view'
+function savedView(): View {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'
+  } catch {
+    return 'grid'
+  }
 }
 
 type TypeFilter = 'all' | 'package' | 'hotel' | 'flight'
@@ -80,6 +107,11 @@ export default function PredefinedQuotesPanel({
   const toast = useToast()
   const [quotes, setQuotes] = useState<PredefinedQuote[]>([])
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+  const [view, setViewState] = useState<View>(savedView)
+  const setView = (next: View) => {
+    setViewState(next)
+    try { localStorage.setItem(VIEW_KEY, next) } catch { /* the choice just is not remembered */ }
+  }
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -292,6 +324,9 @@ export default function PredefinedQuotesPanel({
     { id: 'delete', label: 'Delete', tone: 'danger' as const, onClick: () => void handleDelete(quote) },
   ]
 
+  // Cards have their own boxes; the table and the empty/loading states share one.
+  const showCards = !loading && !error && filteredQuotes.length > 0
+
   return (
     <>
       {!loading && !error && quotes.length > 0 && (
@@ -307,17 +342,30 @@ export default function PredefinedQuotesPanel({
               { id: 'flight', label: translate("Flight"), count: typeCounts.flight },
             ]}
           />
-          {filteredQuotes.length > 0 && (
-            <label className="flex min-h-9 items-center gap-2 text-xs font-semibold text-shop-muted">
-              <input
-                type="checkbox"
-                aria-label={translate("Select all visible templates")}
-                checked={allVisibleSelected}
-                disabled={deletingSelected}
-                onChange={(event) => toggleAllVisible(event.target.checked)}
+          <div className="flex flex-wrap items-center gap-3">
+            {filteredQuotes.length > 0 && (
+              <label className="flex min-h-9 items-center gap-2 text-xs font-semibold text-shop-muted">
+                <input
+                  type="checkbox"
+                  aria-label={translate("Select all visible templates")}
+                  checked={allVisibleSelected}
+                  disabled={deletingSelected}
+                  onChange={(event) => toggleAllVisible(event.target.checked)}
+                />
+                {translate("Select all")}</label>
+            )}
+            <div className="max-lg:hidden">
+              <SegmentedControl
+                ariaLabel="Library view"
+                value={view}
+                onChange={(id) => setView(id as View)}
+                items={[
+                  { id: 'grid', label: 'Grid', icon: <LayoutGrid strokeWidth={1.8} /> },
+                  { id: 'list', label: 'List', icon: <List strokeWidth={1.8} /> },
+                ]}
               />
-              {translate("Select all")}</label>
-          )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -344,7 +392,7 @@ export default function PredefinedQuotesPanel({
         </div>
       )}
 
-      <section className="overflow-hidden rounded-[10px] border border-shop-border bg-white">
+      <section className={showCards ? '' : 'overflow-hidden rounded-xl border border-shop-border bg-white'}>
         {loading && <div role="status" className="px-4 py-16 text-center text-shop-muted">{translate("Loading quotes…")}</div>}
         {!loading && error && <div role="alert" className="px-4 py-16 text-center text-danger-fg">{translate(error)}</div>}
         {!loading && !error && quotes.length === 0 && (
@@ -363,47 +411,82 @@ export default function PredefinedQuotesPanel({
 
         {!loading && !error && filteredQuotes.length > 0 && (
           <>
-            <div className="lg:hidden">
-              {filteredQuotes.map((quote) => (
-                <article
-                  key={quote.id}
-                  className={`border-b border-neutral-bg p-4 last:border-b-0 ${selected.has(quote.id) ? 'bg-tint' : ''}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      aria-label={translate("Select {value0}", { value0: translate(String(quote.title)) })}
-                      checked={selected.has(quote.id)}
-                      disabled={deletingSelected}
-                      onChange={(event) => toggleOne(quote.id, event.target.checked)}
-                      className="mt-3 size-4 shrink-0"
-                    />
-                    <Cover quote={quote} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-bold">{quote.title}</h3>
+            <ul className={`m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-4 p-0 ${view === 'list' ? 'lg:hidden' : ''}`}>
+              {filteredQuotes.map((quote) => {
+                const isSelected = selected.has(quote.id)
+                return (
+                  <li
+                    key={quote.id}
+                    className={`group flex flex-col overflow-hidden rounded-xl border bg-white shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-raised)] ${isSelected ? 'border-shop-accent ring-2 ring-shop-accent/20' : 'border-shop-border'}`}
+                  >
+                    <div className="relative">
+                      <button type="button" onClick={() => setPreview(quote)} className="block w-full" aria-label={translate("Preview {value0}", { value0: quote.title })}>
+                        <Cover quote={quote} className="h-40 w-full" large />
+                      </button>
+                      <label className="absolute start-2.5 top-2.5 grid size-8 cursor-pointer place-items-center rounded-lg bg-white/90 shadow-sm backdrop-blur">
+                        <input
+                          type="checkbox"
+                          aria-label={translate("Select {value0}", { value0: translate(String(quote.title)) })}
+                          checked={isSelected}
+                          disabled={deletingSelected}
+                          onChange={(event) => toggleOne(quote.id, event.target.checked)}
+                          className="size-4"
+                        />
+                      </label>
+                      <div className="absolute end-2.5 top-2.5 flex flex-wrap justify-end gap-1.5">
                         <TypeBadge type={quote.quote_type} />
-                        {quote.is_public && <span className="rounded-full bg-shop-green-bg px-2 py-0.5 text-[11px] font-semibold text-primary-800">{translate('On offers page')}</span>}
                       </div>
-                      <p className="mt-1 text-sm text-shop-muted">{quoteSummary(quote)}</p>
-                      <div className="mt-1.5 font-bold tabular-nums">
-                        {formatQuoteMoney(displayTotal(quote), quote.currency)}
+                      {quote.is_public && (
+                        <span className="absolute bottom-2.5 start-2.5 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-primary-800 shadow-sm">{translate('On offers page')}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1.5 p-4">
+                      <h3 dir="auto" className="m-0 line-clamp-2 text-start text-[15px] leading-snug font-bold">{quote.title}</h3>
+                      <p className="m-0 line-clamp-2 text-[13px] text-shop-muted"><SummaryLine quote={quote} /></p>
+                      <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[11px] font-semibold tracking-[0.06em] text-shop-muted uppercase">{translate("Total")}</span>
+                          <span className="text-lg font-extrabold tabular-nums">{formatQuoteMoney(displayTotal(quote), quote.currency)}</span>
+                        </div>
+                        <span className="text-xs text-shop-muted tabular-nums"><bdi dir="ltr">{formatWhen(quote.updated_at || quote.created_at)}</bdi></span>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-3 flex items-center gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setPreview(quote)}>
-                      {translate("Preview")}</Button>
-                    <OverflowMenu portal align="left" label={translate("More actions for {value0}", { value0: translate(String(quote.title)) })} items={quoteMenu(quote)} />
-                  </div>
-                </article>
-              ))}
-            </div>
+                    <div className="flex items-center gap-1 border-t border-[#eef1f5] px-2.5 py-2">
+                      <Button size="sm" variant="ghost" onClick={() => setPreview(quote)}>
+                        {translate("Preview")}</Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        iconOnly
+                        aria-label={translate("Download PDF of {value0}", { value0: translate(String(quote.title)) })}
+                        loading={downloadingId === quote.id}
+                        icon={<Download />}
+                        onClick={() => void handleDownload(quote)}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        iconOnly
+                        aria-label={translate("Send {value0} to a customer", { value0: translate(String(quote.title)) })}
+                        icon={<Send />}
+                        onClick={() => setSendToCustomer(quote)}
+                      />
+                      <span className="ms-auto">
+                        <OverflowMenu
+                          label={translate("More actions for {value0}", { value0: translate(String(quote.title)) })}
+                          items={quoteMenu(quote).filter((i) => !['view', 'download', 'send'].includes(i.id))}
+                        />
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
 
-            <div className="hidden overflow-x-auto lg:block">
+            <div className={`hidden overflow-x-auto rounded-xl border border-shop-border bg-white shadow-[var(--shadow-card)] ${view === 'list' ? 'lg:block' : ''}`}>
               <table className="w-full min-w-[980px] text-start text-sm">
                 <thead>
-                  <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
+                  <tr className="border-b border-shop-border bg-[#f8fafc] text-[11px] font-semibold tracking-[0.06em] text-slate-500 uppercase [&>th]:text-start">
                     <th className="w-10 px-3 py-2.5">
                       <input
                         type="checkbox"
@@ -419,16 +502,16 @@ export default function PredefinedQuotesPanel({
                     <th className="px-3 py-2.5">{translate("Template")}</th>
                     <th className="px-3 py-2.5">{translate("Type")}</th>
                     <th className="px-3 py-2.5">{translate("Trip")}</th>
-                    <th className="px-3 py-2.5 text-end">{translate("Total")}</th>
+                    <th className="px-3 py-2.5 !text-end">{translate("Total")}</th>
                     <th className="px-3 py-2.5">{translate("Updated")}</th>
-                    <th className="px-3.5 py-2.5 text-end">{translate("Actions")}</th>
+                    <th className="px-3.5 py-2.5 !text-end">{translate("Actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredQuotes.map((quote) => (
                     <tr
                       key={quote.id}
-                      className={`border-b border-neutral-bg last:border-0 hover:bg-shop-bg ${selected.has(quote.id) ? 'bg-tint' : ''}`}
+                      className={`border-b border-[#eef1f5] transition-colors last:border-0 hover:bg-[#f7fafb] ${selected.has(quote.id) ? 'bg-tint' : ''}`}
                     >
                       <td className="px-3 py-2.5">
                         <input
@@ -443,12 +526,12 @@ export default function PredefinedQuotesPanel({
                         <Cover quote={quote} />
                       </td>
                       <td className="px-3 py-2.5">
-                        <strong>{quote.title}</strong>
+                        <strong dir="auto">{quote.title}</strong>
                       </td>
                       <td className="px-3 py-2.5">
                         <TypeBadge type={quote.quote_type} />
                       </td>
-                      <td className="px-3 py-2.5 text-slate-700">{quoteSummary(quote)}</td>
+                      <td className="px-3 py-2.5 text-slate-700"><SummaryLine quote={quote} /></td>
                       <td className="px-3 py-2.5 text-end font-bold whitespace-nowrap tabular-nums">
                         {formatQuoteMoney(displayTotal(quote), quote.currency)}
                       </td>

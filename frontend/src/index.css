@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 html[lang="ar"] {
@@ -23,9 +23,9 @@ input:is([type="tel"], [type="email"], [type="number"], [type="date"], [type="da
 @theme {
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --color-shop-bg: #f8fafc;
+  --color-shop-bg: #f4f6f9;
   --color-shop-sidebar: #ffffff;
-  --color-shop-border: #e2e8f0;
+  --color-shop-border: #e4e8ee;
   --color-shop-ink: #0f172a;
   --color-shop-muted: #64748b;
   --color-shop-green: #0f766e;
@@ -41,9 +41,13 @@ input:is([type="tel"], [type="email"], [type="number"], [type="date"], [type="da
 
   /* Design system v1.0 (Claude Design: "Horizon Travel CRM") — state and source colours.
      Each is a background tint + readable foreground; status is always text + colour. */
+  /* Teal scale around the accent (#0f766e = 700). Pages use 500-800 for bars, focus and icons. */
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #0f766e;
   --color-primary-800: #115e59;
   --color-tint: #f0fdfa;
-  --color-line-strong: #cbd5e1;
+  --color-line-strong: #d2d9e3;
   --color-neutral-bg: #f1f5f9;
   --color-neutral-fg: #334155;
   --color-info-bg: #dbeafe;
@@ -57,6 +61,17 @@ input:is([type="tel"], [type="email"], [type="number"], [type="date"], [type="da
   --color-dealer-bg: #ede9fe;
   --color-dealer-fg: #5b21b6;
   --color-dealer: #7c3aed;
+
+  /* Redesign v2: the sidebar, card depth and the focus ring. */
+  --color-sidebar-bg: #0c2a2a;
+  --color-sidebar-ink: #d7e6e4;
+  --color-sidebar-muted: #86a3a0;
+  --color-sidebar-hover: rgb(255 255 255 / 0.06);
+  --color-sidebar-active: rgb(255 255 255 / 0.11);
+  --color-sidebar-line: rgb(255 255 255 / 0.09);
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.05);
+  --shadow-raised: 0 4px 12px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.05);
+  --ring-focus: 0 0 0 3px rgb(15 118 110 / 0.16);
 }
 
 @layer base {
@@ -87,6 +102,32 @@ input:is([type="tel"], [type="email"], [type="number"], [type="date"], [type="da
 
   :is(button, input, select, textarea):disabled {
     cursor: not-allowed;
+  }
+
+  /* Every white card or panel with a border gets the same soft depth. */
+  :is(section, article, aside, li, div, details, form, figure):is(.rounded-xl, .rounded-2xl, .rounded-\[10px\], .rounded-\[12px\], .rounded-\[14px\]).border.bg-white {
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Text fields: a soft teal ring when focused, instead of a hard outline. */
+  :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]), select, textarea) {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]), select, textarea):focus {
+    border-color: var(--color-shop-accent);
+    box-shadow: var(--ring-focus);
+    outline: none;
+  }
+  :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]), select, textarea)::placeholder {
+    color: #94a3b8;
+  }
+
+  input[type="checkbox"], input[type="radio"], input[type="range"], progress {
+    accent-color: var(--color-shop-accent);
+  }
+
+  h1, h2, h3 {
+    letter-spacing: -0.01em;
   }
 
   ::selection {

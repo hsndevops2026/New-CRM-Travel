@@ -75,7 +75,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[100] grid place-items-center bg-shop-ink/45 p-4"
+      className="fixed inset-0 z-[100] grid place-items-center bg-slate-900/40 p-4 backdrop-blur-[2px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onCancel()
       }}
@@ -86,7 +86,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
-        className="flex w-full max-w-[420px] flex-col gap-3.5 rounded-[14px] bg-white p-6 shadow-[0_20px_48px_rgba(15,23,42,0.25)]"
+        className="flex w-full max-w-[420px] flex-col gap-3.5 rounded-2xl bg-white p-6 shadow-[0_24px_64px_rgba(15,23,42,0.22)]"
       >
         {tone === 'danger' && (
           <div aria-hidden="true" className="grid size-10 place-items-center rounded-[10px] bg-danger-bg text-danger">

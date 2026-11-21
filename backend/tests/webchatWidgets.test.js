@@ -147,6 +147,7 @@ describe('website chat per user', () => {
 
     const all = await api('GET', '/webchat-settings', admin);
     assert.equal(all.data.widgets.find((w) => w.owner_id === agent.id).lead_count, 1);
+    assert.equal((await api('GET', '/webchat-settings', agent)).data.my_widget.lead_count, 1);
   });
 
   it('the shared chat without a key gives the lead to nobody', async () => {

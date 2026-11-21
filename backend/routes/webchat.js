@@ -151,7 +151,7 @@ export function webchatTestPage(req, res) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${rtl ? 'تجربة محادثة الموقع' : 'Website chat test'}</title>
-<script src="/webchat.js" data-lang="${language}"${key ? ` data-key="${key}"` : ''}></script>
+<script src="webchat.js" data-lang="${language}"${key ? ` data-key="${key}"` : ''}></script>
 <style>body{margin:0;font-family:system-ui,sans-serif;background:#f3f4f6;color:#111827}main{max-width:640px;margin:0 auto;padding:48px 20px}h1{font-size:22px}p{line-height:1.6;color:#4b5563}</style>
 </head>
 <body>

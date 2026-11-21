@@ -68,12 +68,12 @@ export default function ChatThreadList({ threads, activeId, loading, onSelect, e
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className={`truncate ${waiting ? 'font-bold' : 'font-semibold'}`}>{thread.title}</span>
+                  <span dir="auto" className={`truncate text-start ${waiting ? 'font-bold' : 'font-semibold'}`}>{thread.title}</span>
                   <span className={`shrink-0 text-xs font-semibold tabular-nums ${waiting ? 'text-shop-accent' : 'text-shop-muted'}`}>
                     {formatThreadTime(thread.last_at)}
                   </span>
                 </div>
-                <span className={`truncate text-sm ${waiting ? 'font-semibold text-shop-ink' : 'text-shop-muted'}`}>
+                <span dir="auto" className={`truncate text-start text-sm ${waiting ? 'font-semibold text-shop-ink' : 'text-shop-muted'}`}>
                   {threadPreview(thread)}
                 </span>
                 <div className="flex flex-wrap gap-1.5">

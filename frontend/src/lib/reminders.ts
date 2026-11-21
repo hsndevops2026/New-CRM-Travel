@@ -116,3 +116,24 @@ export async function deleteReminder(id: string): Promise<void> {
   const data = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(data.error || 'Failed to delete reminder')
 }
+
+/** Reminders from the start of one local day up to (not including) the start of another. */
+export async function fetchRemindersBetween(fromYmd: string, toYmd: string): Promise<ContactReminder[]> {
+  const params = new URLSearchParams({ from: dayBounds(fromYmd).from, to: dayBounds(toYmd).from })
+  const response = await apiFetch(`/api/reminders?${params.toString()}`)
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to load reminders')
+  return (data.reminders || []) as ContactReminder[]
+}
+
+/** The Monday of the week a day falls in. */
+export function weekStartYmd(dateYmd: string) {
+  const [y, m, d] = dateYmd.split('-').map(Number)
+  const day = new Date(y, m - 1, d).getDay()
+  return shiftYmd(dateYmd, -((day + 6) % 7))
+}
+
+/** "2026-11-21" for a reminder's local calendar day. */
+export function reminderYmd(iso: string) {
+  return todayYmd(new Date(iso))
+}

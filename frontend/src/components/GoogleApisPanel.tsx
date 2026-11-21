@@ -1,3 +1,4 @@
+import { Plug } from 'lucide-react'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useState } from 'react'
 import Button from './ui/Button'
@@ -114,9 +115,14 @@ export default function GoogleApisPanel() {
 
   return (
     <section id="integrations" aria-labelledby="s-google" className="scroll-mt-4 rounded-[10px] border border-shop-border bg-white p-5">
-      <h2 id="s-google" className="text-base font-bold">{translate("Google APIs (SerpApi)")}</h2>
-      <p className="mt-1 text-sm text-shop-muted">
-        {translate("Run each integration live. Every call spends one SerpApi search credit.")}</p>
+      <div className="flex items-start gap-3">
+        <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-tint text-shop-accent"><Plug className="size-[18px]" strokeWidth={1.8} /></span>
+        <div className="min-w-0">
+          <h2 id="s-google" className="m-0 text-base font-bold">{translate("Google APIs (SerpApi)")}</h2>
+          <p className="m-0 mt-0.5 text-[13px] text-shop-muted">
+            {translate("Run each integration live. Every call spends one SerpApi search credit.")}</p>
+        </div>
+      </div>
 
       <div className="mt-3 flex flex-wrap gap-1">
         {CARDS.map((item) => (

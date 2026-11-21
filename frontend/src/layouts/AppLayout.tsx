@@ -66,19 +66,21 @@ const ADMIN_NAV: NavEntry[] = [
 ]
 
 /** The number beside a nav item: a teal badge for work waiting, amber for approvals, plain for totals. */
+const PILL = 'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums'
+
 function countFor(to: string, counts: NavCounts | null): ReactNode {
   if (!counts) return null
   if (to === '/inbox' && counts.inbox_awaiting > 0) {
-    return <StatusBadge label={String(counts.inbox_awaiting)} tone="success" className="tabular-nums" />
+    return <span className={`${PILL} bg-teal-400 text-teal-950`}>{counts.inbox_awaiting}</span>
   }
   if (to === '/leads/hotel') {
-    return <span className="text-xs tabular-nums text-shop-muted">{counts.leads_open}</span>
+    return <span className="text-xs tabular-nums text-sidebar-muted">{counts.leads_open}</span>
   }
   if (to === '/permissions' && counts.approvals_pending) {
-    return <StatusBadge label={String(counts.approvals_pending)} tone="warning" className="tabular-nums" />
+    return <span className={`${PILL} bg-amber-300 text-amber-950`}>{counts.approvals_pending}</span>
   }
   if (to === '/reminders' && counts.reminders_open > 0) {
-    return <StatusBadge label={String(counts.reminders_open)} tone="warning" className="tabular-nums" />
+    return <span className={`${PILL} bg-amber-300 text-amber-950`}>{counts.reminders_open}</span>
   }
   return null
 }
@@ -101,13 +103,13 @@ function NavItem({
       to={entry.to}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm no-underline transition-colors max-md:h-11 ${
+      className={`relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13.5px] no-underline transition-colors max-md:h-11 ${
         active
-          ? 'bg-tint font-bold text-shop-accent'
-          : 'font-medium text-neutral-fg hover:bg-neutral-bg hover:text-shop-ink'
+          ? 'bg-sidebar-active font-semibold text-white before:absolute before:inset-y-2 before:-start-3 before:w-[3px] before:rounded-e-full before:bg-teal-400'
+          : 'font-medium text-sidebar-ink hover:bg-sidebar-hover hover:text-white'
       }`}
     >
-      <Icon className="size-4 shrink-0" strokeWidth={1.8} />
+      <Icon className={`size-[18px] shrink-0 ${active ? 'text-teal-300' : 'text-sidebar-muted'}`} strokeWidth={1.8} />
       <span className="flex-1">{translate(entry.label)}</span>
       {countFor(entry.to, counts)}
     </Link>
@@ -123,12 +125,14 @@ function SidebarNav({ counts, onNavigate }: { counts: NavCounts | null; onNaviga
 
   return (
     <nav aria-label={translate("Main navigation")} className="flex flex-col gap-0.5">
+      <p aria-hidden="true" className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">{translate("Workspace")}</p>
       {PRIMARY_NAV.map((entry) => (
         <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} />
       ))}
       {adminItems.length > 0 && (
         <>
-          <div className="my-2.5 h-px bg-shop-border" role="separator" />
+          <div className="mt-4 mb-1.5 h-px bg-sidebar-line" role="separator" />
+          <p aria-hidden="true" className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">{translate("Admin")}</p>
           {adminItems.map((entry) => (
             <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} />
           ))}
@@ -144,19 +148,19 @@ function Brand({ agency, size = 30 }: { agency: AgencySettings | null; size?: nu
   return (
     <div className="flex items-center gap-2.5">
       {agency?.logo_url ? (
-        <img src={agency.logo_url} alt="" style={{ width: size, height: size }} className="rounded-lg object-contain" />
+        <img src={agency.logo_url} alt="" style={{ width: size, height: size }} className="rounded-[10px] bg-white object-contain p-0.5" />
       ) : (
         <span
           aria-hidden="true"
           style={{ width: size, height: size }}
-          className="flex items-center justify-center rounded-lg bg-shop-accent font-extrabold text-white"
+          className="flex items-center justify-center rounded-[10px] bg-gradient-to-br from-teal-300 to-teal-600 font-extrabold text-teal-950 shadow-[0_2px_8px_rgb(20_184_166/0.35)]"
         >
           {name.slice(0, 1).toUpperCase()}
         </span>
       )}
       <div className="flex min-w-0 flex-col leading-tight">
-        <strong className="truncate">{name}</strong>
-        <span className="text-xs text-shop-muted">{translate("Agency CRM")}</span>
+        <strong className="truncate text-[15px] text-white">{name}</strong>
+        <span className="text-xs text-sidebar-muted">{translate("Agency CRM")}</span>
       </div>
     </div>
   )
@@ -185,22 +189,22 @@ function CreditsCard() {
   const total = left + used
   const percent = total > 0 ? Math.round((left / total) * 100) : 0
   return (
-    <div className="flex flex-col gap-1.5 rounded-[10px] border border-shop-border p-2.5">
+    <div className="flex flex-col gap-1.5 rounded-xl bg-sidebar-hover p-3 text-sidebar-ink">
       <div className="flex justify-between">
-        <span className="text-xs font-semibold text-slate-600">{translate("Lead credits")}</span>
-        <span className="font-bold tabular-nums">{left}</span>
+        <span className="text-xs font-semibold text-sidebar-muted">{translate("Lead credits")}</span>
+        <span className="font-bold text-white tabular-nums">{left}</span>
       </div>
       <div
-        className="h-1.5 rounded-sm bg-neutral-bg"
+        className="h-1.5 rounded-full bg-white/10"
         role="meter"
         aria-label={translate("Lead credits remaining")}
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={left}
       >
-        <div className="h-1.5 rounded-sm bg-shop-accent" style={{ width: `${percent}%` }} />
+        <div className="h-1.5 rounded-full bg-teal-400" style={{ width: `${percent}%` }} />
       </div>
-      <span className="text-xs text-shop-muted">{used}{' '}{translate("used ·")}{' '}{left}{' '}{translate("left")}</span>
+      <span className="text-xs text-sidebar-muted">{used}{' '}{translate("used ·")}{' '}{left}{' '}{translate("left")}</span>
     </div>
   )
 }
@@ -266,30 +270,30 @@ function Shell() {
 
   const searchField = (
     <div className="relative w-full">
-      <Search className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-shop-muted" strokeWidth={1.8} />
+      <Search className="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-shop-muted" strokeWidth={1.8} />
       <input
         type="search"
-        aria-label={placeholder}
+        aria-label={translate(placeholder)}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder}
-        className="h-9 w-full rounded-lg border border-line-strong bg-shop-bg ps-[34px] pe-3 text-sm placeholder:text-shop-muted focus:border-shop-accent focus:bg-white max-md:h-11"
+        placeholder={translate(placeholder)}
+        className="h-10 w-full rounded-full border border-shop-border bg-shop-bg ps-10 pe-4 text-sm transition-colors hover:border-line-strong focus:bg-white max-md:h-11"
       />
     </div>
   )
 
   return (
     <div className="flex h-dvh bg-shop-bg text-shop-ink">
-      <aside className="hidden h-full w-[232px] shrink-0 flex-col gap-0.5 border-e border-shop-border bg-shop-sidebar px-3 py-3.5 md:flex">
+      <aside className="hidden h-full w-[244px] shrink-0 flex-col gap-3 bg-sidebar-bg px-3 py-4 md:flex">
         <button
           type="button"
           onClick={() => navigate('/inbox')}
-          className="px-2 pb-4 pt-1 text-start"
+          className="rounded-lg px-2 pb-3 pt-1 text-start"
           aria-label={translate("Go to Inbox")}
         >
           <Brand agency={agency} />
         </button>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto ps-3 -ms-3 [scrollbar-width:thin]">
           <SidebarNav counts={counts} />
         </div>
         <CreditsCard />
@@ -307,7 +311,7 @@ function Shell() {
             role="dialog"
             aria-modal="true"
             aria-label={translate("Main menu")}
-            className="absolute inset-y-0 start-0 flex w-[min(300px,85vw)] flex-col gap-1 bg-white px-3 py-4 shadow-[8px_0_32px_rgba(15,23,42,.2)]"
+            className="absolute inset-y-0 start-0 flex w-[min(300px,85vw)] flex-col gap-3 bg-sidebar-bg px-3 py-4 shadow-[8px_0_32px_rgba(15,23,42,.3)]"
           >
             <div className="flex items-center px-2 pb-4 pt-1">
               <div className="min-w-0 flex-1">
@@ -316,25 +320,25 @@ function Shell() {
               <button
                 type="button"
                 aria-label={translate("Close menu")}
-                className="flex size-11 items-center justify-center text-neutral-fg"
+                className="flex size-11 items-center justify-center rounded-lg text-sidebar-ink hover:bg-sidebar-hover"
                 onClick={() => setSidebarOpen(false)}
               >
                 <X className="size-4" strokeWidth={1.8} />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto ps-3 -ms-3">
               <SidebarNav counts={counts} onNavigate={() => setSidebarOpen(false)} />
             </div>
-            <div className="flex items-center gap-2.5 rounded-xl border border-shop-border p-3">
+            <div className="flex items-center gap-2.5 rounded-xl bg-sidebar-hover p-3 text-sidebar-ink">
               <Avatar name={displayName} size={36} />
               <div className="flex min-w-0 flex-1 flex-col leading-tight">
-                <strong className="truncate">{displayName}</strong>
-                <span className="truncate text-[13px] capitalize text-shop-muted">
+                <strong className="truncate text-white">{displayName}</strong>
+                <span className="truncate text-[13px] capitalize text-sidebar-muted">
                   {translate(admin?.role)}
                   {admin?.role === 'agent' ? translate(" · {value0} credits", { value0: translate(String(admin.lead_credits ?? 0)) }) : ''}
                 </span>
               </div>
-              <button type="button" onClick={signOut} className="text-sm font-semibold text-shop-accent">
+              <button type="button" onClick={signOut} className="text-sm font-semibold text-teal-300">
                 {translate("Sign out")}</button>
             </div>
           </aside>
@@ -342,7 +346,7 @@ function Shell() {
       )}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-shop-border bg-white px-3 md:px-6">
+        <header className="relative z-20 flex h-[60px] shrink-0 items-center gap-3 border-b border-shop-border bg-white/85 px-3 backdrop-blur-md md:px-6">
           <LanguageSwitcher />
           <button
             type="button"
@@ -374,7 +378,7 @@ function Shell() {
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute end-0 z-30 mt-2 w-64 rounded-[10px] border border-shop-border bg-white p-1.5 shadow-[0_8px_24px_rgba(15,23,42,.12)]"
+                className="absolute end-0 z-30 mt-2 w-64 rounded-xl border border-shop-border bg-white p-1.5 shadow-[0_12px_32px_rgba(15,23,42,.14)]"
               >
                 <div className="px-2.5 py-2">
                   <div className="truncate font-semibold">{displayName}</div>

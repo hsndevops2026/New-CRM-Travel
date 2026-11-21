@@ -127,7 +127,7 @@ export function ViewToggle({
       onChange={(id) => onChange(id as 'table' | 'board')}
       items={[
         { id: 'table', label: translate('Table'), icon: <List strokeWidth={1.8} /> },
-        { id: 'board', label: translate("Board"), icon: <Columns3 strokeWidth={1.8} /> },
+        { id: 'board', label: translate("Board view"), icon: <Columns3 strokeWidth={1.8} /> },
       ]}
     />
   )

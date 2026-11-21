@@ -272,6 +272,15 @@ export async function listWidgets() {
   return rows.map((row) => ({ ...widgetFromRow(row), lead_count: row.lead_count }));
 }
 
+/** How many leads a chat has brought in (each chat counted once). */
+export async function widgetLeadCount(widgetId) {
+  const { rows } = await query(
+    `SELECT COUNT(DISTINCT lead_id)::int AS n FROM webchat_sessions WHERE widget_id = $1 AND lead_id IS NOT NULL`,
+    [widgetId],
+  );
+  return rows[0]?.n ?? 0;
+}
+
 export async function touchWidget(widgetId) {
   await query(
     `UPDATE webchat_widgets SET last_used_at = NOW()

@@ -29,14 +29,25 @@ describe('ContactsPage delete', () => {
 
   it('each row has a delete button that asks first, then removes only that contact', async () => {
     render(<MemoryRouter><ContactsPage /></MemoryRouter>)
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete Rana Ahmed' }))
+    // The table (desktop) and the cards (phones) are both in the page; CSS shows one.
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Delete Rana Ahmed' }))[0])
 
     const dialog = await screen.findByRole('alertdialog').catch(() => screen.findByRole('dialog'))
     expect(api.deleteContact).not.toHaveBeenCalled()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete contact' }))
 
     await waitFor(() => expect(api.deleteContact).toHaveBeenCalledWith('c1'))
-    await waitFor(() => expect(screen.queryByText('Rana Ahmed')).toBeNull())
-    expect(screen.getByText('Omar Saleh')).toBeTruthy()
+    await waitFor(() => expect(screen.queryAllByText('Rana Ahmed')).toHaveLength(0))
+    expect(screen.getAllByText('Omar Saleh').length).toBeGreaterThan(0)
+  })
+
+  it('filters to contacts with or without a lead', async () => {
+    render(<MemoryRouter><ContactsPage /></MemoryRouter>)
+    await screen.findAllByText('Rana Ahmed')
+    fireEvent.click(screen.getByRole('button', { name: /No lead yet/ }))
+    expect(screen.getAllByText('Rana Ahmed').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: /With a lead/ }))
+    expect(screen.queryAllByText('Rana Ahmed')).toHaveLength(0)
+    expect(screen.getByText('No contact has a lead yet')).toBeTruthy()
   })
 })

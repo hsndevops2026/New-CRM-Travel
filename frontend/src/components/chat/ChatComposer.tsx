@@ -74,7 +74,7 @@ export default function ChatComposer({
           disabled={disabled || sending}
           rows={1}
           placeholder={placeholder}
-          className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-line-strong bg-white px-3 py-[9px] text-sm disabled:opacity-50"
+          className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-line-strong bg-white px-3 py-[9px] text-sm disabled:opacity-50 placeholder:overflow-hidden placeholder:text-ellipsis placeholder:whitespace-nowrap"
         />
         <Button type="submit" variant="primary" icon={<Send />} loading={sending} disabled={disabled || !text.trim()} className="h-10">
           {translate("Send")}</Button>

@@ -1,5 +1,6 @@
 import { apiFetch, apiJson } from './api'
 import { formatDate, formatMoney } from './leads'
+import { t } from './i18n'
 
 export type QuoteType = 'hotel' | 'flight' | 'package'
 /** `fixed`: exact dates (10–20 Oct). `period`: whole months (Jan, Feb, Oct) — any trip inside them. */
@@ -252,7 +253,8 @@ export function availabilityLabel(quote: Pick<PredefinedQuote, 'availability_mod
   return [from, to].filter(Boolean).join(' → ')
 }
 
-export function quoteSummary(quote: PredefinedQuote) {
+/** The pieces of a package's one-line summary: route, dates or months, hotels, flights. */
+export function quoteSummaryParts(quote: PredefinedQuote): string[] {
   const hotels = quote.items.filter((item) => item.item_type === 'hotel').length
   const flights = quote.items.filter((item) => item.item_type === 'flight').length
   const parts = [
@@ -262,10 +264,14 @@ export function quoteSummary(quote: PredefinedQuote) {
       : quote.travel_date
         ? formatDate(quote.travel_date)
         : null,
-    hotels ? `${hotels} hotel${hotels === 1 ? '' : 's'}` : null,
-    flights ? `${flights} flight${flights === 1 ? '' : 's'}` : null,
+    hotels ? t('{count} hotel{suffix}', { count: hotels, suffix: hotels === 1 ? '' : 's' }) : null,
+    flights ? t('{count} flight{suffix}', { count: flights, suffix: flights === 1 ? '' : 's' }) : null,
   ]
-  return parts.filter(Boolean).join(' · ')
+  return parts.filter((part): part is string => Boolean(part))
+}
+
+export function quoteSummary(quote: PredefinedQuote) {
+  return quoteSummaryParts(quote).join(' · ')
 }
 
 export function formatQuoteMoney(amount: number | null | undefined, currency = 'USD') {

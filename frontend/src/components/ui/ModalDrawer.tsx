@@ -78,7 +78,7 @@ export default function ModalDrawer({
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-shop-ink/45 ${
+      className={`fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] ${
         side ? 'flex items-end justify-end sm:items-stretch' : 'flex items-end justify-center sm:items-center sm:p-4'
       }`}
       onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}
@@ -89,7 +89,7 @@ export default function ModalDrawer({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`flex w-full flex-col bg-white shadow-[0_20px_48px_rgba(15,23,42,0.25)] ${
+        className={`flex w-full flex-col bg-white shadow-[0_24px_64px_rgba(15,23,42,0.22)] ${
           side
             ? 'max-h-[92dvh] max-w-none rounded-t-[14px] sm:max-h-none sm:max-w-[420px] sm:rounded-none'
             : `max-h-[92dvh] ${maxWidthClassName} rounded-t-[14px] sm:max-h-[90vh] sm:rounded-[14px]`

@@ -10,13 +10,28 @@ import {
   rotateWidgetKey,
   updateWebchatSettings,
   updateWidget,
+  widgetLeadCount,
 } from '../services/webchatSettings.js';
 import { selfOrigin } from './webchat.js';
 
-/** Where websites load the widget from: WEBCHAT_PUBLIC_URL, else this backend's own address. */
+const isLocal = (url) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(url);
+
+/**
+ * Where websites load the widget from, including any path the backend is served
+ * under (e.g. https://api.agency.com/travel behind nginx):
+ * WEBCHAT_PUBLIC_URL, else BACKEND_URL / API_URL (already set for WhatsApp PDF links),
+ * else this request's own address plus the X-Forwarded-Prefix a proxy may send.
+ * A localhost address is only used while the CRM itself is opened on localhost.
+ */
 export function widgetBaseUrl(req, env = process.env) {
-  const configured = String(env.WEBCHAT_PUBLIC_URL || '').trim().replace(/\/$/, '');
-  return configured || selfOrigin(req);
+  const self = selfOrigin(req);
+  const candidates = [env.WEBCHAT_PUBLIC_URL, env.BACKEND_URL, env.API_URL]
+    .map((v) => String(v || '').trim().replace(/\/+$/, ''))
+    .filter((v) => /^https?:\/\//i.test(v));
+  const usable = candidates.find((v) => !isLocal(v) || isLocal(self));
+  if (usable) return usable;
+  const prefix = String(req.get('x-forwarded-prefix') || '').trim().replace(/\/+$/, '');
+  return /^\/[\w\-./]*$/.test(prefix) ? `${self}${prefix}` : self;
 }
 
 /** The pieces of a user's chat the page shows: settings, script address and test page. */
@@ -40,7 +55,7 @@ async function payload(req) {
     env_origins: envOrigins(),
     script_url: `${base}/webchat.js`,
     test_page_url: `${base}/webchat-test?lang=${settings.language}`,
-    my_widget: widgetView(req, mine, settings),
+    my_widget: { ...widgetView(req, mine, settings), lead_count: await widgetLeadCount(mine.id) },
     widgets: isAdmin ? (await listWidgets()).map((w) => widgetView(req, w, settings)) : undefined,
   };
 }

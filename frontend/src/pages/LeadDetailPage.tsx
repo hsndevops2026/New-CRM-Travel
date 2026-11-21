@@ -7,7 +7,8 @@ import LeadTasksButton from '../components/tasks/LeadTasksButton'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { CalendarDays, ChevronLeft, CircleAlert, ChevronRight, MessageCircle, PanelRightClose, Phone, Plane, Users } from 'lucide-react'
+import { CalendarDays, ChevronLeft, CircleAlert, ChevronRight, MessageCircle, PanelRightClose, Phone, Plane, UserRound, Users } from 'lucide-react'
+import { initialsFromName } from '../lib/people'
 import ChatWindow from '../components/chat/ChatWindow'
 import ComparisonPanel from '../components/ComparisonPanel'
 import MarketReferencesPanel from '../components/MarketReferencesPanel'
@@ -80,6 +81,9 @@ function ActivityList({ audit }: { audit: unknown[] }) {
   })
   return <Timeline emptyLabel="No activity yet." items={items} />
 }
+
+/** One fact about the trip in the header (where, when, who, phone). */
+const FACT = 'inline-flex h-8 items-center gap-1.5 rounded-full border border-shop-border bg-[#f8fafb] px-3'
 
 export default function LeadDetailPage() {
   useI18n()
@@ -396,7 +400,7 @@ export default function LeadDetailPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="shrink-0 border-b border-shop-border bg-white px-4 pt-3.5 max-md:px-2 max-md:pt-2 sm:px-6 max-md:sm:px-2">
+      <header className="shrink-0 border-b border-shop-border bg-white px-4 pt-4 max-md:px-2 max-md:pt-2 sm:px-6 max-md:sm:px-2">
         <div className="flex flex-col gap-2 md:hidden">
           <div className="flex items-center gap-1">
             <Link
@@ -407,7 +411,7 @@ export default function LeadDetailPage() {
               <ChevronLeft className="size-5" aria-hidden="true" />
             </Link>
             <div className="flex min-w-0 flex-1 flex-col leading-tight">
-              <strong className="truncate text-[17px]">{leadPerson(lead)}</strong>
+              <strong dir="auto" className="truncate text-start text-[17px]">{leadPerson(lead)}</strong>
               <span className="truncate text-[13px] text-shop-muted tabular-nums">
                 {[
                   lead.destination,
@@ -454,37 +458,49 @@ export default function LeadDetailPage() {
         </nav>
 
         <div className="flex flex-wrap items-start justify-between gap-4 max-md:hidden">
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-2xl font-extrabold tracking-[-0.01em] text-shop-ink">{leadPerson(lead)}</h1>
-              <LifecycleBadge status={lead.lifecycle_status} />
-              <StatusBadge label={leadTypeLabel(lead.booking_type)} tone="neutral" />
+          <div className="flex min-w-0 items-start gap-3.5">
+            <span
+              aria-hidden="true"
+              className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-teal-100 to-teal-200 text-base font-extrabold text-teal-900"
+            >
+              {/\p{L}/u.test(leadPerson(lead)) ? initialsFromName(leadPerson(lead)) : <UserRound className="size-6" strokeWidth={1.8} />}
+            </span>
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 dir="auto" className="text-[26px] leading-tight font-extrabold tracking-[-0.02em] text-shop-ink">{leadPerson(lead)}</h1>
+                <LifecycleBadge status={lead.lifecycle_status} />
+                <StatusBadge label={leadTypeLabel(lead.booking_type)} tone="neutral" />
+              </div>
+              <ul className="flex flex-wrap gap-1.5 text-[13px] tabular-nums text-slate-700">
+                <li className={FACT}>
+                  <Plane className="size-3.5 text-shop-muted" aria-hidden="true" />
+                  {leadTitle(lead)}
+                </li>
+                <li className={FACT}>
+                  <CalendarDays className="size-3.5 text-shop-muted" aria-hidden="true" />
+                  {formatDateRange(lead.travel_date, lead.return_date)}
+                  {nights ? ` · ${nights}` : ''}
+                </li>
+                <li className={FACT}>
+                  <Users className="size-3.5 text-shop-muted" aria-hidden="true" />
+                  {travelersLabel(lead.adults_count, lead.children_count, lead.children_ages)}
+                </li>
+                <li>
+                  <a
+                    href={`tel:${formatPhone(lead.phone).replace(/\s+/g, '')}`}
+                    className={`${FACT} hover:border-line-strong hover:text-shop-ink`}
+                  >
+                    <Phone className="size-3.5 text-shop-muted" aria-hidden="true" />
+                    <bdi dir="ltr">{formatPhone(lead.phone)}</bdi>
+                  </a>
+                </li>
+                {lead.web_attribution && (
+                  <li className={FACT}>
+                    <WebSource attribution={lead.web_attribution} as="div" />
+                  </li>
+                )}
+              </ul>
             </div>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] tabular-nums text-slate-700">
-              <li className="flex items-center gap-1.5">
-                <Plane className="size-4 text-shop-muted" aria-hidden="true" />
-                {leadTitle(lead)}
-              </li>
-              <li className="flex items-center gap-1.5">
-                <CalendarDays className="size-4 text-shop-muted" aria-hidden="true" />
-                {formatDateRange(lead.travel_date, lead.return_date)}
-                {nights ? ` · ${nights}` : ''}
-              </li>
-              <li className="flex items-center gap-1.5">
-                <Users className="size-4 text-shop-muted" aria-hidden="true" />
-                {travelersLabel(lead.adults_count, lead.children_count, lead.children_ages)}
-              </li>
-              <li>
-                <a
-                  href={`tel:${formatPhone(lead.phone).replace(/\s+/g, '')}`}
-                  className="-my-2.5 flex items-center gap-1.5 py-2.5 text-slate-700 hover:text-shop-ink"
-                >
-                  <Phone className="size-4 text-shop-muted" aria-hidden="true" />
-                  <bdi dir="ltr">{formatPhone(lead.phone)}</bdi>
-                </a>
-              </li>
-              <WebSource attribution={lead.web_attribution} />
-            </ul>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -504,7 +520,7 @@ export default function LeadDetailPage() {
           </div>
         </div>
 
-        <div className="mt-3 max-md:hidden">
+        <div className="mt-4 rounded-xl border border-shop-border bg-[#f8fafb] px-3 py-2.5 max-md:hidden">
           <StagePath
             current={lead.lifecycle_status || 'intake'}
             allowed={lead.lifecycle_allowed}
@@ -514,7 +530,7 @@ export default function LeadDetailPage() {
           />
         </div>
 
-        <div className="mt-2 max-md:mt-1.5">
+        <div className="mt-3 max-md:mt-1.5">
           <LeadWorkspaceTabs step={step} onSelect={setStep} badges={tabBadges} />
         </div>
       </header>
@@ -548,7 +564,7 @@ export default function LeadDetailPage() {
           {step === 'build' && !draft && <div role="status" className="rounded-[10px] border border-shop-border bg-white p-4 text-sm text-shop-muted">{translate("Preparing the quote builder…")}</div>}
           {step === 'build' && draft && (
             <div className="flex flex-wrap items-start gap-6">
-              <section aria-labelledby="cmp-h" className="min-w-0 flex-[999_1_520px]">
+              <section aria-labelledby="cmp-h" className="min-w-0 flex-[999_1_520px] rounded-xl border border-shop-border bg-white p-4 sm:p-5">
                 <ComparisonPanel leadId={lead.id} draft={draft} onDraftChange={setDraft} />
               </section>
               <aside className="flex-[1_1_360px] lg:sticky lg:top-0 lg:max-h-[calc(100dvh-15rem)] lg:max-w-[420px] lg:overflow-y-auto">

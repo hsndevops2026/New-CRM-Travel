@@ -564,8 +564,9 @@ describe('import carousel — uploading multiple files at once', () => {
 
   it('shows per-file reading progress while extracting', async () => {
     fetchImports.mockResolvedValueOnce([]).mockResolvedValue([A])
-    let finish: (value: unknown) => void = () => {}
-    upload.mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
+    type UploadResult = Awaited<ReturnType<typeof api.uploadPredefinedQuoteBrochure>>
+    let finish: (value: UploadResult) => void = () => {}
+    upload.mockReturnValueOnce(new Promise<UploadResult>((resolve) => { finish = resolve }))
     renderModal()
     await screen.findByText('No brochures are waiting for review')
     chooseMany('belek.pdf')

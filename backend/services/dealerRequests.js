@@ -587,3 +587,18 @@ export async function listUnmatchedMessages({ limit = 100, resolved = false } = 
 export async function resolveUnmatchedMessage(id) {
   await query(`UPDATE unmatched_dealer_messages SET resolved = TRUE WHERE id = $1`, [id]);
 }
+
+/**
+ * Deletes a quote request sent to a dealer, with the replies it got. The WhatsApp
+ * messages stay in the Inbox history; they just no longer point to it.
+ * Returns the deleted request, or null.
+ */
+export async function deleteDealerRequest(id) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) return null;
+  await query(`UPDATE messages SET dealer_request_id = NULL WHERE dealer_request_id = $1`, [id]);
+  const { rows } = await query(
+    `DELETE FROM dealer_requests WHERE id = $1 RETURNING id, lead_id, request_code`,
+    [id],
+  );
+  return rows[0] || null;
+}

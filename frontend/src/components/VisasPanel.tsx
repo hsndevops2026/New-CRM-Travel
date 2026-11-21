@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Stamp } from 'lucide-react'
 import Button from './ui/Button'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../hooks/useConfirm'
 import { t as translate, useI18n } from '../lib/i18n'
-import { VISA_STATUS_LABEL, fetchVisas, saveVisaRule, updateVisa, type LeadVisas, type VisaStatus, type VisaTraveller } from '../lib/groupsVisas'
+import { VISA_STATUS_LABEL, deleteVisaRule, fetchVisas, saveVisaRule, updateVisa, type LeadVisas, type VisaStatus, type VisaTraveller } from '../lib/groupsVisas'
 
 const FIELD = 'h-9 rounded-lg border border-line-strong bg-white px-2 text-sm'
 const TONE: Partial<Record<VisaStatus, string>> = {
@@ -14,6 +15,7 @@ const TONE: Partial<Record<VisaStatus, string>> = {
 export default function VisasPanel({ leadId }: { leadId: string }) {
   useI18n()
   const { admin } = useAuth()
+  const { confirm, dialog } = useConfirm()
   const [data, setData] = useState<LeadVisas | null>(null)
   const [editingRule, setEditingRule] = useState(false)
   const [docs, setDocs] = useState('')
@@ -49,8 +51,27 @@ export default function VisasPanel({ leadId }: { leadId: string }) {
     }
   }
 
+  const removeRule = async () => {
+    if (!data.rule) return
+    const ok = await confirm({
+      title: translate('Delete the visa notes for {value0}?', { value0: data.rule.destination }),
+      description: translate('Every booking to this destination stops showing them. Visa progress on bookings is kept.'),
+      confirmLabel: translate('Delete'),
+      tone: 'danger',
+    })
+    if (!ok) return
+    setError(null)
+    try {
+      await deleteVisaRule(data.rule.destination)
+      setData((d) => (d ? { ...d, rule: null } : d))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete')
+    }
+  }
+
   return (
     <section aria-labelledby="visa-h" className="rounded-[10px] border border-shop-border bg-white p-4">
+      {dialog}
       <h3 id="visa-h" className="mb-2 flex items-center gap-2 text-[15px] font-bold">
         <Stamp className="size-4" aria-hidden="true" />
         {translate('Visas')}
@@ -81,6 +102,11 @@ export default function VisasPanel({ leadId }: { leadId: string }) {
         {!editingRule && admin?.role === 'admin' && data.destination && (
           <button type="button" className="mt-1 text-xs font-semibold text-shop-accent" onClick={() => { setDocs(data.rule?.documents || ''); setDays(data.rule?.processing_days?.toString() || ''); setEditingRule(true) }}>
             {translate(data.rule ? 'Edit' : 'Add what this destination needs')}
+          </button>
+        )}
+        {!editingRule && admin?.role === 'admin' && data.rule && (
+          <button type="button" className="ms-3 mt-1 text-xs font-semibold text-danger-fg" onClick={() => void removeRule()}>
+            {translate('Delete')}
           </button>
         )}
       </div>

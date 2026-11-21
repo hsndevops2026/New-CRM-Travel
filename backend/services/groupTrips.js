@@ -185,3 +185,17 @@ export async function roomingListCsv(groupId) {
   ])];
   return `﻿${lines.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }
+
+/**
+ * Deletes a group trip. Its bookings stay; they are only taken out of the group,
+ * and the rooms given for it are cleared. Returns the deleted trip, or null.
+ */
+export async function deleteGroupTrip(id) {
+  await query(
+    `UPDATE lead_travellers SET room = NULL WHERE lead_id IN (SELECT id FROM leads WHERE group_trip_id = $1)`,
+    [id],
+  );
+  await query(`UPDATE leads SET group_trip_id = NULL, group_room = NULL WHERE group_trip_id = $1`, [id]);
+  const { rows } = await query(`DELETE FROM group_trips WHERE id = $1 RETURNING id, title`, [id]);
+  return rows[0] || null;
+}

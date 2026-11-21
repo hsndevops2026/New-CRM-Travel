@@ -109,7 +109,7 @@ export default function ConfirmDialog({
             disabled={busy}
             className="h-9 rounded-lg border border-line-strong bg-white px-3.5 text-[13px] font-semibold hover:bg-neutral-bg disabled:opacity-60 max-sm:h-11"
           >
-            {cancelLabel}
+            {translate(cancelLabel)}
           </button>
           <Button variant={tone === 'danger' ? 'danger' : 'primary'} loading={busy} onClick={onConfirm}>
             {confirmLabel}

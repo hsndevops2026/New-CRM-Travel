@@ -2067,5 +2067,14 @@
   "Your chat shows nothing until an admin approves your account.": "Your chat shows nothing until an admin approves your account.",
   "Your chat shows nothing until they switch it back on.": "Your chat shows nothing until they switch it back on.",
   "Your code for websites": "Your code for websites",
-  "chat of {value0}": "chat of {value0}"
+  "chat of {value0}": "chat of {value0}",
+  "Delete the visa notes for {value0}?": "Delete the visa notes for {value0}?",
+  "Every booking to this destination stops showing them. Visa progress on bookings is kept.": "Every booking to this destination stops showing them. Visa progress on bookings is kept.",
+  "The group and its rooms are deleted. Its {value0} booking(s) stay as normal leads.": "The group and its rooms are deleted. Its {value0} booking(s) stay as normal leads.",
+  "Delete group": "Delete group",
+  "Group trip deleted.": "Group trip deleted.",
+  "Delete request {value0}?": "Delete request {value0}?",
+  "Delete request {value0}": "Delete request {value0}",
+  "The request and the offers it got are removed from this lead. Messages already sent on WhatsApp are not unsent.": "The request and the offers it got are removed from this lead. Messages already sent on WhatsApp are not unsent.",
+  "Contact deleted.": "Contact deleted."
 }

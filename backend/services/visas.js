@@ -124,3 +124,11 @@ export async function notifyVisaRisks() {
 
 export const visaDone = (status) => DONE.has(status);
 export { day as visaDay };
+
+/** Forgets what a destination asks for. Visa progress on bookings is kept. */
+export async function deleteVisaRule(destination) {
+  const key = destinationKey(destination);
+  if (!key) throw httpErr(400, 'destination is required');
+  const { rowCount } = await query(`DELETE FROM visa_rules WHERE destination_key = $1`, [key]);
+  return rowCount > 0;
+}

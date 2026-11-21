@@ -30,6 +30,10 @@ export const updateVisa = async (leadId: string, travellerId: string, input: Par
   (await apiJson<{ traveller: VisaTraveller }>(`/api/leads/${leadId}/visas/${travellerId}`, { method: 'PATCH', body: JSON.stringify(input) })).traveller
 export const saveVisaRule = async (input: VisaRule) =>
   (await apiJson<{ rule: VisaRule }>('/api/visa-rules', { method: 'PUT', body: JSON.stringify(input) })).rule
+/** Forgets what a destination asks for. Visa progress on bookings is kept. */
+export const deleteVisaRule = async (destination: string) => {
+  await apiJson(`/api/visa-rules?destination=${encodeURIComponent(destination)}`, { method: 'DELETE' })
+}
 
 export type GroupTrip = {
   id: string
@@ -66,6 +70,10 @@ export const createGroupTrip = async (input: Partial<GroupTrip>) =>
   (await apiJson<{ group: GroupTrip }>('/api/group-trips', { method: 'POST', body: JSON.stringify(input) })).group
 export const updateGroupTrip = async (id: string, input: Partial<GroupTrip>) =>
   (await apiJson<{ group: GroupTrip }>(`/api/group-trips/${id}`, { method: 'PATCH', body: JSON.stringify(input) })).group
+/** Deletes the group. Its bookings stay; they just leave the group. */
+export const deleteGroupTrip = async (id: string) => {
+  await apiJson(`/api/group-trips/${id}`, { method: 'DELETE' })
+}
 export const setBookingRoom = (groupId: string, leadId: string, room: string) =>
   apiJson(`/api/group-trips/${groupId}/bookings/${leadId}`, { method: 'PATCH', body: JSON.stringify({ room }) })
 export const setTravellerRoom = (groupId: string, travellerId: string, room: string) =>

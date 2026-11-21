@@ -3,7 +3,7 @@ import { parseThreadId } from '../services/inbox.js';
 
 const LEAD_PATH = /^\/leads\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i;
 
-const RESOURCE_PATH = /^\/(dealer-responses|quote-versions|quote-deliveries)\/([0-9a-f-]{36})(?:\/|$)/i;
+const RESOURCE_PATH = /^\/(dealer-requests|dealer-responses|quote-versions|quote-deliveries)\/([0-9a-f-]{36})(?:\/|$)/i;
 
 // Scope lead-bearing resources while allowing agents to use the rest of the CRM.
 export async function agentLeadAccess(req, res, next) {
@@ -40,7 +40,7 @@ export async function agentLeadAccess(req, res, next) {
     }
     const resource = apiPath.match(RESOURCE_PATH);
     if (resource) {
-      const type = { 'dealer-responses': 'dealer_response', 'quote-versions': 'quote_version', 'quote-deliveries': 'quote_delivery' }[resource[1]];
+      const type = { 'dealer-requests': 'dealer_request', 'dealer-responses': 'dealer_response', 'quote-versions': 'quote_version', 'quote-deliveries': 'quote_delivery' }[resource[1]];
       leadId = await leadIdForResource(type, resource[2]);
     }
     if (leadId && !await hasLeadAccess(req.admin.id, leadId)) {

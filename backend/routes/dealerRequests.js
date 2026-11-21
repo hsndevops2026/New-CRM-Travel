@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  deleteDealerRequest,
   dispatchDealerRfq,
   listDealerRequests,
   listDealerResponses,
@@ -14,6 +15,25 @@ import { logAuditEvent } from '../services/audit.js';
 const router = Router();
 
 // ── RFQ dispatch ─────────────────────────────────────────────────────────────
+
+router.delete('/dealer-requests/:id', async (req, res) => {
+  try {
+    const deleted = await deleteDealerRequest(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Dealer request not found' });
+    void logAuditEvent({
+      entityType: 'lead',
+      entityId: deleted.lead_id,
+      action: 'dealer_rfq_deleted',
+      actorId: req.admin?.id,
+      actorRole: req.admin?.role,
+      before: { request_code: deleted.request_code },
+    });
+    res.status(204).send();
+  } catch (error) {
+    console.error('Delete RFQ failed:', error.message);
+    res.status(500).json({ error: 'Failed to delete the dealer request' });
+  }
+});
 
 router.post('/dealer-requests', async (req, res) => {
   try {

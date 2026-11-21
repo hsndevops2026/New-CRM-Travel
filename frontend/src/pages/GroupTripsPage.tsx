@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { Download, Plus, UsersRound } from 'lucide-react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Download, Plus, Trash2, UsersRound } from 'lucide-react'
 import Button from '../components/ui/Button'
 import EmptyState from '../components/ui/EmptyState'
 import PageHeader from '../components/ui/PageHeader'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../hooks/useConfirm'
+import { useToast } from '../hooks/useToast'
 import { locale, t as translate, useI18n } from '../lib/i18n'
 import { formatPhone } from '../lib/leads'
 import {
   VISA_STATUS_LABEL,
   createGroupTrip,
+  deleteGroupTrip,
   downloadRoomingList,
   effectiveTravellerRoom,
   fetchGroupTrip,
@@ -71,6 +74,9 @@ function NewGroupForm({ onCreated, onCancel }: { onCreated: (g: GroupTrip) => vo
 function GroupDetail({ id }: { id: string }) {
   useI18n()
   const { admin } = useAuth()
+  const navigate = useNavigate()
+  const toast = useToast()
+  const { confirm, dialog } = useConfirm()
   const [group, setGroup] = useState<GroupTrip | null>(null)
   const [error, setError] = useState<string | null>(null)
   const load = useCallback(() => fetchGroupTrip(id).then(setGroup).catch((err) => setError(err instanceof Error ? err.message : 'Failed to load')), [id])
@@ -78,8 +84,26 @@ function GroupDetail({ id }: { id: string }) {
   if (error) return <p role="alert" className="p-6 text-sm text-danger-fg">{translate(error)}</p>
   if (!group) return <p className="p-6 text-sm text-shop-muted">{translate('Loading…')}</p>
 
+  const remove = async () => {
+    const ok = await confirm({
+      title: translate('Delete {value0}?', { value0: group.title }),
+      description: translate('The group and its rooms are deleted. Its {value0} booking(s) stay as normal leads.', { value0: group.bookings?.length || 0 }),
+      confirmLabel: translate('Delete group'),
+      tone: 'danger',
+    })
+    if (!ok) return
+    try {
+      await deleteGroupTrip(group.id)
+      toast.show({ tone: 'success', message: translate('Group trip deleted.') })
+      navigate('/groups')
+    } catch (err) {
+      toast.show({ tone: 'error', message: err instanceof Error ? err.message : 'Could not delete' })
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1000px] p-4 pb-24 sm:p-6">
+      {dialog}
       <Link to="/groups" className="text-sm font-semibold text-shop-accent hover:underline">{translate('All group trips')}</Link>
       <PageHeader
         title={group.title}
@@ -89,6 +113,9 @@ function GroupDetail({ id }: { id: string }) {
             <Button size="sm" icon={<Download />} onClick={() => void downloadRoomingList(group.id, group.title).catch(() => {})}>{translate('Rooming list (Excel)')}</Button>
             {admin?.role === 'admin' && group.status === 'open' && (
               <Button size="sm" onClick={() => void updateGroupTrip(group.id, { status: 'closed' }).then(load)}>{translate('Close bookings')}</Button>
+            )}
+            {admin?.role === 'admin' && (
+              <Button size="sm" variant="ghost" icon={<Trash2 />} onClick={() => void remove()}>{translate('Delete group')}</Button>
             )}
           </div>
         }

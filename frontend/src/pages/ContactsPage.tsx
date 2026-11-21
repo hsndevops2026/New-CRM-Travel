@@ -1,7 +1,7 @@
 import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CircleAlert, Pencil, Plus, Search } from 'lucide-react'
+import { CircleAlert, MessageSquare, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import AddLeadModal from '../components/AddLeadModal'
 import ContactModal from '../components/ContactModal'
 import ReminderModal from '../components/ReminderModal'
@@ -13,6 +13,7 @@ import PageHeader from '../components/ui/PageHeader'
 import { TableSkeleton } from '../components/ui/Skeleton'
 import { useSearch } from '../hooks/useSearch'
 import { useConfirm } from '../hooks/useConfirm'
+import { useToast } from '../hooks/useToast'
 import { deleteContact, fetchContacts, type Contact } from '../lib/contacts'
 import { contactThread, matchesContact, relatedLead } from '../lib/contactView'
 import { fetchThreads, formatThreadTime, type Thread } from '../lib/inbox'
@@ -32,6 +33,8 @@ export default function ContactsPage() {
   const [contactEditor, setContactEditor] = useState<Contact | null | undefined>(undefined)
   const [leadFor, setLeadFor] = useState<Contact | null>(null)
   const [reminderFor, setReminderFor] = useState<Contact | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const toast = useToast()
 
   useEffect(() => {
     setPlaceholder('Search name or phone, e.g. 050 123')
@@ -87,6 +90,26 @@ export default function ContactsPage() {
 
   const filtered = useMemo(() => contacts.filter((c) => matchesContact(c, query)), [contacts, query])
 
+
+  const removeContact = async (contact: Contact) => {
+    const ok = await confirm({
+      title: translate("Delete {value0}?", { value0: contact.name }),
+      description: translate("The contact is removed. Leads keep the phone number they were created with."),
+      confirmLabel: translate("Delete contact"),
+      tone: 'danger',
+    })
+    if (!ok) return
+    setDeletingId(contact.id)
+    try {
+      await deleteContact(contact.id)
+      setContacts((list) => list.filter((c) => c.id !== contact.id))
+      toast.show({ tone: 'success', message: translate("Contact deleted.") })
+    } catch (err) {
+      toast.show({ tone: 'error', message: err instanceof Error ? err.message : 'Failed to delete contact' })
+    } finally {
+      setDeletingId(null)
+    }
+  }
   return (
     <div className="mx-auto w-full max-w-[1400px] p-4 pb-24 sm:p-6">
       <PageHeader
@@ -133,14 +156,14 @@ export default function ContactsPage() {
         )}
         {!loading && !error && filtered.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-start text-sm">
+            <table className="w-full min-w-[640px] text-start text-sm">
               <thead>
                 <tr className="border-b border-shop-border bg-shop-bg text-xs font-semibold text-slate-600">
                   <th className="px-3.5 py-2.5">{translate("Name")}</th>
                   <th className="px-3 py-2.5">{translate("WhatsApp / phone")}</th>
                   <th className="px-3 py-2.5">{translate("Last interaction")}</th>
                   <th className="px-3 py-2.5">{translate("Related lead")}</th>
-                  <th className="relative px-3.5 py-2.5">
+                  <th className="sticky end-0 bg-shop-bg px-3.5 py-2.5">
                     <span className="sr-only">{translate("Actions")}</span>
                   </th>
                 </tr>
@@ -150,7 +173,7 @@ export default function ContactsPage() {
                   const lead = relatedLead(contact, leads)
                   const thread = contactThread(contact, threads)
                   return (
-                    <tr key={contact.id} className="border-b border-neutral-bg last:border-0 hover:bg-shop-bg">
+                    <tr key={contact.id} className="group border-b border-neutral-bg last:border-0 hover:bg-shop-bg">
                       <td className="px-3.5 py-3">
                         <div className="flex items-center gap-2.5">
                           <span
@@ -167,7 +190,7 @@ export default function ContactsPage() {
                       <td className="px-3 py-3 tabular-nums"><bdi dir="ltr">{formatPhone(contact.phone)}</bdi></td>
                       <td className="px-3 py-3">
                         {thread ? (
-                          <div className="flex max-w-[280px] flex-col">
+                          <div className="flex max-w-[200px] flex-col">
                             <span className="truncate">{threadPreview(thread)}</span>
                             <span className="text-xs text-shop-muted tabular-nums">{formatThreadTime(thread.last_at)}</span>
                           </div>
@@ -190,11 +213,17 @@ export default function ContactsPage() {
                             {translate("Create lead")}</Button>
                         )}
                       </td>
-                      <td className="px-3.5 py-3">
+                      <td className="sticky end-0 bg-white px-3.5 py-3 group-hover:bg-shop-bg">
                         <div className="flex items-center justify-end gap-0.5">
                           {thread && (
-                            <Button size="sm" variant="ghost" onClick={() => navigate(`/inbox/${encodeURIComponent(thread.id)}`)}>
-                              {translate("Message")}</Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              iconOnly
+                              aria-label={translate("Message {value0}", { value0: contact.name })}
+                              icon={<MessageSquare />}
+                              onClick={() => navigate(`/inbox/${encodeURIComponent(thread.id)}`)}
+                            />
                           )}
                           <Button
                             size="sm"
@@ -204,6 +233,16 @@ export default function ContactsPage() {
                             icon={<Pencil />}
                             onClick={() => setContactEditor(contact)}
                           />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            iconOnly
+                            aria-label={translate("Delete {value0}", { value0: contact.name })}
+                            icon={<Trash2 />}
+                            loading={deletingId === contact.id}
+                            disabled={deletingId !== null}
+                            onClick={() => void removeContact(contact)}
+                          />
                           <OverflowMenu
                             label={translate("More actions for {value0}", { value0: translate(String(contact.name)) })}
                             items={[
@@ -211,20 +250,6 @@ export default function ContactsPage() {
                                 id: 'reminder',
                                 label: translate("Add reminder…"),
                                 onClick: () => setReminderFor(contact),
-                              },
-                              {
-                                id: 'delete',
-                                label: translate("Delete contact…"),
-                                tone: 'danger',
-                                onClick: () => {
-                                  void confirm({
-                                    title: translate("Delete {value0}?", { value0: translate(String(contact.name)) }),
-                                    description: translate("The contact is removed. Leads keep the phone number they were created with."),
-                                    confirmLabel: translate("Delete contact"),
-                                  }).then((ok) => {
-                                    if (ok) void deleteContact(contact.id).then(load)
-                                  })
-                                },
                               },
                             ]}
                           />

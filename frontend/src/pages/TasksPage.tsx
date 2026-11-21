@@ -73,7 +73,9 @@ export default function TasksPage() {
     setBusy(task.id)
     try {
       const updated = await updateTask(task.id, { status: task.status === 'done' ? 'open' : 'done' })
-      setTasks((list) => (showDone ? list.map((t) => (t.id === task.id ? updated : t)) : list.filter((t) => t.id !== task.id || updated.status === 'open')))
+      // Stays on the list, crossed out, so it never looks deleted; it can be ticked back.
+      // It leaves the list on the next load unless "Show done tasks" is on.
+      setTasks((list) => list.map((t) => (t.id === task.id ? updated : t)))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update the task')
     } finally {

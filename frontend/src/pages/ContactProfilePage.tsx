@@ -25,11 +25,13 @@ import PageHeader from '../components/ui/PageHeader'
 import ContactEmailsPanel from '../components/email/ContactEmailsPanel'
 import { useAuth } from '../context/AuthContext'
 import { useConfirm } from '../hooks/useConfirm'
+import { useToast } from '../hooks/useToast'
 import {
   deleteLeadDocument,
   type BookingDocument,
 } from '../lib/bookingDocuments'
 import {
+  deleteContact,
   fetchContactProfile,
   type Contact,
   setContactLanguage,
@@ -132,6 +134,7 @@ export default function ContactProfilePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { admin } = useAuth()
   const { confirm, dialog } = useConfirm()
+  const toast = useToast()
   const isAdmin = admin?.role === 'admin'
   const tab = parseTab(searchParams.get('tab'))
   const setTab = (next: TabId) => {
@@ -331,6 +334,27 @@ export default function ContactProfilePage() {
             )}
             <Button variant="secondary" icon={<Pencil />} onClick={() => setEditing(true)}>
               {translate("Edit")}</Button>
+            <Button
+              variant="ghost"
+              icon={<Trash2 />}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: translate("Delete {value0}?", { value0: contact.name }),
+                  description: translate("The contact is removed. Leads keep the phone number they were created with."),
+                  confirmLabel: translate("Delete contact"),
+                  tone: 'danger',
+                })
+                if (!ok) return
+                try {
+                  await deleteContact(contact.id)
+                  toast.show({ tone: 'success', message: translate("Contact deleted.") })
+                  navigate('/contacts')
+                } catch (err) {
+                  toast.show({ tone: 'error', message: err instanceof Error ? err.message : 'Failed to delete contact' })
+                }
+              }}
+            >
+              {translate("Delete")}</Button>
             <Button
               variant="primary"
               icon={<Plus />}

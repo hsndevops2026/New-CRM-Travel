@@ -2067,5 +2067,14 @@
   "Your chat shows nothing until an admin approves your account.": "لن تظهر محادثتك حتى يعتمد المسؤول حسابك.",
   "Your chat shows nothing until they switch it back on.": "لن تظهر محادثتك حتى يعيد تشغيلها.",
   "Your code for websites": "الكود الخاص بك للمواقع",
-  "chat of {value0}": "محادثة {value0}"
+  "chat of {value0}": "محادثة {value0}",
+  "Delete the visa notes for {value0}?": "حذف ملاحظات التأشيرة لـ {value0}؟",
+  "Every booking to this destination stops showing them. Visa progress on bookings is kept.": "لن تظهر بعد الآن في الحجوزات إلى هذه الوجهة. تبقى متابعة التأشيرات في الحجوزات كما هي.",
+  "The group and its rooms are deleted. Its {value0} booking(s) stay as normal leads.": "تُحذف المجموعة وتوزيع الغرف. تبقى حجوزاتها ({value0}) كعملاء محتملين عاديين.",
+  "Delete group": "حذف المجموعة",
+  "Group trip deleted.": "تم حذف الرحلة الجماعية.",
+  "Delete request {value0}?": "حذف الطلب {value0}؟",
+  "Delete request {value0}": "حذف الطلب {value0}",
+  "The request and the offers it got are removed from this lead. Messages already sent on WhatsApp are not unsent.": "يُحذف الطلب والعروض التي وصلت عليه من هذا العميل المحتمل. الرسائل التي أُرسلت على واتساب لا تُسحب.",
+  "Contact deleted.": "تم حذف جهة الاتصال."
 }

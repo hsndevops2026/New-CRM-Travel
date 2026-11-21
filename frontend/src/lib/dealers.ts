@@ -195,6 +195,15 @@ export async function fetchDealerRequests(params: {
   return data.dealer_requests as DealerRequest[]
 }
 
+/** Deletes a quote request and the replies it got. */
+export async function deleteDealerRequest(id: string): Promise<void> {
+  const response = await apiFetch(`/api/dealer-requests/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(data.error || 'Failed to delete the dealer request')
+  }
+}
+
 export async function fetchDealerResponses(params: {
   dealerRequestId?: string
   leadId?: string

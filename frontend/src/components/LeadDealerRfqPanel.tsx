@@ -1,10 +1,12 @@
 import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Clock, Send } from 'lucide-react'
+import { Check, Clock, Send, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
+import { useConfirm } from '../hooks/useConfirm'
 import SegmentedControl from './ui/SegmentedControl'
 import StatusBadge from './ui/StatusBadge'
 import {
+  deleteDealerRequest,
   dispatchRfq,
   fetchDealerRequests,
   fetchDealerResponses,
@@ -42,6 +44,8 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
   const [sessionStatus, setSessionStatus] = useState<string | null>(null)
   const [sessionName, setSessionName] = useState<string | null>(null)
   const [requests, setRequests] = useState<DealerRequest[]>([])
+  const { confirm, dialog } = useConfirm()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [replies, setReplies] = useState<DealerResponse[]>([])
   // When the lists were fetched — "waiting 3 h" is measured from here, not from each render.
   const [now, setNow] = useState(() => Date.now())
@@ -208,10 +212,33 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
     channel === 'group' ? looksLikeGroupJid(groupJidToSend) : Boolean(selectedDealerId)
 
   const repliesByRequest = (id: string) => replies.filter((r) => r.dealer_request_id === id)
+
+  const removeRequest = async (req: DealerRequest) => {
+    const ok = await confirm({
+      title: translate('Delete request {value0}?', { value0: req.request_code }),
+      description: translate('The request and the offers it got are removed from this lead. Messages already sent on WhatsApp are not unsent.'),
+      confirmLabel: translate('Delete'),
+      tone: 'danger',
+    })
+    if (!ok) return
+    setDeletingId(req.id)
+    setError(null)
+    try {
+      await deleteDealerRequest(req.id)
+      setRequests((list) => list.filter((r) => r.id !== req.id))
+      setReplies((list) => list.filter((r) => r.dealer_request_id !== req.id))
+      onUpdated?.()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete the dealer request')
+    } finally {
+      setDeletingId(null)
+    }
+  }
   const FIELD = 'h-9 w-full rounded-lg border border-line-strong bg-white px-3 text-sm max-sm:h-11'
 
   return (
     <div className="flex flex-col gap-5">
+      {dialog}
       {requests.length > 0 && (
         <section aria-labelledby="rq-h" className="flex flex-col gap-2.5">
           <h2 id="rq-h" className="text-base font-bold">{translate("Requests for quotation")}</h2>
@@ -223,6 +250,7 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
                   <th className="px-3.5 py-2.5">{translate("Channel")}</th>
                   <th className="px-3.5 py-2.5">{translate("Status")}</th>
                   <th className="px-3.5 py-2.5">{translate("Offer")}</th>
+                  <th className="px-3.5 py-2.5"><span className="sr-only">{translate("Actions")}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -246,6 +274,18 @@ export default function LeadDealerRfqPanel({ lead, onUpdated }: Props) {
                       </td>
                       <td className="px-3.5 py-3 font-bold tabular-nums">
                         {price ?? <span className="font-normal text-shop-muted">—</span>}
+                      </td>
+                      <td className="px-2 py-3 text-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconOnly
+                          icon={<Trash2 />}
+                          aria-label={translate('Delete request {value0}', { value0: req.request_code })}
+                          loading={deletingId === req.id}
+                          disabled={deletingId !== null}
+                          onClick={() => void removeRequest(req)}
+                        />
                       </td>
                     </tr>
                   )

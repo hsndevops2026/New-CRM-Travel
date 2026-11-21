@@ -40,11 +40,14 @@ export default function LeadTasksButton({ leadId, contactId }: { leadId: string;
     }
   }, [open])
 
-  const finish = (task: StaffTask) => {
-    updateTask(task.id, { status: 'done' })
-      .then(() => setTasks((list) => list.filter((t) => t.id !== task.id)))
+  // Ticking keeps the task in the list, crossed out, so it can be unticked;
+  // done tasks drop off the next time the list loads.
+  const toggle = (task: StaffTask) => {
+    updateTask(task.id, { status: task.status === 'done' ? 'open' : 'done' })
+      .then((updated) => setTasks((list) => list.map((t) => (t.id === task.id ? updated : t))))
       .catch(() => {})
   }
+  const openCount = tasks.filter((t) => t.status !== 'done').length
 
   return (
     <div ref={box} className="relative">
@@ -54,7 +57,7 @@ export default function LeadTasksButton({ leadId, contactId }: { leadId: string;
         aria-expanded={open}
         onClick={() => { setOpen((v) => !v); setAdding(false) }}
       >
-        {tasks.length ? translate('Tasks ({value0})', { value0: tasks.length }) : translate('Tasks')}
+        {openCount ? translate('Tasks ({value0})', { value0: openCount }) : translate('Tasks')}
       </Button>
       {open && (
         <div
@@ -83,16 +86,19 @@ export default function LeadTasksButton({ leadId, contactId }: { leadId: string;
                 <p className="p-3 text-sm text-shop-muted">{translate('No open tasks for this lead.')}</p>
               ) : (
                 <ul className="max-h-[320px] divide-y divide-shop-border overflow-y-auto">
-                  {tasks.map((task) => (
+                  {tasks.map((task) => {
+                    const done = task.status === 'done'
+                    return (
                     <li key={task.id} className="flex items-start gap-2 px-3 py-2.5">
                       <input
                         type="checkbox"
                         className="mt-1 size-4 shrink-0"
-                        aria-label={translate('Mark as done')}
-                        onChange={() => finish(task)}
+                        checked={done}
+                        aria-label={translate(done ? 'Mark as not done' : 'Mark as done')}
+                        onChange={() => toggle(task)}
                       />
                       <div className="min-w-0 flex-1">
-                        <p dir="auto" className="text-sm font-semibold text-shop-ink">{task.title}</p>
+                        <p dir="auto" className={`text-sm font-semibold ${done ? 'text-shop-muted line-through' : 'text-shop-ink'}`}>{task.title}</p>
                         <p className="text-xs text-shop-muted">
                           {[
                             task.due_at && new Date(task.due_at).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
@@ -101,7 +107,8 @@ export default function LeadTasksButton({ leadId, contactId }: { leadId: string;
                         </p>
                       </div>
                     </li>
-                  ))}
+                    )
+                  })}
                 </ul>
               )}
               <div className="border-t border-shop-border p-2">

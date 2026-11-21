@@ -16,11 +16,14 @@ type Props = {
   label?: string
   align?: 'left' | 'right'
   trigger?: ReactNode
-  /** Render outside clipped table/card containers and position against the trigger. */
+  /**
+   * Render on top of the page and position against the trigger (default), so a
+   * scrolling table or card can never clip it. false keeps it inside its parent.
+   */
   portal?: boolean
 }
 
-export default function OverflowMenu({ items, label = 'More actions', align = 'right', trigger, portal = false }: Props) {
+export default function OverflowMenu({ items, label = 'More actions', align = 'right', trigger, portal = true }: Props) {
   useI18n()
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
@@ -42,7 +45,11 @@ export default function OverflowMenu({ items, label = 'More actions', align = 'r
       top = triggerRect.top - menuHeight - gap
     }
 
-    let left = align === 'left' ? triggerRect.left : triggerRect.right - menuWidth
+    // align is logical like the inline menu (start-0 / end-0): 'right' = the end edge,
+    // which is the left side in Arabic and Hebrew.
+    const rtl = getComputedStyle(rootRef.current).direction === 'rtl'
+    const startEdge = (align === 'left') !== rtl
+    let left = startEdge ? triggerRect.left : triggerRect.right - menuWidth
     left = Math.max(gutter, Math.min(left, window.innerWidth - menuWidth - gutter))
     setPosition({ top, left })
   }, [align, open, portal, visible.length])

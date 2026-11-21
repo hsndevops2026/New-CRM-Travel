@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireRole } from '../middleware/requireRole.js';
 import {
   createGroupTrip,
+  deleteGroupTrip,
   getGroupTrip,
   listGroupTrips,
   roomingListCsv,
@@ -10,7 +11,7 @@ import {
   setTravellerRoom,
   updateGroupTrip,
 } from '../services/groupTrips.js';
-import { listVisaRules, listVisas, saveVisaRule, updateVisa } from '../services/visas.js';
+import { deleteVisaRule, listVisaRules, listVisas, saveVisaRule, updateVisa } from '../services/visas.js';
 
 const router = Router();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -26,6 +27,13 @@ router.get('/group-trips', staff, async (req, res) => {
 });
 router.post('/group-trips', requireRole('admin'), async (req, res) => {
   try { res.status(201).json({ group: await createGroupTrip(req.body || {}, { actorId: req.admin.id }) }); } catch (e) { fail(res, e); }
+});
+router.delete('/group-trips/:groupId', requireRole('admin'), async (req, res) => {
+  try {
+    const deleted = await deleteGroupTrip(req.params.groupId);
+    if (!deleted) return res.status(404).json({ error: 'Group trip not found' });
+    res.status(204).send();
+  } catch (e) { fail(res, e); }
 });
 router.get('/group-trips/:groupId', staff, async (req, res) => {
   try { res.json({ group: await getGroupTrip(req.params.groupId) }); } catch (e) { fail(res, e); }
@@ -63,6 +71,12 @@ router.get('/visa-rules', staff, async (_req, res) => {
 });
 router.put('/visa-rules', requireRole('admin'), async (req, res) => {
   try { res.json({ rule: await saveVisaRule(req.body || {}, { actorId: req.admin.id }) }); } catch (e) { fail(res, e); }
+});
+router.delete('/visa-rules', requireRole('admin'), async (req, res) => {
+  try {
+    if (!(await deleteVisaRule(req.query.destination))) return res.status(404).json({ error: 'Visa rule not found' });
+    res.status(204).send();
+  } catch (e) { fail(res, e); }
 });
 
 export default router;

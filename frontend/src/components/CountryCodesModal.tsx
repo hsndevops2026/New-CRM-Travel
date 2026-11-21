@@ -125,7 +125,7 @@ export default function CountryCodesModal({ open, countryCodes, onClose, onChang
           </div>
         </form>
 
-        {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</div>}
+        {error && <div role="alert" className="mt-3 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{translate(error)}</div>}
 
         <div className="mt-4 divide-y divide-shop-border overflow-hidden rounded-xl border border-shop-border">
           {countryCodes.map((country) => (

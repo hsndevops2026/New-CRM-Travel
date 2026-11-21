@@ -175,7 +175,16 @@ export default function TasksPage() {
         <p className="text-sm text-shop-muted">{translate('Loading…')}</p>
       ) : !tasks.length ? (
         <section className="rounded-[10px] border border-shop-border bg-white">
-          <EmptyState icon={<ListChecks />} title={translate('No tasks')} description={translate(isAdmin ? 'Give a task to someone on the team with a deadline.' : 'Tasks your manager gives you show up here.')} />
+          <EmptyState
+            icon={<ListChecks />}
+            title={translate('No tasks')}
+            description={translate(isAdmin ? 'Give a task to someone on the team with a deadline.' : 'Tasks your manager gives you show up here.')}
+            action={isAdmin ? (
+              <Button variant="primary" icon={<Plus />} onClick={() => setAdding(true)}>
+                {translate('New task')}
+              </Button>
+            ) : undefined}
+          />
         </section>
       ) : (
         <div className="grid gap-4">

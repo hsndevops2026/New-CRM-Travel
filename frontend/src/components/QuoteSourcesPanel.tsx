@@ -74,7 +74,7 @@ function SourceRow({ row }: { row: Row }) {
         </div>
         <div className="truncate text-xs text-shop-muted">{row.via}</div>
         {state.error && (
-          <div className="mt-1 text-xs text-red-700">{state.error}</div>
+          <div className="mt-1 text-xs text-danger-fg">{state.error}</div>
         )}
         {!state.error && state.detail && (
           <div className="mt-1 text-xs text-shop-muted">{state.detail}</div>

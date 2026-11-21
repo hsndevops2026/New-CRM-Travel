@@ -1,7 +1,10 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import ReportsPage from './ReportsPage'
+import ReportsLayout from './reports/ReportsLayout'
+import PipelineReportPage from './reports/PipelineReportPage'
+import TeamReportPage from './reports/TeamReportPage'
+import AttentionReportPage from './reports/AttentionReportPage'
 import { customRange, presetRange, toCsv } from '../lib/reports'
 
 const auth = vi.hoisted(() => ({ value: { admin: { id: 'a1', email: 'boss@test', role: 'admin' } } as { admin: { id: string; email: string; role: string } } }))
@@ -15,18 +18,23 @@ vi.mock('../lib/reports', async (orig) => ({
   fetchOverdueReport: api.overdue,
 }))
 
-function renderPage() {
+function renderReports(path = '/reports/pipeline') {
   return render(
-    <MemoryRouter initialEntries={['/reports']}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/reports" element={<ReportsLayout />}>
+          <Route index element={<Navigate to="pipeline" replace />} />
+          <Route path="pipeline" element={<PipelineReportPage />} />
+          <Route path="team" element={<TeamReportPage />} />
+          <Route path="attention" element={<AttentionReportPage />} />
+        </Route>
         <Route path="/leads/hotel" element={<p>leads page</p>} />
       </Routes>
     </MemoryRouter>,
   )
 }
 
-describe('ReportsPage', () => {
+describe('Reports sections', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     auth.value = { admin: { id: 'a1', email: 'boss@test', role: 'admin' } }
@@ -60,20 +68,31 @@ describe('ReportsPage', () => {
     })
   })
 
-  it('shows totals, the funnel, team performance and who is waiting', async () => {
-    renderPage()
+  it('shows pipeline totals and funnel on the pipeline section', async () => {
+    renderReports('/reports/pipeline')
     expect(await screen.findByText('3,500 USD')).toBeTruthy()
     expect(screen.getByText('75%')).toBeTruthy()
-    const team = screen.getByRole('heading', { name: 'Team performance' }).closest('section') as HTMLElement
-    expect(within(team).getByText('agent@test')).toBeTruthy()
-    expect(within(team).getByText('1.5 h')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Rana' }).getAttribute('href')).toBe('/leads/11111111-1111-1111-1111-111111111111')
+    expect(screen.getByRole('navigation', { name: 'Reports sections' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Pipeline' }).getAttribute('aria-current')).toBe('page')
+  })
+
+  it('shows team performance on the team section', async () => {
+    renderReports('/reports/team')
+    const team = await screen.findByRole('heading', { name: 'Team performance' })
+    const card = team.closest('section') as HTMLElement
+    expect(within(card).getByText('agent@test')).toBeTruthy()
+    expect(within(card).getByText('1.5 h')).toBeTruthy()
+  })
+
+  it('shows who is waiting on the attention section', async () => {
+    renderReports('/reports/attention')
+    expect((await screen.findByRole('link', { name: 'Rana' })).getAttribute('href')).toBe('/leads/11111111-1111-1111-1111-111111111111')
     expect(screen.getByText('any news?')).toBeTruthy()
   })
 
   it('sends agents away', async () => {
     auth.value = { admin: { id: 'a2', email: 'agent@test', role: 'agent' } }
-    renderPage()
+    renderReports('/reports/pipeline')
     await waitFor(() => expect(screen.getByText('leads page')).toBeTruthy())
     expect(api.pipeline).not.toHaveBeenCalled()
   })

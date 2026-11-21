@@ -49,7 +49,7 @@ export default function AiHandoverToggle({ threadId, refreshKey = 0 }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      {error ? <span className="text-xs text-red-600">{translate(error)}</span> : null}
+      {error ? <span className="text-xs text-danger-fg">{translate(error)}</span> : null}
       {state ? (
         <Button
           variant={state.paused ? 'primary' : 'secondary'}

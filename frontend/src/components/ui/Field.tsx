@@ -17,7 +17,7 @@ export default function Field({ label, hint, error, htmlFor, className = '', chi
       <span className="font-medium">{translate(label)}</span>
       {children}
       {error ? (
-        <span className="text-xs text-red-600">{translate(error)}</span>
+        <span className="text-xs text-danger-fg">{translate(error)}</span>
       ) : hint ? (
         <span className="text-xs text-shop-muted">{hint}</span>
       ) : null}

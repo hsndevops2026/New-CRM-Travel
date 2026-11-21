@@ -36,6 +36,7 @@ import { initialsFromName, nameFromEmail } from '../lib/people'
 import type { NavCounts } from '../lib/navCounts'
 import StatusBadge from '../components/ui/StatusBadge'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import { REPORT_SECTIONS } from '../lib/reportSections'
 
 type NavEntry = {
   to: string
@@ -62,7 +63,7 @@ const PRIMARY_NAV: NavEntry[] = [
   { to: '/website-chat', label: 'Website chat', icon: MessagesSquare, match: (path) => path.startsWith('/website-chat') },
 ]
 const ADMIN_NAV: NavEntry[] = [
-  { to: '/reports', label: 'Reports', icon: BarChart3, match: (path) => path.startsWith('/reports'), adminOnly: true },
+  { to: '/reports/pipeline', label: 'Reports', icon: BarChart3, match: (path) => path.startsWith('/reports'), adminOnly: true },
   { to: '/settings', label: 'Settings', icon: SlidersHorizontal, match: (path) => path.startsWith('/settings'), adminOnly: true },
   { to: '/permissions', label: 'Permissions', icon: ShieldCheck, match: (path) => path.startsWith('/permissions'), adminOnly: true },
 ]
@@ -120,21 +121,25 @@ function NavItem({
   counts,
   onNavigate,
   collapsed,
+  current,
 }: {
   entry: NavEntry
   active: boolean
   counts: NavCounts | null
   onNavigate?: () => void
   collapsed?: boolean
+  /** When false, keep the active look without aria-current (parent of a submenu). */
+  current?: boolean
 }) {
   useI18n()
   const Icon = entry.icon
   const label = translate(entry.label)
+  const markCurrent = current ?? active
   return (
     <Link
       to={entry.to}
       onClick={onNavigate}
-      aria-current={active ? 'page' : undefined}
+      aria-current={markCurrent ? 'page' : undefined}
       title={collapsed ? label : undefined}
       aria-label={collapsed ? label : undefined}
       className={`relative flex h-9 items-center rounded-lg text-[13.5px] no-underline transition-colors max-md:h-11 ${
@@ -188,9 +193,44 @@ function SidebarNav({
           {!collapsed && (
             <p aria-hidden="true" className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">{translate("Admin")}</p>
           )}
-          {adminItems.map((entry) => (
-            <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} collapsed={collapsed} />
-          ))}
+          {adminItems.map((entry) => {
+            const active = entry.match(location.pathname)
+            const showReportSub = !collapsed && entry.label === 'Reports' && active
+            return (
+              <div key={entry.to} className="flex flex-col gap-0.5">
+                <NavItem
+                  entry={entry}
+                  active={active}
+                  current={entry.label === 'Reports' ? false : active}
+                  counts={counts}
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                />
+                {showReportSub && (
+                  <div className="ms-3 flex flex-col gap-0.5 border-s border-sidebar-line ps-2" role="group" aria-label={translate('Reports sections')}>
+                    {REPORT_SECTIONS.map((section) => {
+                      const on = location.pathname === section.to || location.pathname.startsWith(`${section.to}/`)
+                      return (
+                        <Link
+                          key={section.id}
+                          to={section.to}
+                          onClick={onNavigate}
+                          aria-current={on ? 'page' : undefined}
+                          className={`flex h-8 items-center rounded-md px-2.5 text-[12.5px] no-underline transition-colors ${
+                            on
+                              ? 'bg-sidebar-active font-semibold text-white'
+                              : 'font-medium text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-ink'
+                          }`}
+                        >
+                          {translate(section.label)}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </>
       )}
     </nav>
@@ -371,7 +411,7 @@ function Shell() {
     <div className="flex h-dvh bg-shop-bg text-shop-ink">
       <aside
         className={`hidden h-full shrink-0 flex-col gap-3 bg-sidebar-bg py-4 transition-[width] duration-200 ease-out md:flex ${
-          sidebarCollapsed ? 'w-[68px] px-2' : 'w-[244px] px-3'
+          sidebarCollapsed ? 'w-[68px] px-2' : 'w-[240px] px-3'
         }`}
         data-collapsed={sidebarCollapsed || undefined}
       >

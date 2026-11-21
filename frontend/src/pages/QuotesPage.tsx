@@ -9,7 +9,7 @@ import { useSearch } from '../hooks/useSearch'
 
 export default function QuotesPage() {
   useI18n()
-  const { query, setPlaceholder } = useSearch()
+  const { query, setQuery, setPlaceholder } = useSearch()
   const [editorOpen, setEditorOpen] = useState(false)
   const [params] = useSearchParams()
   // /quotes?review=1 (from an email turned into packages) opens the review straight away.
@@ -23,7 +23,7 @@ export default function QuotesPage() {
     <div className="mx-auto w-full max-w-[1400px] p-4 pb-24 sm:p-6">
       <PageHeader
         title={translate("Quotes library")}
-        subtitle="Reusable package templates. Customer quotes live inside each lead."
+        subtitle="Reusable hotel, flight, and flight + hotel templates. Customer quotes live inside each lead."
         actions={
           <>
             <Button icon={<FileUp />} onClick={() => setImportOpen(true)}>
@@ -39,6 +39,7 @@ export default function QuotesPage() {
         importOpen={importOpen}
         onEditorOpenChange={setEditorOpen}
         onImportOpenChange={setImportOpen}
+        onClearQuery={() => setQuery('')}
       />
     </div>
   )

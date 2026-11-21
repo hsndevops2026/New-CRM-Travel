@@ -53,7 +53,7 @@ export default function SegmentedControl({ items, value, onChange, ariaLabel }: 
                 move(index, language === 'ar' || language === 'he' ? 1 : -1)
               }
             }}
-            className={`inline-flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 text-[13px] font-semibold max-sm:h-10 ${
+            className={`inline-flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 text-[13px] font-semibold max-sm:h-11 ${
               on ? 'bg-white text-shop-ink shadow-[0_1px_2px_rgb(16_24_40/0.08),0_1px_3px_rgb(16_24_40/0.06)]' : 'text-slate-600 hover:bg-white/60 hover:text-shop-ink'
             }`}
           >

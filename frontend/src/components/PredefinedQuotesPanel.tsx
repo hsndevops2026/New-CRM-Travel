@@ -2,7 +2,7 @@ import { setPackagePublic } from '../lib/growth'
 import { useAuth } from '../context/AuthContext'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
-import { Download, LayoutGrid, List, Send, Trash2, X } from 'lucide-react'
+import { CircleAlert, Download, LayoutGrid, List, Search, Send, Trash2, X } from 'lucide-react'
 import { useConfirm } from '../hooks/useConfirm'
 import { useToast } from '../hooks/useToast'
 import { formatWhen } from '../lib/leads'
@@ -36,6 +36,7 @@ type Props = {
   importOpen: boolean
   onEditorOpenChange: (open: boolean) => void
   onImportOpenChange: (open: boolean) => void
+  onClearQuery?: () => void
 }
 
 function TypeBadge({ type }: { type: string }) {
@@ -99,6 +100,7 @@ export default function PredefinedQuotesPanel({
   importOpen,
   onEditorOpenChange,
   onImportOpenChange,
+  onClearQuery,
 }: Props) {
   useI18n()
   const { admin } = useAuth()
@@ -125,24 +127,21 @@ export default function PredefinedQuotesPanel({
     targetQuoteId: string | null
   } | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    void fetchPredefinedQuotes()
+  const load = () => {
+    setLoading(true)
+    return fetchPredefinedQuotes()
       .then((next) => {
-        if (cancelled) return
         setQuotes(next)
         setError(null)
       })
       .catch((err) => {
-        if (cancelled) return
         setError(err instanceof Error ? err.message : 'Failed to load quotes')
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    void load()
   }, [])
 
   const typeCounts = useMemo(
@@ -394,7 +393,15 @@ export default function PredefinedQuotesPanel({
 
       <section className={showCards ? '' : 'overflow-hidden rounded-xl border border-shop-border bg-white'}>
         {loading && <div role="status" className="px-4 py-16 text-center text-shop-muted">{translate("Loading quotes…")}</div>}
-        {!loading && error && <div role="alert" className="px-4 py-16 text-center text-danger-fg">{translate(error)}</div>}
+        {!loading && error && (
+          <EmptyState
+            tone="danger"
+            icon={<CircleAlert />}
+            title={translate("Quotes could not be loaded")}
+            description={translate(error)}
+            action={<Button variant="primary" onClick={() => void load()}>{translate("Retry")}</Button>}
+          />
+        )}
         {!loading && !error && quotes.length === 0 && (
           <EmptyState
             title={translate("No templates yet")}
@@ -406,7 +413,21 @@ export default function PredefinedQuotesPanel({
           />
         )}
         {!loading && !error && quotes.length > 0 && filteredQuotes.length === 0 && (
-          <div className="px-4 py-16 text-center text-shop-muted">{translate("No templates match this search.")}</div>
+          <EmptyState
+            tone="neutral"
+            icon={<Search />}
+            title={translate("No templates match this search.")}
+            action={
+              <Button
+                onClick={() => {
+                  onClearQuery?.()
+                  setTypeFilter('all')
+                }}
+              >
+                {translate("Clear filters")}
+              </Button>
+            }
+          />
         )}
 
         {!loading && !error && filteredQuotes.length > 0 && (

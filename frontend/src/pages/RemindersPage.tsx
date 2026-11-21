@@ -1,7 +1,7 @@
 import { locale } from '../lib/i18n'
 import { t as translate, useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AlarmClock, Bell, ChevronLeft, ChevronRight, CircleAlert, Clock, MessageCircle, Pencil, Trash2 } from 'lucide-react'
 import ReminderModal from '../components/ReminderModal'
 import Button from '../components/ui/Button'
@@ -92,6 +92,7 @@ function ReminderRow({ reminder, showDate, onToggle, onEdit, onDelete }: {
 
 export default function RemindersPage() {
   useI18n()
+  const navigate = useNavigate()
   const { confirm, dialog } = useConfirm()
   const [day, setDay] = useState(() => todayYmd())
   const [week, setWeek] = useState<ContactReminder[]>([])
@@ -291,8 +292,9 @@ export default function RemindersPage() {
             title={translate("No reminders for this day")}
             description={translate("Add one from a contact’s menu or profile.")}
             action={
-              <Link to="/contacts" className="inline-flex h-9 items-center rounded-[9px] border border-line-strong bg-white px-3.5 text-[13px] font-semibold shadow-[0_1px_2px_rgb(16_24_40/0.05)] hover:bg-shop-bg">
-                {translate("Go to contacts")}</Link>
+              <Button onClick={() => navigate('/contacts')}>
+                {translate("Go to contacts")}
+              </Button>
             }
           />
         )}

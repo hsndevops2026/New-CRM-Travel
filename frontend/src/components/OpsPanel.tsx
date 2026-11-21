@@ -103,7 +103,7 @@ export default function OpsPanel() {
       </div>
 
       {error && (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="mb-3 rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm text-danger-fg">
           {translate(error)}
         </div>
       )}
@@ -119,7 +119,7 @@ export default function OpsPanel() {
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-shop-muted">
                   <span>{translate("waiting:")}{' '}{c.waiting}</span>
                   <span>{translate("active:")}{' '}{c.active}</span>
-                  <span className={c.failed > 0 ? 'font-semibold text-red-700' : ''}>
+                  <span className={c.failed > 0 ? 'font-semibold text-danger-fg' : ''}>
                     {translate("failed:")}{' '}{c.failed}
                   </span>
                 </div>
@@ -149,7 +149,7 @@ export default function OpsPanel() {
                       {job.lead_id ? translate(" · lead {value0}", { value0: translate(String(job.lead_id)) }) : ''}
                     </div>
                     {job.failed_reason && (
-                      <div className="mt-1 truncate text-xs text-red-600">{job.failed_reason}</div>
+                      <div className="mt-1 truncate text-xs text-danger-fg">{job.failed_reason}</div>
                     )}
                   </div>
                   <Button
@@ -182,7 +182,7 @@ export default function OpsPanel() {
                       <span className="font-mono text-xs">{d.recipient}</span>
                     </div>
                     {d.error_message && (
-                      <div className="mt-1 truncate text-xs text-red-600">{d.error_message}</div>
+                      <div className="mt-1 truncate text-xs text-danger-fg">{d.error_message}</div>
                     )}
                   </div>
                   <Button

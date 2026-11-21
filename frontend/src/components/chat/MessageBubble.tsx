@@ -29,7 +29,7 @@ export default function MessageBubble({ direction, body, time, delivery = 'none'
         <div
           className={`text-[13px] whitespace-pre-wrap px-2.5 py-[7px] ${
             outbound
-              ? `rounded-[12px_12px_4px_12px] ${failed ? 'border border-red-200 bg-white' : 'bg-chat-outbound'}`
+              ? `rounded-[12px_12px_4px_12px] ${failed ? 'border border-danger bg-white' : 'bg-chat-outbound'}`
               : 'rounded-[12px_12px_12px_4px] bg-chat-inbound'
           }`}
         >

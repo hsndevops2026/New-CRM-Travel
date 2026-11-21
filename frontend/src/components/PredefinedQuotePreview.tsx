@@ -197,7 +197,7 @@ export default function PredefinedQuotePreview({ open, quote, onClose, onEdit }:
               {quote.notes}
             </p>
           )}
-          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</div>}
+          {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{translate(error)}</div>}
         </div>
       ) : null}
     </ModalDrawer>

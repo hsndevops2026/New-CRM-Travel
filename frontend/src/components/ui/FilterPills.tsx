@@ -26,7 +26,7 @@ export default function FilterPills({ items, value, onChange, ariaLabel }: Props
             type="button"
             aria-pressed={on}
             onClick={() => onChange(item.id)}
-            className={`inline-flex h-[30px] items-center gap-1.5 rounded-full border px-2.5 text-[13px] font-semibold max-sm:h-10 ${
+            className={`inline-flex h-[30px] items-center gap-1.5 rounded-full border px-2.5 text-[13px] font-semibold max-sm:h-11 ${
               on
                 ? 'border-shop-ink bg-shop-ink text-white'
                 : 'border-shop-border bg-white text-neutral-fg hover:bg-neutral-bg'

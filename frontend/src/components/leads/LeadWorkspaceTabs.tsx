@@ -26,9 +26,9 @@ export default function LeadWorkspaceTabs({ step, onSelect, badges = {} }: Props
             type="button"
             onClick={() => onSelect(item.id)}
             aria-current={on ? 'page' : undefined}
-            className={`relative flex shrink-0 items-center gap-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors md:h-10 md:px-3 max-md:h-9 max-md:gap-1.5 max-md:rounded-full max-md:border max-md:px-3 ${
+            className={`relative flex shrink-0 items-center gap-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors md:h-11 md:px-3 max-md:h-11 max-md:gap-1.5 max-md:rounded-full max-md:border max-md:px-3 ${
               on
-                ? 'bg-tint text-primary-800 md:after:absolute md:after:inset-x-3 md:after:-bottom-2.5 md:after:h-[3px] md:after:rounded-t-full md:after:bg-shop-accent max-md:border-shop-accent max-md:bg-shop-accent max-md:text-white'
+                ? 'bg-tint text-primary-800 md:after:absolute md:after:inset-x-3 md:after:-bottom-2.5 md:after:h-[2px] md:after:rounded-t-full md:after:bg-shop-accent max-md:border-shop-accent max-md:bg-shop-accent max-md:text-white'
                 : 'text-slate-600 hover:bg-shop-bg hover:text-shop-ink max-md:border-shop-border max-md:bg-white'
             }`}
           >

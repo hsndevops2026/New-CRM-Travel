@@ -221,7 +221,7 @@ export default function AddLeadModal({ open, onClose, onCreated, initialPhone }:
           </Field>
         </section>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{translate(error)}</p>}
+        {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{translate(error)}</p>}
       </form>
     </ModalDrawer>
   )

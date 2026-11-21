@@ -343,7 +343,7 @@ export default function ImportPredefinedQuoteModal({ open, quotes, onClose, onRe
                   disabled={busy}
                   onChange={(event) => setTargetChoice({ importId: current.id, quoteId: event.target.value })}
                 >
-                  <option value="">{translate("Create a new package")}</option>
+                  <option value="">{translate("Create a new predefined quote")}</option>
                   {quotes.map((quote) => (
                     <option key={quote.id} value={quote.id}>
                       {translate("Update:")}{' '}{quote.title}

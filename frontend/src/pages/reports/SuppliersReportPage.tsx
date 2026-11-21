@@ -14,30 +14,26 @@ export default function SuppliersReportPage() {
   useI18n()
   const { range } = useReportRange()
   const [suppliers, setSuppliers] = useState<SupplierRow[] | null>(null)
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const rangeKey = range ? `${range.from}:${range.to}` : null
+  const ready = Boolean(rangeKey && loadedKey === rangeKey && suppliers)
 
   useEffect(() => {
-    if (!range) {
-      setSuppliers(null)
-      return
-    }
+    if (!range || !rangeKey) return
     let cancelled = false
-    setLoading(true)
     fetchSupplierReport(range)
       .then((s) => {
         if (cancelled) return
         setSuppliers(s)
+        setLoadedKey(rangeKey)
         setError(null)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load supplier report')
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
     return () => { cancelled = true }
-  }, [range])
+  }, [range, rangeKey])
 
   if (!range) return null
 
@@ -52,7 +48,7 @@ export default function SuppliersReportPage() {
     )
   }
 
-  if (loading && !suppliers) {
+  if (!ready || !suppliers) {
     return (
       <div className="overflow-hidden rounded-xl border border-shop-border bg-white">
         <TableSkeleton rows={5} label={translate('Loading…')} />

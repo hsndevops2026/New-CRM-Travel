@@ -7,7 +7,8 @@ import { fetchProfitReport, money, type ProfitReport } from '../../lib/business'
 import { downloadCsv, toCsv } from '../../lib/reports'
 import { t as translate, useI18n } from '../../lib/i18n'
 import { useReportRange } from './ReportRangeContext'
-import { CsvButton, ReportCard, stampDay } from './reportUi'
+import { CsvButton, ReportCard } from './reportUi'
+import { stampDay } from './reportFormat'
 
 const th = 'whitespace-nowrap px-3 py-2.5 text-start text-[11px] font-semibold tracking-[0.06em] text-slate-500 uppercase'
 const td = 'px-3 py-3 tabular-nums'
@@ -16,30 +17,26 @@ export default function ProfitReportPage() {
   useI18n()
   const { range } = useReportRange()
   const [profit, setProfit] = useState<ProfitReport | null>(null)
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const rangeKey = range ? `${range.from}:${range.to}` : null
+  const ready = Boolean(rangeKey && loadedKey === rangeKey && profit)
 
   useEffect(() => {
-    if (!range) {
-      setProfit(null)
-      return
-    }
+    if (!range || !rangeKey) return
     let cancelled = false
-    setLoading(true)
     fetchProfitReport(range)
       .then((p) => {
         if (cancelled) return
         setProfit(p)
+        setLoadedKey(rangeKey)
         setError(null)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load profit report')
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
     return () => { cancelled = true }
-  }, [range])
+  }, [range, rangeKey])
 
   if (!range) return null
 
@@ -54,7 +51,7 @@ export default function ProfitReportPage() {
     )
   }
 
-  if (loading && !profit) {
+  if (!ready || !profit) {
     return (
       <div className="overflow-hidden rounded-xl border border-shop-border bg-white">
         <TableSkeleton rows={5} label={translate('Loading…')} />

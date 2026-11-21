@@ -40,6 +40,7 @@ function renderAt(path = '/inbox') {
 const mainNav = () => screen.getAllByRole('navigation', { name: 'Main navigation' })[0]
 
 beforeEach(() => {
+  localStorage.clear()
   auth.value = { admin, loading: false, logout: vi.fn(() => Promise.resolve()) }
   useNavCounts.mockReturnValue({ leads_open: 38, inbox_awaiting: 12, approvals_pending: 3, reminders_open: 0 })
   fetchAgencySettings.mockResolvedValue({
@@ -153,6 +154,26 @@ describe('AppLayout — account menu', () => {
     fireEvent.click(button)
     fireEvent.mouseDown(document.body)
     expect(screen.queryByRole('menu')).toBeNull()
+  })
+})
+
+describe('AppLayout — collapsible sidebar', () => {
+  it('collapses to an icon rail and remembers the choice', () => {
+    renderAt()
+    const collapse = screen.getByRole('button', { name: 'Collapse sidebar' })
+    expect(collapse.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(collapse)
+    const expand = screen.getByRole('button', { name: 'Expand sidebar' })
+    expect(expand.getAttribute('aria-pressed')).toBe('true')
+    expect(localStorage.getItem('crm.sidebarCollapsed')).toBe('1')
+    expect(within(mainNav()).getByRole('link', { name: 'Inbox' })).toBeTruthy()
+    expect(within(mainNav()).queryByText('Workspace')).toBeNull()
+  })
+
+  it('restores a previously collapsed preference', () => {
+    localStorage.setItem('crm.sidebarCollapsed', '1')
+    renderAt()
+    expect(screen.getByRole('button', { name: 'Expand sidebar' }).getAttribute('aria-pressed')).toBe('true')
   })
 })
 

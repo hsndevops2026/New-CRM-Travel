@@ -14,6 +14,8 @@ import {
   LogOut,
   Menu,
   MessagesSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
   ShieldCheck,
   SlidersHorizontal,
@@ -85,38 +87,87 @@ function countFor(to: string, counts: NavCounts | null): ReactNode {
   return null
 }
 
+/** Dot on a collapsed icon: only for work that needs attention, not plain totals. */
+function hasAttentionCount(to: string, counts: NavCounts | null): boolean {
+  if (!counts) return false
+  if (to === '/inbox') return counts.inbox_awaiting > 0
+  if (to === '/permissions') return Boolean(counts.approvals_pending)
+  if (to === '/reminders') return counts.reminders_open > 0
+  return false
+}
+
+const SIDEBAR_COLLAPSED_KEY = 'crm.sidebarCollapsed'
+
+function readSidebarCollapsed(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeSidebarCollapsed(collapsed: boolean) {
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0')
+  } catch {
+    /* preference just is not remembered */
+  }
+}
+
 function NavItem({
   entry,
   active,
   counts,
   onNavigate,
+  collapsed,
 }: {
   entry: NavEntry
   active: boolean
   counts: NavCounts | null
   onNavigate?: () => void
+  collapsed?: boolean
 }) {
   useI18n()
   const Icon = entry.icon
+  const label = translate(entry.label)
   return (
     <Link
       to={entry.to}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13.5px] no-underline transition-colors max-md:h-11 ${
+      title={collapsed ? label : undefined}
+      aria-label={collapsed ? label : undefined}
+      className={`relative flex h-9 items-center rounded-lg text-[13.5px] no-underline transition-colors max-md:h-11 ${
+        collapsed ? 'justify-center px-0' : 'gap-3 px-2.5'
+      } ${
         active
           ? 'bg-sidebar-active font-semibold text-white before:absolute before:inset-y-2 before:-start-3 before:w-[3px] before:rounded-e-full before:bg-teal-400'
           : 'font-medium text-sidebar-ink hover:bg-sidebar-hover hover:text-white'
       }`}
     >
       <Icon className={`size-[18px] shrink-0 ${active ? 'text-teal-300' : 'text-sidebar-muted'}`} strokeWidth={1.8} />
-      <span className="flex-1">{translate(entry.label)}</span>
-      {countFor(entry.to, counts)}
+      {!collapsed && (
+        <>
+          <span className="flex-1">{label}</span>
+          {countFor(entry.to, counts)}
+        </>
+      )}
+      {collapsed && hasAttentionCount(entry.to, counts) && (
+        <span className="absolute end-1 top-1 size-1.5 rounded-full bg-teal-400" aria-hidden="true" />
+      )}
     </Link>
   )
 }
 
-function SidebarNav({ counts, onNavigate }: { counts: NavCounts | null; onNavigate?: () => void }) {
+function SidebarNav({
+  counts,
+  onNavigate,
+  collapsed,
+}: {
+  counts: NavCounts | null
+  onNavigate?: () => void
+  collapsed?: boolean
+}) {
   useI18n()
   const location = useLocation()
   const { admin } = useAuth()
@@ -125,16 +176,20 @@ function SidebarNav({ counts, onNavigate }: { counts: NavCounts | null; onNaviga
 
   return (
     <nav aria-label={translate("Main navigation")} className="flex flex-col gap-0.5">
-      <p aria-hidden="true" className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">{translate("Workspace")}</p>
+      {!collapsed && (
+        <p aria-hidden="true" className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">{translate("Workspace")}</p>
+      )}
       {PRIMARY_NAV.map((entry) => (
-        <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} />
+        <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} collapsed={collapsed} />
       ))}
       {adminItems.length > 0 && (
         <>
-          <div className="mt-4 mb-1.5 h-px bg-sidebar-line" role="separator" />
-          <p aria-hidden="true" className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">{translate("Admin")}</p>
+          <div className={`mb-1.5 h-px bg-sidebar-line ${collapsed ? 'mx-1 mt-2' : 'mt-4'}`} role="separator" />
+          {!collapsed && (
+            <p aria-hidden="true" className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">{translate("Admin")}</p>
+          )}
           {adminItems.map((entry) => (
-            <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} />
+            <NavItem key={entry.to} entry={entry} active={entry.match(location.pathname)} counts={counts} onNavigate={onNavigate} collapsed={collapsed} />
           ))}
         </>
       )}
@@ -142,11 +197,11 @@ function SidebarNav({ counts, onNavigate }: { counts: NavCounts | null; onNaviga
   )
 }
 
-function Brand({ agency, size = 30 }: { agency: AgencySettings | null; size?: number }) {
+function Brand({ agency, size = 30, collapsed }: { agency: AgencySettings | null; size?: number; collapsed?: boolean }) {
   useI18n()
   const name = agency?.agency_name || 'Horizon Travel'
   return (
-    <div className="flex items-center gap-2.5">
+    <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
       {agency?.logo_url ? (
         <img src={agency.logo_url} alt="" style={{ width: size, height: size }} className="rounded-[10px] bg-white object-contain p-0.5" />
       ) : (
@@ -158,10 +213,12 @@ function Brand({ agency, size = 30 }: { agency: AgencySettings | null; size?: nu
           {name.slice(0, 1).toUpperCase()}
         </span>
       )}
-      <div className="flex min-w-0 flex-col leading-tight">
-        <strong className="truncate text-[15px] text-white">{name}</strong>
-        <span className="text-xs text-sidebar-muted">{translate("Agency CRM")}</span>
-      </div>
+      {!collapsed && (
+        <div className="flex min-w-0 flex-col leading-tight">
+          <strong className="truncate text-[15px] text-white">{name}</strong>
+          <span className="text-xs text-sidebar-muted">{translate("Agency CRM")}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -180,7 +237,7 @@ function Avatar({ name, size = 30 }: { name: string; size?: number }) {
 }
 
 /** Agents work from a lead allowance; admins are unlimited, so only agents see the meter. */
-function CreditsCard() {
+function CreditsCard({ collapsed }: { collapsed?: boolean }) {
   useI18n()
   const { admin } = useAuth()
   if (admin?.role !== 'agent') return null
@@ -188,6 +245,26 @@ function CreditsCard() {
   const used = admin.leads_used ?? 0
   const total = left + used
   const percent = total > 0 ? Math.round((left / total) * 100) : 0
+  if (collapsed) {
+    return (
+      <div
+        className="flex flex-col items-center gap-1 rounded-xl bg-sidebar-hover px-1.5 py-2 text-sidebar-ink"
+        title={`${left} ${translate("credits left")}`}
+      >
+        <span className="text-xs font-bold text-white tabular-nums">{left}</span>
+        <div
+          className="h-1 w-full rounded-full bg-white/10"
+          role="meter"
+          aria-label={translate("Lead credits remaining")}
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={left}
+        >
+          <div className="h-1 rounded-full bg-teal-400" style={{ width: `${percent}%` }} />
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col gap-1.5 rounded-xl bg-sidebar-hover p-3 text-sidebar-ink">
       <div className="flex justify-between">
@@ -217,12 +294,20 @@ function Shell() {
   const location = useLocation()
   const counts = useNavCounts(Boolean(admin))
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
   const [menuOpen, setMenuOpen] = useState(false)
   const [agency, setAgency] = useState<AgencySettings | null>(null)
   const searchEnabled = /^\/(inbox|quotes|dealers|contacts)(\/|$)/.test(location.pathname)
     || /^\/leads\/(hotel|flight|package)$/.test(location.pathname)
 
   const displayName = nameFromEmail(admin?.email)
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      writeSidebarCollapsed(next)
+      return next
+    })
+  }
   const signOut = () => {
     setMenuOpen(false)
     setSidebarOpen(false)
@@ -284,19 +369,40 @@ function Shell() {
 
   return (
     <div className="flex h-dvh bg-shop-bg text-shop-ink">
-      <aside className="hidden h-full w-[244px] shrink-0 flex-col gap-3 bg-sidebar-bg px-3 py-4 md:flex">
-        <button
-          type="button"
-          onClick={() => navigate('/inbox')}
-          className="rounded-lg px-2 pb-3 pt-1 text-start"
-          aria-label={translate("Go to Inbox")}
-        >
-          <Brand agency={agency} />
-        </button>
-        <div className="min-h-0 flex-1 overflow-y-auto ps-3 -ms-3 [scrollbar-width:thin]">
-          <SidebarNav counts={counts} />
+      <aside
+        className={`hidden h-full shrink-0 flex-col gap-3 bg-sidebar-bg py-4 transition-[width] duration-200 ease-out md:flex ${
+          sidebarCollapsed ? 'w-[68px] px-2' : 'w-[244px] px-3'
+        }`}
+        data-collapsed={sidebarCollapsed || undefined}
+      >
+        <div className={`flex items-center gap-1 ${sidebarCollapsed ? 'flex-col' : ''}`}>
+          <button
+            type="button"
+            onClick={() => navigate('/inbox')}
+            className={`min-w-0 flex-1 rounded-lg pt-1 text-start ${sidebarCollapsed ? 'px-0 pb-1' : 'px-2 pb-3'}`}
+            aria-label={translate("Go to Inbox")}
+          >
+            <Brand agency={agency} collapsed={sidebarCollapsed} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleSidebarCollapsed}
+            aria-label={sidebarCollapsed ? translate("Expand sidebar") : translate("Collapse sidebar")}
+            aria-pressed={sidebarCollapsed}
+            title={sidebarCollapsed ? translate("Expand sidebar") : translate("Collapse sidebar")}
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-ink hover:bg-sidebar-hover hover:text-white"
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="size-4" strokeWidth={1.8} />
+            ) : (
+              <PanelLeftClose className="size-4" strokeWidth={1.8} />
+            )}
+          </button>
         </div>
-        <CreditsCard />
+        <div className={`min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin] ${sidebarCollapsed ? '' : 'ps-3 -ms-3'}`}>
+          <SidebarNav counts={counts} collapsed={sidebarCollapsed} />
+        </div>
+        <CreditsCard collapsed={sidebarCollapsed} />
       </aside>
 
       {sidebarOpen && (

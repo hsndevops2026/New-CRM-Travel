@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "improve-ui": {
+      "source": "ibelick/ui-skills",
+      "commit": "7ef0076fce1dfa39dd2bc43b7dc13add6eda8a41",
+      "sourceType": "github",
+      "skillPath": "skills/improve-ui/SKILL.md",
+      "computedHash": "7f913010ca7e6b5c224d928d4f2500438d7daacebb25f00e2f4df3bed513d51d"
+    }
+  }
+}

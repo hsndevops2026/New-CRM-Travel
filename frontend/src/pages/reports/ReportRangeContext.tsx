@@ -33,6 +33,7 @@ export function ReportRangeProvider({ children }: { children: ReactNode }) {
   return <ReportRangeContext.Provider value={value}>{children}</ReportRangeContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook paired with provider
 export function useReportRange() {
   const ctx = useContext(ReportRangeContext)
   if (!ctx) throw new Error('useReportRange must be used within ReportRangeProvider')

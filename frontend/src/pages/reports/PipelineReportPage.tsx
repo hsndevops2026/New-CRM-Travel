@@ -11,36 +11,33 @@ import {
   type PipelineReport,
 } from '../../lib/reports'
 import { useReportRange } from './ReportRangeContext'
-import { Bar, CsvButton, money, ReportCard, SOURCE_LABEL, STAGE_LABEL, stampDay, Stat } from './reportUi'
+import { Bar, CsvButton, ReportCard, Stat } from './reportUi'
+import { money, SOURCE_LABEL, STAGE_LABEL, stampDay } from './reportFormat'
 
 export default function PipelineReportPage() {
   useI18n()
   const { range } = useReportRange()
   const [pipeline, setPipeline] = useState<PipelineReport | null>(null)
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const rangeKey = range ? `${range.from}:${range.to}` : null
+  const ready = Boolean(rangeKey && loadedKey === rangeKey && pipeline)
 
   useEffect(() => {
-    if (!range) {
-      setPipeline(null)
-      return
-    }
+    if (!range || !rangeKey) return
     let cancelled = false
-    setLoading(true)
     fetchPipelineReport(range)
       .then((p) => {
         if (cancelled) return
         setPipeline(p)
+        setLoadedKey(rangeKey)
         setError(null)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to build the report')
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
     return () => { cancelled = true }
-  }, [range])
+  }, [range, rangeKey])
 
   if (!range) return null
 
@@ -55,7 +52,7 @@ export default function PipelineReportPage() {
     )
   }
 
-  if (loading && !pipeline) {
+  if (!ready || !pipeline) {
     return (
       <div className="space-y-4" aria-busy="true">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

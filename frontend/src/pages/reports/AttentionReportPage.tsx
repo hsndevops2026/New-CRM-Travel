@@ -12,15 +12,8 @@ import {
   toCsv,
   type OverdueReport,
 } from '../../lib/reports'
-import {
-  AttentionCount,
-  CsvButton,
-  fmtDate,
-  LeadLink,
-  ReportCard,
-  ReportTable,
-  stampDay,
-} from './reportUi'
+import { AttentionCount, CsvButton, LeadLink, ReportCard, ReportTable } from './reportUi'
+import { fmtDate, stampDay } from './reportFormat'
 
 export default function AttentionReportPage() {
   useI18n()
@@ -30,7 +23,6 @@ export default function AttentionReportPage() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
     fetchOverdueReport()
       .then((o) => {
         if (cancelled) return

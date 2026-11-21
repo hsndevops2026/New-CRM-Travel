@@ -1,7 +1,7 @@
 import { setPackagePublic } from '../lib/growth'
 import { useAuth } from '../context/AuthContext'
 import { t as translate, useI18n } from '../lib/i18n'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CircleAlert, Download, LayoutGrid, List, Search, Send, Trash2, X } from 'lucide-react'
 import { useConfirm } from '../hooks/useConfirm'
 import { useToast } from '../hooks/useToast'
@@ -127,8 +127,7 @@ export default function PredefinedQuotesPanel({
     targetQuoteId: string | null
   } | null>(null)
 
-  const load = () => {
-    setLoading(true)
+  const load = useCallback(() => {
     return fetchPredefinedQuotes()
       .then((next) => {
         setQuotes(next)
@@ -138,11 +137,11 @@ export default function PredefinedQuotesPanel({
         setError(err instanceof Error ? err.message : 'Failed to load quotes')
       })
       .finally(() => setLoading(false))
-  }
+  }, [])
 
   useEffect(() => {
     void load()
-  }, [])
+  }, [load])
 
   const typeCounts = useMemo(
     () => ({
@@ -399,7 +398,17 @@ export default function PredefinedQuotesPanel({
             icon={<CircleAlert />}
             title={translate("Quotes could not be loaded")}
             description={translate(error)}
-            action={<Button variant="primary" onClick={() => void load()}>{translate("Retry")}</Button>}
+            action={
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setLoading(true)
+                  void load()
+                }}
+              >
+                {translate('Retry')}
+              </Button>
+            }
           />
         )}
         {!loading && !error && quotes.length === 0 && (

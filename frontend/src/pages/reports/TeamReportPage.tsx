@@ -10,36 +10,33 @@ import {
   type EmployeeRow,
 } from '../../lib/reports'
 import { useReportRange } from './ReportRangeContext'
-import { CsvButton, fmtMinutes, ReportCard, ReportTable, stampDay } from './reportUi'
+import { CsvButton, ReportCard, ReportTable } from './reportUi'
+import { fmtMinutes, stampDay } from './reportFormat'
 
 export default function TeamReportPage() {
   useI18n()
   const { range } = useReportRange()
   const [employees, setEmployees] = useState<EmployeeRow[] | null>(null)
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const rangeKey = range ? `${range.from}:${range.to}` : null
+  const ready = Boolean(rangeKey && loadedKey === rangeKey && employees)
 
   useEffect(() => {
-    if (!range) {
-      setEmployees(null)
-      return
-    }
+    if (!range || !rangeKey) return
     let cancelled = false
-    setLoading(true)
     fetchEmployeeReport(range)
       .then((e) => {
         if (cancelled) return
         setEmployees(e.employees)
+        setLoadedKey(rangeKey)
         setError(null)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to build the report')
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
     return () => { cancelled = true }
-  }, [range])
+  }, [range, rangeKey])
 
   if (!range) return null
 
@@ -54,7 +51,7 @@ export default function TeamReportPage() {
     )
   }
 
-  if (loading && !employees) {
+  if (!ready || !employees) {
     return (
       <div className="overflow-hidden rounded-xl border border-shop-border bg-white">
         <TableSkeleton rows={6} label={translate('Loading reports')} />
